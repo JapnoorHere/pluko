@@ -3,7 +3,7 @@ import { StatusBoard } from "@/components/site/status-board";
 import { pageMetadata } from "@/lib/site-meta";
 
 export const metadata = pageMetadata("/status", {
-  title: "Status — Pluko",
+  title: "Pluko API Status",
   description:
     "Is Pluko working right now? A live check of the API, the search worker, and the image source.",
 });

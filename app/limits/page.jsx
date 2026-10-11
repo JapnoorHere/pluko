@@ -2,10 +2,12 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { LIMITS } from "@/limits.mjs";
 import { ArticleLayout, ArticleSection, Callout, PageHero, Prose, PublicShell, Reveal, SimpleTable } from "@/components/site/ui";
+import { JsonLd } from "@/components/site/json-ld";
+import { breadcrumbs } from "@/lib/jsonld";
 import { pageMetadata } from "@/lib/site-meta";
 
 export const metadata = pageMetadata("/limits", {
-  title: "Limits — Pluko",
+  title: "Image Search API Limits and Rate Limits — Pluko",
   description:
     "Request rates, daily usage, sizes, and how long Pluko keeps your data. What to expect before you integrate.",
 });
@@ -59,6 +61,7 @@ export default function Limits() {
   const maxImages = (LIMITS.defaultDailyPages * LIMITS.imagesPerPage).toLocaleString("en");
   return (
     <PublicShell>
+      <JsonLd nodes={[breadcrumbs([["Pluko", "/"], ["Limits", "/limits"]])]} />
       <PageHero eyebrow="Limits" title="Limits, in plain numbers.">
         What the service enforces today. Pluko is in beta, so these may change; material changes will be reflected here and in the documentation.
       </PageHero>

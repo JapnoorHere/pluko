@@ -29,7 +29,7 @@ function Hero(){
         <span className="rounded-full bg-foreground px-2 py-0.5 text-xs font-medium text-background">Beta</span>Batch search, webhooks<span className="hidden sm:inline"> and a full workspace</span><ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5"/>
       </Link></div>
       <h1 className={cn(site.display,site.rise)} style={{'--delay':'60ms'}}>Every image.<br/>One API.</h1>
-      <p className={cn(site.lede,site.rise,'mx-auto mt-7 max-w-2xl')} style={{'--delay':'120ms'}}>Search the web for images and get back URLs, sources and metadata your product can use. One query or thousands, in a single job.</p>
+      <p className={cn(site.lede,site.rise,'mx-auto mt-7 max-w-2xl')} style={{'--delay':'120ms'}}>Pluko is an image search API. Send a query and get back image URLs, sources and metadata your product can use. One query or thousands, in a single job.</p>
       <div className={cn(site.rise,'mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row')} style={{'--delay':'180ms'}}>
         <Button asChild size="lg" className="h-12 rounded-full px-7 text-base"><Link href="/app?mode=register">Get started<ArrowRight/></Link></Button>
         <Button asChild size="lg" variant="ghost" className="h-12 rounded-full px-6 text-base"><Link href="/docs">Read the docs<ArrowUpRight/></Link></Button>

@@ -14,6 +14,17 @@ test('robots.txt keeps crawlers out of the workspace and API', () => {
   assert.equal(rules.sitemap, 'https://images.example.com/sitemap.xml');
 });
 
+test('robots.txt lets crawlers read the OpenAPI file and names AI crawlers', () => {
+  const rules = robotsRules('https://images.example.com');
+  for (const rule of rules.rules) assert.ok(rule.allow.includes('/v1/openapi.json'));
+  assert.ok(rules.rules[1].userAgent.includes('OAI-SearchBot'));
+  assert.ok(rules.rules[1].disallow.includes('/admin'));
+});
+
+test('sitemap entries carry a last-modified date', () => {
+  for (const entry of sitemapEntries('https://images.example.com')) assert.match(entry.lastModified, /^\d{4}-\d{2}-\d{2}$/);
+});
+
 test('sitemap lists only public pages with absolute URLs', () => {
   const urls = sitemapEntries('https://images.example.com').map(entry => entry.url);
   assert.equal(urls.length, PUBLIC_PAGES.length);
@@ -36,4 +47,13 @@ test('pages refuse framing and sniffing', () => {
   assert.match(headers['content-security-policy'], /frame-ancestors 'none'/);
   assert.equal(headers['x-frame-options'], 'DENY');
   assert.equal(headers['x-content-type-options'], 'nosniff');
+});
+
+test('llms.txt links the docs and OpenAPI file on the site origin', async () => {
+  const { llmsTxt } = await import('../lib/llms-txt.js');
+  const text = llmsTxt('https://images.example.com');
+  assert.match(text, /^# Pluko\n\n> /);
+  assert.ok(text.includes('https://images.example.com/v1/openapi.json'));
+  assert.ok(text.includes('https://images.example.com/docs#quickstart'));
+  assert.ok(!text.includes('127.0.0.1'));
 });

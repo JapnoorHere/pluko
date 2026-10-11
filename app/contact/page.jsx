@@ -5,7 +5,7 @@ import { Callout, PageHero, PublicShell, Reveal } from "@/components/site/ui";
 import { pageMetadata } from "@/lib/site-meta";
 
 export const metadata = pageMetadata("/contact", {
-  title: "Contact — Pluko",
+  title: "Contact the Pluko Image Search API Team",
   description:
     "How to reach the Pluko team for support, limits, privacy requests, or to report misuse or a security problem.",
 });

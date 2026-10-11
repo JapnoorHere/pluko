@@ -1,12 +1,19 @@
 import { DocsPage } from "@/components/site/docs-page";
-import { pageMetadata } from "@/lib/site-meta";
+import { JsonLd } from "@/components/site/json-ld";
+import { breadcrumbs, techArticle } from "@/lib/jsonld";
+import { PAGE_UPDATED, pageMetadata } from "@/lib/site-meta";
 
-export const metadata = pageMetadata("/docs", {
-  title: "API documentation — Pluko",
-  description:
-    "Integrate Pluko image search: authentication, asynchronous jobs, batch queries, filters, result pagination, webhooks and error handling.",
-});
+const title = "Image Search API Documentation — Pluko";
+const description =
+  "Integrate Pluko image search: authentication, asynchronous jobs, batch queries, filters, result pagination, webhooks and error handling.";
+
+export const metadata = pageMetadata("/docs", { title, description });
 
 export default function Documentation() {
-  return <DocsPage />;
+  return (
+    <>
+      <JsonLd nodes={[breadcrumbs([["Pluko", "/"], ["Documentation", "/docs"]]), techArticle({ path: "/docs", title, description, updated: PAGE_UPDATED["/docs"] })]} />
+      <DocsPage />
+    </>
+  );
 }

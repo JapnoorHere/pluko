@@ -12,7 +12,7 @@ const api = createApiServer();
 
 // Pre-launch mode: "/" shows the coming-soon page and other pages redirect to it.
 // The admin portal, legal pages and static files stay reachable. Signed-in administrators see the full site.
-const PRELAUNCH_OPEN = new Set(['/','/coming-soon','/privacy','/terms','/robots.txt','/sitemap.xml','/opengraph-image','/admin']);
+const PRELAUNCH_OPEN = new Set(['/','/coming-soon','/privacy','/terms','/robots.txt','/sitemap.xml','/llms.txt','/opengraph-image','/admin']);
 const opensDuringPrelaunch = pathname => PRELAUNCH_OPEN.has(pathname) || pathname.startsWith('/admin/') || pathname.startsWith('/_next/') || /\.[a-z0-9]+$/i.test(pathname);
 
 function isAdmin(req){
