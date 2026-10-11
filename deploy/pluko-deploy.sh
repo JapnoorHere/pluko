@@ -25,10 +25,27 @@ healthy() {
   return 1
 }
 
+# Tell Bing, Yandex and other IndexNow engines that the public pages may have changed.
+# The key is the name of the 32-character .txt file in public/; it is public by design.
+# Failures are reported but never fail the deploy.
+notify_search_engines() {
+  local origin key urls
+  origin=$(grep -E '^PUBLIC_ORIGIN=' .env | tail -1 | cut -d= -f2- | sed 's#/*$##')
+  key=$(ls /srv/pluko/src/public | grep -E '^[0-9a-f]{32}\.txt$' | head -1 | sed 's/\.txt$//')
+  [ -n "$origin" ] && [ -n "$key" ] || { echo "   indexnow: skipped (no origin or key)"; return 0; }
+  urls=$(curl -fsS --max-time 15 "$origin/sitemap.xml" | grep -oE '<loc>[^<]+</loc>' | sed -E 's#</?loc>##g; s#.*#"&"#' | paste -sd, -)
+  [ -n "$urls" ] || { echo "   indexnow: skipped (empty sitemap)"; return 0; }
+  curl -sS --max-time 15 -o /dev/null -w "   indexnow: HTTP %{http_code}\n" -H 'Content-Type: application/json; charset=utf-8' \
+    -d "{\"host\":\"${origin#https://}\",\"key\":\"$key\",\"keyLocation\":\"$origin/$key.txt\",\"urlList\":[$urls]}" \
+    https://api.indexnow.org/indexnow || echo "   indexnow: request failed"
+}
+
 echo "-> building and starting"
 if compose up -d --build && healthy; then
   echo "-> healthy"
   docker image prune -f >/dev/null 2>&1
+  notify_search_engines
+
   echo "deployed: $(runuser -u pluko -- git -C /srv/pluko/src log --oneline -1)"
   exit 0
 fi

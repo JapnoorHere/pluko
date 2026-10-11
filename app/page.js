@@ -1,3 +1,4 @@
+import { preconnect } from "react-dom";
 import LandingPage from "@/components/landing/landing-page";
 import { JsonLd } from "@/components/site/json-ld";
 import { faqPage, organization, softwareApplication, website } from "@/lib/jsonld";
@@ -13,6 +14,8 @@ export const metadata = pageMetadata("/", {
 });
 
 export default function Home() {
+  // The first sample photos load straight away from Unsplash; opening the connection early speeds up the first paint.
+  preconnect("https://images.unsplash.com");
   return (
     <>
       <JsonLd nodes={[organization(), website(), softwareApplication(), faqPage(faqs)]} />
