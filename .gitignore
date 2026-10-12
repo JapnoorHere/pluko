@@ -1,0 +1,24 @@
+data/
+.env
+*.log
+node_modules/
+.next/
+out/
+coverage/
+.env.*
+!.env.example
+!.env.production.example
+LOCAL-SETUP.txt
+*.sqlite*
+*.db
+*.db-*
+*.pem
+*.key
+backups/
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+
+# Keep working notes local. Only the root README is published.
+*.[mM][dD]
+!/README.md
