@@ -18,7 +18,7 @@ Pluko brings image search, background processing, and request inspection into on
 
 It returns **URLs and metadata**, not downloaded image files. Images stay with their original hosts.
 
-> **Project status:** active development. Local use and a single-server deployment are supported by the current architecture. Review the deployment notes before exposing it publicly. A public marketing page is planned; the current web interface is the workspace.
+> **Project status:** active development. Local use and a single-server deployment are supported by the current architecture. Review the deployment notes before exposing it publicly. The public landing page is at `/`, the workspace is at `/app`, and integration documentation is at `/docs`.
 
 ## What you can do
 
@@ -45,7 +45,7 @@ node manage.mjs bootstrap you@example.com
 node dev.mjs
 ```
 
-Open [localhost:4180](http://127.0.0.1:4180). The bootstrap command writes a one-time setup link to `LOCAL-SETUP.txt`. Open that link, choose your password, sign in, and enroll an authenticator for the administrator account.
+Open the [workspace](http://127.0.0.1:4180/app). The bootstrap command writes a one-time setup link to `LOCAL-SETUP.txt`. Open that link, choose your password, sign in, and enroll an authenticator for the administrator account.
 
 Run bootstrap only on a fresh database, before creating any accounts. It does not create a default password. Keep the setup file private.
 
