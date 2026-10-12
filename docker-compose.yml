@@ -1,0 +1,29 @@
+services:
+  api:
+    build: .
+    command: node start.mjs
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4180
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN}
+      DATA_DIR: /var/lib/pluko
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    ports:
+      - "127.0.0.1:4180:4180"
+    volumes:
+      - pluko-data:/var/lib/pluko
+    restart: unless-stopped
+  worker:
+    build: .
+    command: node worker.mjs
+    environment:
+      NODE_ENV: production
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN}
+      DATA_DIR: /var/lib/pluko
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+    volumes:
+      - pluko-data:/var/lib/pluko
+    restart: unless-stopped
+volumes:
+  pluko-data:

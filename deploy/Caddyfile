@@ -1,0 +1,10 @@
+{$PLUKO_DOMAIN} {
+  encode zstd gzip
+
+  header {
+    -Server
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  }
+
+  reverse_proxy api:4180
+}

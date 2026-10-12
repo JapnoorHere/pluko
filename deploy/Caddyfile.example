@@ -1,0 +1,4 @@
+# Replace images.example.com with your domain, then put the API behind HTTPS.
+images.example.com {
+  reverse_proxy 127.0.0.1:4180
+}
