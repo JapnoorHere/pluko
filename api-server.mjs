@@ -38,7 +38,7 @@ export function createServer(){return http.createServer(async(req,res)=>{
     if(req.method==='POST'){if(req.headers.origin&&req.headers.origin!==config.origin)fail(403,'ORIGIN_REJECTED','Cross-origin request rejected');payload=await body(req);}
     if(url.pathname==='/api/login'&&req.method==='POST'){
       const address=email(payload.email);if(!rate('login:'+hash(address),RATE_LIMITS.loginPerWindow,900000))fail(429,'LOGIN_RATE_LIMIT','Wait before trying again');
-      const user=get('SELECT * FROM users WHERE email=?',address);if(!user||!user.active||!await passwordCheck(payload.password,user.password)){audit(null,'login.failed',hash(address));fail(401,'LOGIN_FAILED','Invalid credentials');}
+      const user=get('SELECT * FROM users WHERE email=?',address);if(!user||!user.active||(payload.portal==='admin'&&user.role!=='admin')||!await passwordCheck(payload.password,user.password)){audit(null,'login.failed',hash(address));fail(401,'LOGIN_FAILED','Invalid credentials');}
       if(user.totp)consumeCode(user,payload.code);const token=secret();run('INSERT INTO sessions VALUES(?,?,?,?,?)',hash(token),user.id,secret(),now()+43200000,now());cookie(res,token);auth={user_id:user.id};audit(user.id,'login.success',user.id);return respond(200,{ok:true});
     }
     if(url.pathname==='/api/register'&&req.method==='POST'){
@@ -93,7 +93,7 @@ export function createServer(){return http.createServer(async(req,res)=>{
       if(url.pathname==='/api/admin/feedback'&&req.method==='POST'){run("UPDATE feedback SET status='reviewed' WHERE id=?",payload.id);audit(auth.user_id,'feedback.reviewed',payload.id);return respond(200,{ok:true});}
       if(url.pathname==='/api/admin/storage'){const files=[];for(const name of await readdir(config.data)){if(name.endsWith('.key'))continue;const st=await stat(path.join(config.data,name));if(st.isFile())files.push({name,bytes:st.size});}return respond(200,{files,tables:all("SELECT name FROM sqlite_master WHERE type='table'").map(x=>({name:x.name,count:get('SELECT count(*) n FROM "'+x.name+'"').n})),migrations:all('SELECT * FROM migrations'),backups:await readdir(path.join(config.data,'backups')).catch(()=>[])});}
       if(url.pathname==='/api/admin/backup'&&req.method==='POST'){const folder=path.join(config.data,'backups');mkdirSync(folder,{recursive:true});const name='pluko-'+now()+'.sqlite';await backup(db,path.join(folder,name));audit(auth.user_id,'backup.created',name);return respond(201,{name,note:'Local database snapshot. Protect the encryption key separately; offsite encrypted backups are not configured.'});}
-      if(url.pathname==='/api/admin/cleanup'&&req.method==='POST'){cleanup();audit(auth.user_id,'retention.applied');return respond(200,{ok:true});}
+      if(url.pathname==='/api/admin/cleanup'&&req.method==='POST'){const table=payload.table;if(table!==undefined&&!['requests','attempts','jobs','audit','feedback','sessions','tokens','rate_limits','usage'].includes(table))fail(400,'INVALID_CLEANUP_TABLE','This table is not eligible for retention cleanup');cleanup(table);audit(auth.user_id,table?'retention.table_applied':'retention.applied',table||null);return respond(200,{ok:true,table:table||'all'});}
     }
     fail(404,'NOT_FOUND','Route not found');
   }catch(e){respond(e.status||500,{error:{code:e.code||'INTERNAL_ERROR',message:e.status?e.message:'Unexpected server error; inspect server diagnostics'}});if(!e.status)console.error(requestId,e.message);}

@@ -12,6 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import styles from "./marketing.module.css";
+import { legal } from "@/lib/legal";
 
 export function Brand() {
   return (
@@ -96,9 +97,14 @@ export function SiteFooter() {
         <Link href="/#developers">Developers</Link>
         <Link href="/docs">Documentation</Link>
         <Link href="/app">Sign in</Link>
+        <Link href="/privacy">Privacy</Link>
+        <Link href="/terms">Terms</Link>
       </nav>
       <div className={styles.footerBottom}>
-        <span>© {new Date().getFullYear()} Pluko</span>
+        <span>
+          © {new Date().getFullYear()} Pluko · By{" "}
+          <a href={legal.website}>{legal.operator}</a>
+        </span>
         <span>
           Sample photography from{" "}
           <a href="https://unsplash.com" target="_blank" rel="noreferrer">

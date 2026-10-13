@@ -604,6 +604,53 @@ export default function LandingPage() {
             </p>
           </Reveal>
         </section>
+        <section
+          className={`${styles.section} ${styles.responsibility}`}
+          aria-labelledby="responsibility-heading"
+        >
+          <Reveal>
+            <span className={styles.eyebrow}>DATA & IMAGE RIGHTS</span>
+            <h2 id="responsibility-heading">
+              Clear about what stays.
+              <br />
+              Careful about what you use.
+            </h2>
+            <div className={styles.responsibilityGrid}>
+              <div>
+                <ImageIcon size={20} />
+                <h3>URLs, not stored images.</h3>
+                <p>
+                  Pluko stores search metadata and operational logs. Result
+                  images load from their original hosts.
+                </p>
+              </div>
+              <div>
+                <Link2 size={20} />
+                <h3>The source still matters.</h3>
+                <p>
+                  A search result is not a license. Check the source and its
+                  permissions before using an image.
+                </p>
+              </div>
+              <div>
+                <ClipboardList size={20} />
+                <h3>Know how your data is used.</h3>
+                <p>
+                  Read about account data, log retention, administrator access,
+                  and how to request help.
+                </p>
+              </div>
+            </div>
+            <div className={styles.legalLinks}>
+              <Link href="/privacy">
+                Read the Privacy Policy <ArrowUpRight size={14} />
+              </Link>
+              <Link href="/terms">
+                Read the Terms of Service <ArrowUpRight size={14} />
+              </Link>
+            </div>
+          </Reveal>
+        </section>
         <section className={`${styles.section} ${styles.faqSection}`}>
           <Reveal className={styles.faqLayout}>
             <div>

@@ -50,13 +50,18 @@ export function tx(fn){const level=depth++;db.exec(level?'SAVEPOINT nested_'+lev
 export function audit(actor,action,target,details={}){run('INSERT INTO audit(actor,action,target,details,created) VALUES(?,?,?,?,?)',actor||null,action,target||null,JSON.stringify(details),now());}
 export function setting(key){return get('SELECT value FROM settings WHERE key=?',key)?.value;}
 export function rate(bucket,max,ms){return tx(()=>{run('DELETE FROM rate_limits WHERE bucket=? AND expires<=?',bucket,now());const r=get('SELECT * FROM rate_limits WHERE bucket=?',bucket);if(r&&r.count>=max)return false;run('INSERT INTO rate_limits VALUES(?,1,?) ON CONFLICT(bucket) DO UPDATE SET count=count+1',bucket,now()+ms);return true;});}
-export function cleanup(){const t=now(),day=86400000;tx(()=>{
-  run('UPDATE requests SET payload=NULL,response=NULL WHERE created<?',t-Number(setting('body_days'))*day);
-  run('DELETE FROM requests WHERE created<?',t-Number(setting('summary_days'))*day);
-  run('DELETE FROM attempts WHERE created<?',t-Number(setting('summary_days'))*day);
-  run("DELETE FROM jobs WHERE updated<? AND status NOT IN ('queued','running')",t-Number(setting('job_days'))*day);
-  run('DELETE FROM audit WHERE created<?',t-Number(setting('audit_days'))*day);
-  run('DELETE FROM feedback WHERE created<?',t-Number(setting('summary_days'))*day);
-  run('DELETE FROM sessions WHERE expires<?',t);run('DELETE FROM tokens WHERE expires<?',t);run('DELETE FROM rate_limits WHERE expires<?',t);
-  run('DELETE FROM usage WHERE day<?',new Date(t-365*day).toISOString().slice(0,10));
+export function cleanup(table){const t=now(),day=86400000;tx(()=>{
+  const tasks={
+    requests:()=>{run('UPDATE requests SET payload=NULL,response=NULL WHERE created<?',t-Number(setting('body_days'))*day);run('DELETE FROM requests WHERE created<?',t-Number(setting('summary_days'))*day);},
+    attempts:()=>run('DELETE FROM attempts WHERE created<?',t-Number(setting('summary_days'))*day),
+    jobs:()=>run("DELETE FROM jobs WHERE updated<? AND status NOT IN ('queued','running')",t-Number(setting('job_days'))*day),
+    audit:()=>run('DELETE FROM audit WHERE created<?',t-Number(setting('audit_days'))*day),
+    feedback:()=>run('DELETE FROM feedback WHERE created<?',t-Number(setting('summary_days'))*day),
+    sessions:()=>run('DELETE FROM sessions WHERE expires<?',t),
+    tokens:()=>run('DELETE FROM tokens WHERE expires<?',t),
+    rate_limits:()=>run('DELETE FROM rate_limits WHERE expires<?',t),
+    usage:()=>run('DELETE FROM usage WHERE day<?',new Date(t-365*day).toISOString().slice(0,10)),
+  };
+  if(table){if(!tasks[table])throw new Error('Unsupported cleanup table');tasks[table]();return;}
+  for(const clean of Object.values(tasks))clean();
 });}
