@@ -54,13 +54,14 @@ export function LandingHeader(){
 const FOOTER=[
   ['Product',[['/#how-it-works','How it works'],['/#workspace','Workspace'],['/app','Sign in'],['/app?mode=register','Create an account']]],
   ['Developers',[['/docs','Documentation'],['/v1/openapi.json','OpenAPI schema'],['/limits','Limits'],['/status','System status']]],
+  ['Switch to Pluko',[['/alternatives/bing-image-search-api','Bing Image Search API alternative'],['/alternatives/google-custom-search-api','Google Custom Search API alternative']]],
   ['Company',[['/contact','Contact'],[legal.website,legal.operator]]],
   ['Legal',[['/privacy','Privacy Policy'],['/terms','Terms of Service']]],
 ];
 
 export function LandingFooter(){
   return <footer className="border-t">
-    <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.3fr_repeat(4,1fr)]">
+    <div className="mx-auto grid max-w-[1200px] gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[1.3fr_repeat(5,1fr)]">
       <div className="grid content-start gap-3"><Logo/><p className="max-w-xs text-sm text-muted-foreground">Image search for the products you build.</p></div>
       {FOOTER.map(([heading,links])=><nav key={heading} aria-label={heading} className="grid content-start gap-3 text-sm">
         <p className="font-medium">{heading}</p>

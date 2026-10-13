@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/logo.png" alt="Pluko" width="64" height="64" />
   <h1>Pluko</h1>
-  <p><strong>Image search for your applications.</strong></p>
+  <p><strong>An open-source image search API for your applications.</strong></p>
   <p>Send a query. Get image URLs, source links and metadata back.<br />Manage keys and watch requests from one workspace.</p>
   <p>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="License: AGPL-3.0" /></a>
