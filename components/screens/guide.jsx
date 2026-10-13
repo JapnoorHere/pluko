@@ -92,7 +92,7 @@ export function Guide(){
 
         <Section id="guide-webhooks" index={4} title="Get notified instead">
           <Text>Add a webhook to a project and Pluko sends a signed {c('job.finished')} event to your https endpoint when a job is complete, partial or cancelled. No polling needed.</Text>
-          <div className="flex flex-wrap gap-2"><Button asChild size="sm" className="rounded-full px-4"><Link href={href('projects')}><Webhook/>Set up a webhook</Link></Button><Button asChild size="sm" variant="outline" className="rounded-full"><a href="/docs#webhooks" target="_blank" rel="noopener noreferrer">How to verify signatures<ArrowUpRight/></a></Button></div>
+          <div className="flex flex-wrap gap-2"><Button asChild size="sm" className="rounded-full px-4"><Link href={href('projects')}><Webhook/>Set up a webhook</Link></Button><Button asChild size="sm" variant="outline" className="rounded-full"><a href="/docs/webhooks" target="_blank" rel="noopener noreferrer">How to verify signatures<ArrowUpRight/></a></Button></div>
         </Section>
 
         <Section id="guide-batches" index={5} title="Batches and filters">

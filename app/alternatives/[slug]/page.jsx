@@ -6,6 +6,7 @@ import { ArticleLayout, ArticleSection, Callout, CodeBlock, PageHero, Prose, Pub
 import { JsonLd } from "@/components/site/json-ld";
 import { breadcrumbs, faqPage, techArticle } from "@/lib/jsonld";
 import { ALTERNATIVE_SLUGS, alternatives } from "@/lib/marketing/alternatives";
+import { docHref } from "@/lib/docs-pages";
 import { pageMetadata } from "@/lib/site-meta";
 
 export const dynamicParams = false;
@@ -61,7 +62,7 @@ export default async function AlternativePage({ params }) {
 
         <ArticleSection id="fields" title="Field mapping">
           <SimpleTable columns={[page.name, "Pluko"]} rows={page.fieldMap.map(([from, to]) => [<code key="from">{from}</code>, to])} />
-          <Prose><p>Every field is described in the <Link href="/docs#metadata">documentation</Link> and the <a href="/v1/openapi.json">OpenAPI schema</a>.</p></Prose>
+          <Prose><p>Every field is described in the <Link href={docHref("metadata")}>documentation</Link> and the <a href="/v1/openapi.json">OpenAPI schema</a>.</p></Prose>
         </ArticleSection>
 
         <ArticleSection id="differences" title="What works differently">

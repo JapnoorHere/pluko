@@ -1,12 +1,13 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,ArrowUpRight,BookOpen,FileCode2,Gauge,KeyRound,Menu,Search,ThumbsDown,ThumbsUp} from 'lucide-react';
+import {ArrowLeft,ArrowRight,ArrowUpRight,BookOpen,FileCode2,Gauge,KeyRound,Menu,Search,ThumbsDown,ThumbsUp} from 'lucide-react';
 import {LIMITS} from '@/limits.mjs';
 import {FILTER_VALUES} from '@/filters.mjs';
 import {requestExample,responses} from '@/lib/marketing/content';
 import {SAMPLE_EVENT,VERIFY_SNIPPET} from '@/lib/webhook-example';
 import {legal} from '@/lib/legal';
+import {DOCS_PAGES,docHref,docsPage,docsPath,pageOfSection} from '@/lib/docs-pages';
 import {cn} from '@/lib/utils';
 import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@/components/ui/dialog';
 import {Sheet,SheetContent,SheetHeader,SheetTitle,SheetTrigger} from '@/components/ui/sheet';
@@ -16,28 +17,27 @@ import {useReturnFocus} from '@/components/design/system';
 
 /* ---------- Navigation and search index ---------- */
 
-const GROUPS=[
-  {label:'Get started',items:[['quickstart','Quick start','api key environment first request 202'],['authentication','Authentication','bearer token scopes search read revoke']]},
-  {label:'Core concepts',items:[['jobs','Jobs and statuses','queued running complete partial cancelled reason'],['delivery','Getting results','wait webhook poll Prefer respond-async delivery'],['pagination','Reading results','next_cursor after poll_after limit page'],['idempotency','Retries and idempotency','idempotency-key 409 conflict retry']]},
-  {label:'API reference',items:[['create-search','Create a search','POST /v1/images/search query count min_width'],['get-job','Get a job','GET /v1/jobs/{job_id} status'],['get-results','Read results','GET /v1/jobs/{job_id}/results images'],['list-jobs','List jobs','GET /v1/jobs before status'],['cancel-retry','Cancel and retry','POST cancel retry JOB_FINISHED'],['feedback','Send feedback','POST /v1/feedback not_relevant watermark broken'],['usage','Usage','GET /v1/usage pages quota reset'],['status','Service status','GET /v1/status worker provider']]},
-  {label:'Features',items:[['batches','Batch searches','queries array 64 KiB'],['filters','Filters','safe_search image_type layout size color INVALID_FILTER'],['webhooks','Webhooks','job.finished signature hmac Pluko-Signature retries']]},
-  {label:'Reference',items:[['errors','Errors and limits','401 403 400 409 413 429 Retry-After rate limit'],['metadata','Image metadata and reuse','image_url thumbnail_url source_url license watermark dimensions'],['openapi','OpenAPI and tools','openapi.json postman insomnia retention expires']]},
-];
-const ITEMS=GROUPS.flatMap(group=>group.items.map(([id,label,keywords])=>({id,label,keywords,group:group.label})));
-const IDS=ITEMS.map(item=>item.id);
+// Every section on every docs page, for the sidebar and search.
+const ITEMS=DOCS_PAGES.flatMap(page=>page.sections.map(([id,label,keywords])=>({id,label,keywords,group:page.nav,slug:page.slug})));
 
-function NavList({active,onNavigate}){
+// A link to a section: a plain hash on the same page, the full path on another.
+const sectionHref=(id,slug)=>pageOfSection(id)?.slug===slug?`#${id}`:docHref(id);
+
+function NavList({slug,active,onNavigate}){
   return <nav aria-label="Documentation" className="grid gap-7 text-sm">
-    {GROUPS.map(group=><div key={group.label}>
-      <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{group.label}</p>
-      <ul className="grid gap-0.5">
-        {group.items.map(([id,label])=><li key={id}><a href={`#${id}`} onClick={onNavigate} aria-current={active===id?'location':undefined} className={cn('block rounded-lg px-3 py-1.5 transition-colors',active===id?'bg-muted font-medium text-foreground':'text-muted-foreground hover:bg-muted/60 hover:text-foreground')}>{label}</a></li>)}
-      </ul>
-    </div>)}
+    {DOCS_PAGES.map(page=>{
+      const current=page.slug===slug;
+      return <div key={page.slug}>
+        <Link href={docsPath(page.slug)} onClick={onNavigate} aria-current={current?'page':undefined} className={cn('mb-2 block text-xs font-medium tracking-wide uppercase transition-colors',current?'text-foreground':'text-muted-foreground hover:text-foreground')}>{page.nav}</Link>
+        <ul className="grid gap-0.5">
+          {page.sections.map(([id,label])=><li key={id}><a href={sectionHref(id,slug)} onClick={onNavigate} aria-current={current&&active===id?'location':undefined} className={cn('block rounded-lg px-3 py-1.5 transition-colors',current&&active===id?'bg-muted font-medium text-foreground':'text-muted-foreground hover:bg-muted/60 hover:text-foreground')}>{label}</a></li>)}
+        </ul>
+      </div>;
+    })}
   </nav>;
 }
 
-function DocsSearch({open,onOpenChange}){
+function DocsSearch({slug,open,onOpenChange}){
   const [query,setQuery]=useState(''),[index,setIndex]=useState(0);
   const list=useRef(null);
   useEffect(()=>{if(open){setQuery('');setIndex(0);}},[open]);
@@ -48,7 +48,11 @@ function DocsSearch({open,onOpenChange}){
   },[query]);
   useEffect(()=>setIndex(0),[query]);
   useEffect(()=>{list.current?.querySelector(`[data-index="${index}"]`)?.scrollIntoView({block:'nearest'});},[index]);
-  const go=item=>{onOpenChange(false);setTimeout(()=>{document.getElementById(item.id)?.scrollIntoView({behavior:'smooth'});window.history.replaceState(null,'',`#${item.id}`);},50);};
+  const go=item=>{
+    onOpenChange(false);
+    if(item.slug!==slug){window.location.assign(docHref(item.id));return;}
+    setTimeout(()=>{document.getElementById(item.id)?.scrollIntoView({behavior:'smooth'});window.history.replaceState(null,'',`#${item.id}`);},50);
+  };
   const returnFocus=useReturnFocus(open);
   return <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent onCloseAutoFocus={returnFocus} showCloseButton={false} className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
@@ -105,17 +109,220 @@ const REASONS=[
   ['user_cancelled','The job was cancelled.'],
 ];
 
+/* ---------- Page content, one entry per docs page ---------- */
+
+const CONTENT={
+  "":({origin})=><>
+    <Section id="quickstart" title="Quick start">
+      <ol className="grid gap-8">
+        <li className="grid gap-3"><p className="font-semibold"><span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-foreground text-xs text-background">1</span>Create a project and an API key</p>
+          <Prose><p>In your <Link href="/app">workspace</Link>, create a project, then generate an API key with the {c('search')} and {c('read')} scopes. Copy it when it’s shown: the full key is displayed only once.</p></Prose></li>
+        <li className="grid gap-3"><p className="font-semibold"><span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-foreground text-xs text-background">2</span>Set your environment variables</p>
+          <Prose><p>Keep the key on your server. Use your deployment’s address when hosted.</p></Prose>
+          <CodeBlock title=".env" code={`PLUKO_URL=${origin}\nPLUKO_API_KEY=YOUR_API_KEY`}/></li>
+        <li className="grid gap-3"><p className="font-semibold"><span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-foreground text-xs text-background">3</span>Create your first search</p>
+          <CodeBlock title="POST /v1/images/search" samples={allLanguages(0)}/>
+          <Callout type="note">A {c('202')} response means the job was accepted, not that images are ready. Use the returned {c('job_id')} with the status and results endpoints below.</Callout></li>
+      </ol>
+    </Section>
+
+    <Section id="authentication" title="Authentication">
+      <Prose><p>Send {c('Authorization: Bearer YOUR_API_KEY')} on every public API request. Keep keys on your server, never in browser code, mobile apps, URLs or logs.</p></Prose>
+      <SimpleTable columns={['Scope','Allows']} rows={[[c('search'),'Create, cancel and retry jobs.'],[c('read'),'Read job state, results and usage.']]}/>
+      <Callout type="tip">Keys expire automatically and can be rotated or revoked from the API keys page of your workspace. Rotate before a key expires to avoid an outage.</Callout>
+    </Section>
+  </>,
+  "jobs":({origin})=><>
+    <Section id="jobs" title="Jobs and statuses">
+      <Prose><p>A search is a background job. Check {c('GET /v1/jobs/JOB_ID')}, wait for it, or use a webhook; see <a href={docHref('delivery')}>Getting results</a>. A job is always in one of these states:</p></Prose>
+      <SimpleTable columns={['Status','Meaning']} rows={[[c('queued'),'Accepted and waiting for the worker.'],[c('running'),'Pages are being fetched; results appear as they are found.'],[c('complete'),'Every query found what it asked for.'],[c('partial'),'Finished with fewer images than requested. Check each query’s reason.'],[c('cancelled'),'Stopped before it finished. Results found so far are kept.']]}/>
+      <Prose><p>Each query in a job reports a {c('reason')} when it stops:</p></Prose>
+      <SimpleTable columns={['Reason','What happened']} rows={REASONS.map(([code,text])=>[c(code),text])}/>
+    </Section>
+
+    <Section id="delivery" title="Getting results">
+      <Prose><p>Each project chooses how its searches return results, in the project’s Delivery tab in the workspace. You can change it at any time.</p></Prose>
+      <SimpleTable columns={['Mode','What happens','Best for']} rows={[
+        ['Check back (default)',<>The search returns {c('202')} with a job ID straight away. Check {c('GET /v1/jobs/JOB_ID')} until it finishes. Add {c('?wait=10')} to each check and it waits up to 10 seconds for the job, so you need far fewer requests.</>,'Large searches and batch jobs.'],
+        ['Wait for results',<>The search call stays open until the job finishes, up to the project’s limit (3, 5 or 10 seconds), then returns {c('200')} with {c('status')}, {c('job')} and the first page of {c('images')}. If it’s still running, you get the usual {c('202')} and can wait on the job.</>,'Small searches someone is waiting on.'],
+        ['Webhook',<>The search returns {c('202')} straight away, and Pluko sends a signed {c('job.finished')} event to your URL when the job ends. See <a href={docHref('webhooks')}>Webhooks</a>.</>,'Backends that shouldn’t wait or check back.'],
+      ]}/>
+      <Prose><p>A single request can override its project: send {c('Prefer: wait=5')} to wait up to 5 seconds (10 at most), or {c('Prefer: respond-async')} to return straight away. Responses that waited include a {c('Preference-Applied')} header. Waits are always short, so a large search never holds a connection open; it carries on as a normal job.</p></Prose>
+    </Section>
+
+    <Section id="pagination" title="Reading results">
+      <Prose>
+        <p>Read {c('GET /v1/jobs/JOB_ID/results?limit=100&after=0')}. A page holds up to {LIMITS.resultsPageMax} images. Pass {c('next_cursor')} as {c('after')} to read the next page.</p>
+        <p>When {c('next_cursor')} is {c('null')} you have reached the end of the results available right now. If the job is still running, wait and continue from {c('poll_after')} to fetch only new results without reading earlier rows again.</p>
+      </Prose>
+    </Section>
+
+    <Section id="idempotency" title="Retries and idempotency">
+      <Prose><p>Add a unique {c('Idempotency-Key')} header when you create a job. Retrying with the same key and identical input returns the original job instead of starting a second one. Reusing the key with different input returns {c('409 IDEMPOTENCY_CONFLICT')}.</p></Prose>
+    </Section>
+  </>,
+  "api-reference":({origin})=><>
+    <Section id="create-search" title="Create a search">
+      <Endpoint method="POST" path="/v1/images/search" scope="search"/>
+      <Prose><p>Starts a job and returns {c('202')} straight away. Send either {c('query')} (with an optional {c('count')}) or a {c('queries')} array for a <a href={docHref('batches')}>batch</a>.</p></Prose>
+      <Params rows={[
+        ['query','string',false,`The search text, up to ${LIMITS.queryMaxLength} characters.`],
+        ['count','string',false,<>Images wanted per query, as a positive decimal string. Default {c('"15"')}. No product cap; the source may have fewer.</>],
+        ['queries','array',false,'A batch of { query, count } objects. Queries must be unique.'],
+        ['min_width','integer',false,<>Minimum width in pixels, 0 to 20000. Default {c('800')}.</>],
+        ['exclude_domains','string[]',false,<>Plain domains to skip, such as {c('example.com')}.</>],
+        ['watermark_policy','string',false,<>{c('prefer_clean')} (default) or {c('any')}. A hint from titles and domains, not a guarantee.</>],
+        ['safe_search, image_type, layout, size, color','string',false,<>Optional <a className="text-[var(--accent-ink)] underline underline-offset-2" href={docHref('filters')}>filters</a>.</>],
+      ]}/>
+      <CodeBlock title="Request" samples={allLanguages(0)}/>
+      <CodeBlock title="Response · 202" code={json(responses[0])}/>
+    </Section>
+
+    <Section id="get-job" title="Get a job">
+      <Endpoint method="GET" path="/v1/jobs/{job_id}" scope="read"/>
+      <Prose><p>Returns the job’s status, per-query progress, the filters it ran with, and {c('expires')}: when its results will be removed.</p></Prose>
+      <CodeBlock title="Request" samples={allLanguages(1)}/>
+      <CodeBlock title="Response · 200 (excerpt)" code={json(responses[1])}/>
+    </Section>
+
+    <Section id="get-results" title="Read results">
+      <Endpoint method="GET" path="/v1/jobs/{job_id}/results" scope="read"/>
+      <Params rows={[['limit','integer',false,`1 to ${LIMITS.resultsPageMax}. Default 50.`],['after','integer',false,<>Cursor from the previous page’s {c('next_cursor')}, or {c('poll_after')} while the job runs. Default 0.</>]]}/>
+      <CodeBlock title="Request" samples={allLanguages(2)}/>
+      <CodeBlock title="Response · 200 (excerpt)" code={json(responses[2])}/>
+    </Section>
+
+    <Section id="list-jobs" title="List jobs">
+      <Endpoint method="GET" path="/v1/jobs" scope="read"/>
+      <Prose><p>Lists the key’s project jobs, newest first.</p></Prose>
+      <Params rows={[['limit','integer',false,`1 to ${LIMITS.resultsPageMax}. Default 50.`],['status','string',false,<>{c('queued')}, {c('running')}, {c('complete')}, {c('partial')} or {c('cancelled')}.</>],['before','integer',false,<>Pass {c('next_cursor')} from the previous page.</>]]}/>
+      <CodeBlock title="Request" code={curl('GET','/v1/jobs?status=running')}/>
+    </Section>
+
+    <Section id="cancel-retry" title="Cancel and retry">
+      <Endpoint method="POST" path="/v1/jobs/{job_id}/cancel" scope="search"/>
+      <Endpoint method="POST" path="/v1/jobs/{job_id}/retry" scope="search"/>
+      <Prose><p>Cancel stops a queued or running job. A job that already finished returns {c('409 JOB_FINISHED')} and keeps its status. Retry creates a new job from the original request and returns its {c('job_id')}.</p></Prose>
+      <CodeBlock title="Request" code={curl('POST','/v1/jobs/JOB_ID/cancel')}/>
+    </Section>
+
+    <Section id="feedback" title="Send feedback">
+      <Endpoint method="POST" path="/v1/feedback" scope="search"/>
+      <Params rows={[['job_id','string',true,'The job the result belongs to.'],['result_id','string',true,<>The image’s {c('id')}.</>],['reason','string',true,<>{c('not_relevant')}, {c('watermark')}, {c('broken')} or {c('other')}.</>],['note','string',false,'Up to 1000 characters.']]}/>
+      <CodeBlock title="Request" code={curl('POST','/v1/feedback',{job_id:'JOB_ID',result_id:'IMAGE_ID',reason:'not_relevant',note:'The result does not match the query.'})}/>
+      <Prose><p>List your reports, newest first, with {c('GET /v1/feedback')} (read scope). Each one includes an {c('image')} with its title, URLs and source domain, or {c('null')} once retention has removed the result.</p></Prose>
+    </Section>
+
+    <Section id="usage" title="Usage">
+      <Endpoint method="GET" path="/v1/usage" scope="read"/>
+      <Prose><p>Today’s provider pages used, the project’s daily limit, pages remaining, when it resets (00:00 UTC) and the last week. A page is one request to the image source and returns up to {LIMITS.imagesPerPage} images.</p></Prose>
+      <CodeBlock title="Request" code={curl('GET','/v1/usage')}/>
+    </Section>
+
+    <Section id="status" title="Service status">
+      <Endpoint method="GET" path="/v1/status"/>
+      <Prose><p>Reports whether the API, the search worker and the image source are working. It needs no key and is also shown on the <Link href="/status">status page</Link>.</p></Prose>
+      <CodeBlock title="Request" code={`curl "$PLUKO_URL/v1/status"`}/>
+    </Section>
+  </>,
+  "batch-search":({origin})=><>
+    <Section id="batches" title="Batch searches">
+      <Prose><p>Send several unique queries in one job, each with its own count. JSON bodies are limited to {LIMITS.requestBodyBytes/1024} KiB, so split very large batches across jobs. There’s no image-count cap, but source availability and your project’s daily limit still apply.</p></Prose>
+      <CodeBlock title="Request body" code={json({queries:[{query:'mountain landscape',count:'15'},{query:'wireless headphones',count:'30'}],min_width:800,watermark_policy:'prefer_clean'})}/>
+    </Section>
+  </>,
+  "filters":({origin})=><>
+    <Section id="filters" title="Filters">
+      <Prose><p>Narrow a search with optional fields next to {c('query')}. Omit a field, or send {c('any')}, to leave it unfiltered. Filters are passed to the image source on a best-effort basis, so some results may not match exactly.</p></Prose>
+      <SimpleTable columns={['Field','Values']} rows={Object.entries(FILTER_VALUES).map(([name,values])=>[c(name),<span key="v" className="flex flex-wrap gap-1">{values.map(value=><code key={value} className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{value}</code>)}</span>])}/>
+      <Callout type="warning">{c('safe_search')} defaults to {c('moderate')} and can’t be switched off. An invalid value returns {c('400 INVALID_FILTER')}.</Callout>
+      <CodeBlock title="Request body" code={json({query:'city skyline',count:'20',image_type:'photo',layout:'wide',size:'large',safe_search:'strict'})}/>
+    </Section>
+  </>,
+  "webhooks":({origin})=><>
+    <Section id="webhooks" title="Webhooks">
+      <Prose><p>Skip polling: add a webhook to a project (Projects → Webhook) and Pluko sends a signed {c('POST')} to your https endpoint when a job becomes {c('complete')}, {c('partial')} or {c('cancelled')}. Fetch the results with the usual results endpoint using the event’s {c('job_id')}.</p></Prose>
+      <CodeBlock title="Event body" code={json(SAMPLE_EVENT)}/>
+      <Prose><p>Each request carries {c('Pluko-Event')}, {c('Pluko-Delivery')} (unique per event; use it to ignore duplicates) and {c('Pluko-Signature')} as {c('t=<ms>,v1=<hex>')}. {c('v1')} is the HMAC-SHA256 of {c('"<t>.<raw body>"')} using your signing secret, which is shown once when you save the webhook. Verify it, and reject timestamps older than five minutes.</p></Prose>
+      <CodeBlock title="verify.js" code={VERIFY_SNIPPET}/>
+      <SimpleTable columns={['Rule','Detail']} rows={[['Answer quickly',<>Any {c('2xx')} status within 8 seconds.</>],['Retries','Up to 5, after about 30 seconds, 2 minutes, 10 minutes, 1 hour and 6 hours. Retry a failed one from the dashboard.'],['Endpoint','https on port 443 with a public domain name. Private and internal addresses are refused.'],['Ordering','At least once, not strictly ordered. Treat the job status as the source of truth.']]}/>
+    </Section>
+  </>,
+  "errors":({origin})=><>
+    <Section id="errors" title="Errors and limits">
+      <Prose><p>Errors share one shape. Keep {c('request_id')} and {c('job_id')} when you investigate a failure, and never include credentials in support reports.</p></Prose>
+      <CodeBlock title="Error body" code={json({error:{code:'UNAUTHORIZED',message:'Provide a Bearer API key'},request_id:'req_example'})}/>
+      <SimpleTable columns={['Status','When']} rows={[[c('400'),'Invalid query, count or other input.'],[c('401'),'Missing, expired or revoked key.'],[c('403'),'Missing scope or unavailable account access.'],[c('409'),'An idempotency key was reused with different input, or the job already finished.'],[c('413'),`The request body is larger than ${LIMITS.requestBodyBytes/1024} KiB.`],[c('429'),<>Rate or queue limit. Respect the {c('Retry-After')} header.</>]]}/>
+      <SimpleTable columns={['Limit','Value']} rows={[['Requests per key',`${LIMITS.keyPerMinute} per minute`],['Requests per account',`${LIMITS.accountPerMinute} per minute across all keys`],['Active jobs per project',`${LIMITS.activeJobsPerProject} queued or running`],['Daily provider pages','Per project; see Usage']]}/>
+      <Prose><p>Every limit is listed on the <Link href="/limits">limits page</Link>.</p></Prose>
+    </Section>
+  </>,
+  "image-metadata":({origin})=><>
+    <Section id="metadata" title="Image metadata and reuse">
+      <SimpleTable columns={['Field','Notes']} rows={[[c('image_url'),'The full image on its original host.'],[c('thumbnail_url'),'A smaller preview, when the source provides one.'],[c('source_url'),'The page the image was found on.'],[c('width, height'),<>Reported by the source; {c('dimensions_verified')} says whether they were checked.</>],[c('license_status'),<>Always {c('unknown')} unless a source supplies verifiable licence data.</>],[c('watermark_hint'),'A title and domain heuristic, not a guarantee.']]}/>
+      <Callout type="warning" title="Search results grant no reuse rights">Review the original source and its licensing before you use an image. Pluko never removes watermarks, and it stores metadata and logs, not image files. Source URLs can expire or block embedding, so handle image-load failures in your app.</Callout>
+    </Section>
+
+    <Section id="openapi" title="OpenAPI and tools">
+      <Prose>
+        <p><a href="/v1/openapi.json">{c('GET /v1/openapi.json')}</a> is the OpenAPI 3.1 description. Import it into Postman, Insomnia or a code generator.</p>
+        <p>Results are removed after the retention period shown on each job ({c('expires')}), 30 days after it finishes by default. Export what you need before then.</p>
+      </Prose>
+    </Section>
+  </>,
+};
+
+// Extra material for pages that are short on their own.
+const BATCH_EXTRA=()=><Section id="batch-results" title="Reading batch results">
+  <Prose>
+    <p>A batch is one job, so you read it with the same <a href={docHref('get-results')}>results endpoint</a> as a single search. Every image carries the {c('query')} it was found for, so you can group results by query as they arrive.</p>
+    <p>Each query also reports its own progress and stop {c('reason')} in {c('GET /v1/jobs/JOB_ID')}, so one query running out of images doesn’t hide the others. A batch finishes {c('complete')} only when every query found what it asked for; otherwise it is {c('partial')}.</p>
+  </Prose>
+  <CodeBlock title="Group results by query (JavaScript)" code={BATCH_READ_SNIPPET}/>
+  <SimpleTable columns={['Tip','Why']} rows={[['Keep queries unique','Duplicate queries in one batch are refused.'],[`Stay under ${LIMITS.requestBodyBytes/1024} KiB`,'Split very large lists into several jobs; each job is independent.'],['Set a count per query',<>Each item can carry its own {c('count')}; a top-level {c('count')} applies to items without one.</>],['Use a webhook for big batches',<>Get one signed {c('job.finished')} event instead of checking back. See <a href={docHref('webhooks')}>Webhooks</a>.</>]]}/>
+</Section>;
+
+const BATCH_READ_SNIPPET=[
+  'const byQuery = {};',
+  'let after = 0;',
+  'while (true) {',
+  '  const url = `${process.env.PLUKO_URL}/v1/jobs/${jobId}/results?limit=100&after=${after}`;',
+  '  const response = await fetch(url, {',
+  '    headers: { Authorization: `Bearer ${process.env.PLUKO_API_KEY}` },',
+  '  });',
+  '  const page = await response.json();',
+  '  for (const image of page.images) (byQuery[image.query] ??= []).push(image);',
+  '  if (page.next_cursor === null) break;',
+  '  after = page.next_cursor;',
+  '}',
+].join('\n');
+
+const EXTRA={'batch-search':{Component:BATCH_EXTRA,sections:[['batch-results','Reading batch results']]}};
+
 /* ---------- Page ---------- */
 
-export function DocsPage(){
-  const active=useActiveSection(IDS);
+const DOC_CARDS=[['/app/keys',KeyRound,'Get an API key','Create a project and a scoped key.',false],['/v1/openapi.json',FileCode2,'OpenAPI schema','Generate a typed client.',true],['/limits',Gauge,'Limits','Rates, quotas and retention.',false]];
+
+export function DocsPage({slug=''}){
+  const page=docsPage(slug)||DOCS_PAGES[0];
+  const position=DOCS_PAGES.indexOf(page),previous=DOCS_PAGES[position-1],next=DOCS_PAGES[position+1];
+  const extra=EXTRA[page.slug];
+  const sections=useMemo(()=>page.sections.concat(extra?.sections||[]),[page,extra]);
+  const ids=useMemo(()=>sections.map(([id])=>id),[sections]);
+  const active=useActiveSection(ids);
   const [search,setSearch]=useState(false),[menu,setMenu]=useState(false),[origin,setOrigin]=useState('https://your-pluko-host');
   useEffect(()=>setOrigin(window.location.origin),[]);
+  // Old links pointed at one long page (/docs#webhooks). Send them to the page that now holds the section.
+  useEffect(()=>{
+    const id=decodeURIComponent(window.location.hash.slice(1));
+    const target=id&&pageOfSection(id);
+    if(target&&target.slug!==page.slug)window.location.replace(docHref(id));
+  },[page]);
   useEffect(()=>{
     const onKey=event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setSearch(true);}};
     window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);
   },[]);
-  const group=GROUPS.find(item=>item.items.some(([id])=>id===active))||GROUPS[0];
+  const Content=CONTENT[page.slug],Extra=extra?.Component;
   const searchButton=<button type="button" onClick={()=>setSearch(true)} className="flex h-10 w-full items-center gap-2 rounded-xl border bg-background px-3 text-sm text-muted-foreground shadow-sm transition-colors hover:text-foreground"><Search className="size-4"/>Search docs<kbd className="ml-auto rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px]">Ctrl K</kbd></button>;
 
   return <PublicShell>
@@ -123,191 +330,49 @@ export function DocsPage(){
       <div className="sticky top-16 z-30 flex gap-2 border-b bg-background/90 px-5 py-2.5 backdrop-blur lg:hidden">
         <Sheet open={menu} onOpenChange={setMenu}>
           <SheetTrigger asChild><button type="button" className="flex h-10 items-center gap-2 rounded-xl border bg-background px-3 text-sm"><Menu className="size-4"/>Menu</button></SheetTrigger>
-          <SheetContent side="left" className="!w-80 !max-w-[85vw] overflow-y-auto"><SheetHeader><SheetTitle>Documentation</SheetTitle></SheetHeader><div className="px-4 pb-8"><NavList active={active} onNavigate={()=>setMenu(false)}/></div></SheetContent>
+          <SheetContent side="left" className="!w-80 !max-w-[85vw] overflow-y-auto"><SheetHeader><SheetTitle>Documentation</SheetTitle></SheetHeader><div className="px-4 pb-8"><NavList slug={page.slug} active={active} onNavigate={()=>setMenu(false)}/></div></SheetContent>
         </Sheet>
         <div className="flex-1">{searchButton}</div>
       </div>
 
       <div className="mx-auto max-w-[1440px] gap-12 px-5 pt-10 pb-24 sm:px-8 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:pt-28 xl:grid-cols-[15rem_minmax(0,1fr)_13rem]">
-        <aside className="hidden lg:block"><div className="sticky top-24 grid max-h-[calc(100svh-7rem)] gap-6 overflow-y-auto pr-2 pb-6 scrollbar-quiet">{searchButton}<NavList active={active}/></div></aside>
+        <aside className="hidden lg:block"><div className="sticky top-24 grid max-h-[calc(100svh-7rem)] gap-6 overflow-y-auto pr-2 pb-6 scrollbar-quiet">{searchButton}<NavList slug={page.slug} active={active}/></div></aside>
 
         <article className="min-w-0 max-w-3xl">
           <header className="mb-14">
-            <p className="mb-4 text-sm font-medium text-[var(--accent-ink)]">Documentation</p>
-            <h1 className={site.title}>Your first image search.</h1>
-            <p className={cn(site.lede,'mt-6')}>Call Pluko over HTTP from your backend: create a search job, follow its progress, and read image URLs and metadata. No SDK required.</p>
-            <div className="mt-10 grid gap-3 sm:grid-cols-3">
-              {[['/app/keys',KeyRound,'Get an API key','Create a project and a scoped key.',false],['/v1/openapi.json',FileCode2,'OpenAPI schema','Generate a typed client.',true],['/limits',Gauge,'Limits','Rates, quotas and retention.',false]].map(([href,Icon,title,text,external])=>{
+            <p className="mb-4 text-sm font-medium text-[var(--accent-ink)]">{page.slug?<><Link href="/docs" className="hover:underline">Documentation</Link> · {page.nav}</>:'Documentation'}</p>
+            <h1 className={site.title}>{page.heading}</h1>
+            <p className={cn(site.lede,'mt-6')}>{page.lede}</p>
+            {!page.slug&&<div className="mt-10 grid gap-3 sm:grid-cols-3">
+              {DOC_CARDS.map(([href,Icon,title,text,external])=>{
                 const body=<><Icon className="size-5 text-[var(--accent-ink)]"/><span className="mt-3 flex items-center gap-1 font-medium">{title}{external?<ArrowUpRight className="size-3.5 text-muted-foreground"/>:<ArrowRight className="size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5"/>}</span><span className="mt-1 text-sm text-muted-foreground">{text}</span></>;
                 const className='group flex flex-col rounded-2xl border p-4 transition-colors hover:bg-muted/40';
                 return external?<a key={href} href={href} target="_blank" rel="noopener noreferrer" className={className}>{body}</a>:<Link key={href} href={href} className={className}>{body}</Link>;
               })}
-            </div>
+            </div>}
           </header>
 
-          <Section id="quickstart" title="Quick start">
-            <ol className="grid gap-8">
-              <li className="grid gap-3"><p className="font-semibold"><span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-foreground text-xs text-background">1</span>Create a project and an API key</p>
-                <Prose><p>In your <Link href="/app">workspace</Link>, create a project, then generate an API key with the {c('search')} and {c('read')} scopes. Copy it when it’s shown: the full key is displayed only once.</p></Prose></li>
-              <li className="grid gap-3"><p className="font-semibold"><span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-foreground text-xs text-background">2</span>Set your environment variables</p>
-                <Prose><p>Keep the key on your server. Use your deployment’s address when hosted.</p></Prose>
-                <CodeBlock title=".env" code={`PLUKO_URL=${origin}\nPLUKO_API_KEY=YOUR_API_KEY`}/></li>
-              <li className="grid gap-3"><p className="font-semibold"><span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-foreground text-xs text-background">3</span>Create your first search</p>
-                <CodeBlock title="POST /v1/images/search" samples={allLanguages(0)}/>
-                <Callout type="note">A {c('202')} response means the job was accepted, not that images are ready. Use the returned {c('job_id')} with the status and results endpoints below.</Callout></li>
-            </ol>
-          </Section>
+          <Content origin={origin}/>
+          {Extra&&<Extra/>}
 
-          <Section id="authentication" title="Authentication">
-            <Prose><p>Send {c('Authorization: Bearer YOUR_API_KEY')} on every public API request. Keep keys on your server, never in browser code, mobile apps, URLs or logs.</p></Prose>
-            <SimpleTable columns={['Scope','Allows']} rows={[[c('search'),'Create, cancel and retry jobs.'],[c('read'),'Read job state, results and usage.']]}/>
-            <Callout type="tip">Keys expire automatically and can be rotated or revoked from the API keys page of your workspace. Rotate before a key expires to avoid an outage.</Callout>
-          </Section>
+          <nav aria-label="More documentation" className="mt-16 grid gap-3 sm:grid-cols-2">
+            {previous?<Link href={docsPath(previous.slug)} className="flex flex-col rounded-2xl border p-4 transition-colors hover:bg-muted/40"><span className="flex items-center gap-1 text-xs text-muted-foreground"><ArrowLeft className="size-3.5"/>Previous</span><span className="mt-1 font-medium">{previous.nav}</span></Link>:<span className="hidden sm:block"/>}
+            {next&&<Link href={docsPath(next.slug)} className="flex flex-col items-end rounded-2xl border p-4 text-right transition-colors hover:bg-muted/40"><span className="flex items-center gap-1 text-xs text-muted-foreground">Next<ArrowRight className="size-3.5"/></span><span className="mt-1 font-medium">{next.nav}</span></Link>}
+          </nav>
 
-          <Section id="jobs" title="Jobs and statuses">
-            <Prose><p>A search is a background job. Check {c('GET /v1/jobs/JOB_ID')}, wait for it, or use a webhook; see <a href="#delivery">Getting results</a>. A job is always in one of these states:</p></Prose>
-            <SimpleTable columns={['Status','Meaning']} rows={[[c('queued'),'Accepted and waiting for the worker.'],[c('running'),'Pages are being fetched; results appear as they are found.'],[c('complete'),'Every query found what it asked for.'],[c('partial'),'Finished with fewer images than requested. Check each query’s reason.'],[c('cancelled'),'Stopped before it finished. Results found so far are kept.']]}/>
-            <Prose><p>Each query in a job reports a {c('reason')} when it stops:</p></Prose>
-            <SimpleTable columns={['Reason','What happened']} rows={REASONS.map(([code,text])=>[c(code),text])}/>
-          </Section>
-
-          <Section id="delivery" title="Getting results">
-            <Prose><p>Each project chooses how its searches return results, in the project’s Delivery tab in the workspace. You can change it at any time.</p></Prose>
-            <SimpleTable columns={['Mode','What happens','Best for']} rows={[
-              ['Check back (default)',<>The search returns {c('202')} with a job ID straight away. Check {c('GET /v1/jobs/JOB_ID')} until it finishes. Add {c('?wait=10')} to each check and it waits up to 10 seconds for the job, so you need far fewer requests.</>,'Large searches and batch jobs.'],
-              ['Wait for results',<>The search call stays open until the job finishes, up to the project’s limit (3, 5 or 10 seconds), then returns {c('200')} with {c('status')}, {c('job')} and the first page of {c('images')}. If it’s still running, you get the usual {c('202')} and can wait on the job.</>,'Small searches someone is waiting on.'],
-              ['Webhook',<>The search returns {c('202')} straight away, and Pluko sends a signed {c('job.finished')} event to your URL when the job ends. See <a href="#webhooks">Webhooks</a>.</>,'Backends that shouldn’t wait or check back.'],
-            ]}/>
-            <Prose><p>A single request can override its project: send {c('Prefer: wait=5')} to wait up to 5 seconds (10 at most), or {c('Prefer: respond-async')} to return straight away. Responses that waited include a {c('Preference-Applied')} header. Waits are always short, so a large search never holds a connection open; it carries on as a normal job.</p></Prose>
-          </Section>
-
-          <Section id="pagination" title="Reading results">
-            <Prose>
-              <p>Read {c('GET /v1/jobs/JOB_ID/results?limit=100&after=0')}. A page holds up to {LIMITS.resultsPageMax} images. Pass {c('next_cursor')} as {c('after')} to read the next page.</p>
-              <p>When {c('next_cursor')} is {c('null')} you have reached the end of the results available right now. If the job is still running, wait and continue from {c('poll_after')} to fetch only new results without reading earlier rows again.</p>
-            </Prose>
-          </Section>
-
-          <Section id="idempotency" title="Retries and idempotency">
-            <Prose><p>Add a unique {c('Idempotency-Key')} header when you create a job. Retrying with the same key and identical input returns the original job instead of starting a second one. Reusing the key with different input returns {c('409 IDEMPOTENCY_CONFLICT')}.</p></Prose>
-          </Section>
-
-          <Section id="create-search" title="Create a search">
-            <Endpoint method="POST" path="/v1/images/search" scope="search"/>
-            <Prose><p>Starts a job and returns {c('202')} straight away. Send either {c('query')} (with an optional {c('count')}) or a {c('queries')} array for a <a href="#batches">batch</a>.</p></Prose>
-            <Params rows={[
-              ['query','string',false,`The search text, up to ${LIMITS.queryMaxLength} characters.`],
-              ['count','string',false,<>Images wanted per query, as a positive decimal string. Default {c('"15"')}. No product cap; the source may have fewer.</>],
-              ['queries','array',false,'A batch of { query, count } objects. Queries must be unique.'],
-              ['min_width','integer',false,<>Minimum width in pixels, 0 to 20000. Default {c('800')}.</>],
-              ['exclude_domains','string[]',false,<>Plain domains to skip, such as {c('example.com')}.</>],
-              ['watermark_policy','string',false,<>{c('prefer_clean')} (default) or {c('any')}. A hint from titles and domains, not a guarantee.</>],
-              ['safe_search, image_type, layout, size, color','string',false,<>Optional <a className="text-[var(--accent-ink)] underline underline-offset-2" href="#filters">filters</a>.</>],
-            ]}/>
-            <CodeBlock title="Request" samples={allLanguages(0)}/>
-            <CodeBlock title="Response · 202" code={json(responses[0])}/>
-          </Section>
-
-          <Section id="get-job" title="Get a job">
-            <Endpoint method="GET" path="/v1/jobs/{job_id}" scope="read"/>
-            <Prose><p>Returns the job’s status, per-query progress, the filters it ran with, and {c('expires')}: when its results will be removed.</p></Prose>
-            <CodeBlock title="Request" samples={allLanguages(1)}/>
-            <CodeBlock title="Response · 200 (excerpt)" code={json(responses[1])}/>
-          </Section>
-
-          <Section id="get-results" title="Read results">
-            <Endpoint method="GET" path="/v1/jobs/{job_id}/results" scope="read"/>
-            <Params rows={[['limit','integer',false,`1 to ${LIMITS.resultsPageMax}. Default 50.`],['after','integer',false,<>Cursor from the previous page’s {c('next_cursor')}, or {c('poll_after')} while the job runs. Default 0.</>]]}/>
-            <CodeBlock title="Request" samples={allLanguages(2)}/>
-            <CodeBlock title="Response · 200 (excerpt)" code={json(responses[2])}/>
-          </Section>
-
-          <Section id="list-jobs" title="List jobs">
-            <Endpoint method="GET" path="/v1/jobs" scope="read"/>
-            <Prose><p>Lists the key’s project jobs, newest first.</p></Prose>
-            <Params rows={[['limit','integer',false,`1 to ${LIMITS.resultsPageMax}. Default 50.`],['status','string',false,<>{c('queued')}, {c('running')}, {c('complete')}, {c('partial')} or {c('cancelled')}.</>],['before','integer',false,<>Pass {c('next_cursor')} from the previous page.</>]]}/>
-            <CodeBlock title="Request" code={curl('GET','/v1/jobs?status=running')}/>
-          </Section>
-
-          <Section id="cancel-retry" title="Cancel and retry">
-            <Endpoint method="POST" path="/v1/jobs/{job_id}/cancel" scope="search"/>
-            <Endpoint method="POST" path="/v1/jobs/{job_id}/retry" scope="search"/>
-            <Prose><p>Cancel stops a queued or running job. A job that already finished returns {c('409 JOB_FINISHED')} and keeps its status. Retry creates a new job from the original request and returns its {c('job_id')}.</p></Prose>
-            <CodeBlock title="Request" code={curl('POST','/v1/jobs/JOB_ID/cancel')}/>
-          </Section>
-
-          <Section id="feedback" title="Send feedback">
-            <Endpoint method="POST" path="/v1/feedback" scope="search"/>
-            <Params rows={[['job_id','string',true,'The job the result belongs to.'],['result_id','string',true,<>The image’s {c('id')}.</>],['reason','string',true,<>{c('not_relevant')}, {c('watermark')}, {c('broken')} or {c('other')}.</>],['note','string',false,'Up to 1000 characters.']]}/>
-            <CodeBlock title="Request" code={curl('POST','/v1/feedback',{job_id:'JOB_ID',result_id:'IMAGE_ID',reason:'not_relevant',note:'The result does not match the query.'})}/>
-            <Prose><p>List your reports, newest first, with {c('GET /v1/feedback')} (read scope). Each one includes an {c('image')} with its title, URLs and source domain, or {c('null')} once retention has removed the result.</p></Prose>
-          </Section>
-
-          <Section id="usage" title="Usage">
-            <Endpoint method="GET" path="/v1/usage" scope="read"/>
-            <Prose><p>Today’s provider pages used, the project’s daily limit, pages remaining, when it resets (00:00 UTC) and the last week. A page is one request to the image source and returns up to {LIMITS.imagesPerPage} images.</p></Prose>
-            <CodeBlock title="Request" code={curl('GET','/v1/usage')}/>
-          </Section>
-
-          <Section id="status" title="Service status">
-            <Endpoint method="GET" path="/v1/status"/>
-            <Prose><p>Reports whether the API, the search worker and the image source are working. It needs no key and is also shown on the <Link href="/status">status page</Link>.</p></Prose>
-            <CodeBlock title="Request" code={`curl "$PLUKO_URL/v1/status"`}/>
-          </Section>
-
-          <Section id="batches" title="Batch searches">
-            <Prose><p>Send several unique queries in one job, each with its own count. JSON bodies are limited to {LIMITS.requestBodyBytes/1024} KiB, so split very large batches across jobs. There’s no image-count cap, but source availability and your project’s daily limit still apply.</p></Prose>
-            <CodeBlock title="Request body" code={json({queries:[{query:'mountain landscape',count:'15'},{query:'wireless headphones',count:'30'}],min_width:800,watermark_policy:'prefer_clean'})}/>
-          </Section>
-
-          <Section id="filters" title="Filters">
-            <Prose><p>Narrow a search with optional fields next to {c('query')}. Omit a field, or send {c('any')}, to leave it unfiltered. Filters are passed to the image source on a best-effort basis, so some results may not match exactly.</p></Prose>
-            <SimpleTable columns={['Field','Values']} rows={Object.entries(FILTER_VALUES).map(([name,values])=>[c(name),<span key="v" className="flex flex-wrap gap-1">{values.map(value=><code key={value} className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{value}</code>)}</span>])}/>
-            <Callout type="warning">{c('safe_search')} defaults to {c('moderate')} and can’t be switched off. An invalid value returns {c('400 INVALID_FILTER')}.</Callout>
-            <CodeBlock title="Request body" code={json({query:'city skyline',count:'20',image_type:'photo',layout:'wide',size:'large',safe_search:'strict'})}/>
-          </Section>
-
-          <Section id="webhooks" title="Webhooks">
-            <Prose><p>Skip polling: add a webhook to a project (Projects → Webhook) and Pluko sends a signed {c('POST')} to your https endpoint when a job becomes {c('complete')}, {c('partial')} or {c('cancelled')}. Fetch the results with the usual results endpoint using the event’s {c('job_id')}.</p></Prose>
-            <CodeBlock title="Event body" code={json(SAMPLE_EVENT)}/>
-            <Prose><p>Each request carries {c('Pluko-Event')}, {c('Pluko-Delivery')} (unique per event; use it to ignore duplicates) and {c('Pluko-Signature')} as {c('t=<ms>,v1=<hex>')}. {c('v1')} is the HMAC-SHA256 of {c('"<t>.<raw body>"')} using your signing secret, which is shown once when you save the webhook. Verify it, and reject timestamps older than five minutes.</p></Prose>
-            <CodeBlock title="verify.js" code={VERIFY_SNIPPET}/>
-            <SimpleTable columns={['Rule','Detail']} rows={[['Answer quickly',<>Any {c('2xx')} status within 8 seconds.</>],['Retries','Up to 5, after about 30 seconds, 2 minutes, 10 minutes, 1 hour and 6 hours. Retry a failed one from the dashboard.'],['Endpoint','https on port 443 with a public domain name. Private and internal addresses are refused.'],['Ordering','At least once, not strictly ordered. Treat the job status as the source of truth.']]}/>
-          </Section>
-
-          <Section id="errors" title="Errors and limits">
-            <Prose><p>Errors share one shape. Keep {c('request_id')} and {c('job_id')} when you investigate a failure, and never include credentials in support reports.</p></Prose>
-            <CodeBlock title="Error body" code={json({error:{code:'UNAUTHORIZED',message:'Provide a Bearer API key'},request_id:'req_example'})}/>
-            <SimpleTable columns={['Status','When']} rows={[[c('400'),'Invalid query, count or other input.'],[c('401'),'Missing, expired or revoked key.'],[c('403'),'Missing scope or unavailable account access.'],[c('409'),'An idempotency key was reused with different input, or the job already finished.'],[c('413'),`The request body is larger than ${LIMITS.requestBodyBytes/1024} KiB.`],[c('429'),<>Rate or queue limit. Respect the {c('Retry-After')} header.</>]]}/>
-            <SimpleTable columns={['Limit','Value']} rows={[['Requests per key',`${LIMITS.keyPerMinute} per minute`],['Requests per account',`${LIMITS.accountPerMinute} per minute across all keys`],['Active jobs per project',`${LIMITS.activeJobsPerProject} queued or running`],['Daily provider pages','Per project; see Usage']]}/>
-            <Prose><p>Every limit is listed on the <Link href="/limits">limits page</Link>.</p></Prose>
-          </Section>
-
-          <Section id="metadata" title="Image metadata and reuse">
-            <SimpleTable columns={['Field','Notes']} rows={[[c('image_url'),'The full image on its original host.'],[c('thumbnail_url'),'A smaller preview, when the source provides one.'],[c('source_url'),'The page the image was found on.'],[c('width, height'),<>Reported by the source; {c('dimensions_verified')} says whether they were checked.</>],[c('license_status'),<>Always {c('unknown')} unless a source supplies verifiable licence data.</>],[c('watermark_hint'),'A title and domain heuristic, not a guarantee.']]}/>
-            <Callout type="warning" title="Search results grant no reuse rights">Review the original source and its licensing before you use an image. Pluko never removes watermarks, and it stores metadata and logs, not image files. Source URLs can expire or block embedding, so handle image-load failures in your app.</Callout>
-          </Section>
-
-          <Section id="openapi" title="OpenAPI and tools">
-            <Prose>
-              <p><a href="/v1/openapi.json">{c('GET /v1/openapi.json')}</a> is the OpenAPI 3.1 description. Import it into Postman, Insomnia or a code generator.</p>
-              <p>Results are removed after the retention period shown on each job ({c('expires')}), 30 days after it finishes by default. Export what you need before then.</p>
-            </Prose>
-          </Section>
-
-          <div className="mt-16 flex flex-col gap-4 rounded-3xl border p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-6 flex flex-col gap-4 rounded-3xl border p-6 sm:flex-row sm:items-center sm:justify-between">
             <div><p className="font-semibold">Was this page helpful?</p><p className="text-sm text-muted-foreground">Tell us what’s missing. We read every note.</p></div>
             <div className="flex gap-2">
-              <a href={`mailto:${legal.email}?subject=${encodeURIComponent('Docs feedback: helpful')}`} className="inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors hover:bg-muted"><ThumbsUp className="size-4"/>Yes</a>
-              <a href={`mailto:${legal.email}?subject=${encodeURIComponent('Docs feedback: needs work')}`} className="inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors hover:bg-muted"><ThumbsDown className="size-4"/>Not really</a>
+              <a href={`mailto:${legal.email}?subject=${encodeURIComponent(`Docs feedback (${page.nav}): helpful`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors hover:bg-muted"><ThumbsUp className="size-4"/>Yes</a>
+              <a href={`mailto:${legal.email}?subject=${encodeURIComponent(`Docs feedback (${page.nav}): needs work`)}`} className="inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm transition-colors hover:bg-muted"><ThumbsDown className="size-4"/>Not really</a>
             </div>
           </div>
         </article>
 
         <aside className="hidden xl:block"><div className="sticky top-24 grid gap-8 text-sm">
-          <nav aria-label="In this group">
-            <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">{group.label}</p>
-            <ul className="grid gap-1 border-l">{group.items.map(([id,label])=><li key={id}><a href={`#${id}`} className={cn('-ml-px block border-l py-1 pl-4 transition-colors',active===id?'border-foreground font-medium text-foreground':'border-transparent text-muted-foreground hover:text-foreground')}>{label}</a></li>)}</ul>
+          <nav aria-label="On this page">
+            <p className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">On this page</p>
+            <ul className="grid gap-1 border-l">{sections.map(([id,label])=><li key={id}><a href={`#${id}`} className={cn('-ml-px block border-l py-1 pl-4 transition-colors',active===id?'border-foreground font-medium text-foreground':'border-transparent text-muted-foreground hover:text-foreground')}>{label}</a></li>)}</ul>
           </nav>
           <div className="grid gap-2 border-t pt-6 text-muted-foreground">
             <Link href="/status" className="hover:text-foreground">System status</Link>
@@ -316,7 +381,7 @@ export function DocsPage(){
           </div>
         </div></aside>
       </div>
-      <DocsSearch open={search} onOpenChange={setSearch}/>
+      <DocsSearch slug={page.slug} open={search} onOpenChange={setSearch}/>
       <BackToTop/>
     </LanguageProvider>
   </PublicShell>;

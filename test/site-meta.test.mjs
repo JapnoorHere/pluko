@@ -55,5 +55,6 @@ test('llms.txt links the docs and OpenAPI file on the site origin', async () => 
   assert.match(text, /^# Pluko\n\n> /);
   assert.ok(text.includes('https://images.example.com/v1/openapi.json'));
   assert.ok(text.includes('https://images.example.com/docs#quickstart'));
+  assert.ok(text.includes('https://images.example.com/docs/webhooks#webhooks'));
   assert.ok(!text.includes('127.0.0.1'));
 });
