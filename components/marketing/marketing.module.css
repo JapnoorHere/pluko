@@ -1,3 +1,60 @@
+.responsibility h2 {
+  font-size: clamp(29px, 3.3vw, 42px);
+}
+.responsibilityGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+  margin-top: 32px;
+}
+.responsibilityGrid svg {
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+.site .responsibilityGrid h3 {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+.responsibilityGrid p {
+  font-size: 13px;
+  margin-top: 12px;
+}
+.legalLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--primary);
+}
+.legalLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.legalLinks a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.legalContent a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.legalContent strong {
+  color: var(--foreground);
+  font-weight: 500;
+}
+.footer nav {
+  flex-wrap: wrap;
+}
+@media (max-width: 760px) {
+  .responsibilityGrid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}
 .site {
   --page: #0b0b0e;
   --line: #ffffff12;
@@ -215,7 +272,7 @@
   margin-top: 16px;
 }
 .imageTile {
-  animation: enter .35s ease both;
+  animation: enter 0.35s ease both;
   position: relative;
   overflow: hidden;
   border-radius: 7px;
@@ -473,9 +530,17 @@
   animation: workflowPass 1.4s ease-out forwards;
 }
 @keyframes workflowPass {
-  from { left: 40px; opacity: 0; }
-  15% { opacity: 1; }
-  to { left: calc(100% - 75px); opacity: 0; }
+  from {
+    left: 40px;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    left: calc(100% - 75px);
+    opacity: 0;
+  }
 }
 .workflowTop {
   display: flex;
@@ -1240,7 +1305,9 @@
   .workflow:before {
     display: none;
   }
-  .reveal[data-visible="true"] .workflow::after { display: none; }
+  .reveal[data-visible="true"] .workflow::after {
+    display: none;
+  }
   .workflow > div {
     padding-left: 65px;
   }
