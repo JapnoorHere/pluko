@@ -143,10 +143,12 @@ const sections = [
           how to contact us about it.
         </p>
         <p>
-          You can stop using Pluko and revoke your keys at any time. Contact us
-          to request account closure or data deletion. Ending access does not
-          automatically erase logs or backups; the retention practices in the
-          Privacy Policy apply.
+          You can stop using Pluko, revoke your keys, download your data, or
+          delete your account from the Account page at any time. You can also
+          contact us about account closure. Deleting your account removes your
+          projects, keys, jobs, and results, but backups can retain earlier
+          copies and audit records are kept without naming you; the retention
+          practices in the Privacy Policy apply.
         </p>
       </>
     ),

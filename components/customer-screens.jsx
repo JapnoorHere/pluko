@@ -103,4 +103,29 @@ export function Feedback({call,me,toast}){
   useEffect(()=>{load();},[load]);
   return <Card ><CardHeader><CardTitle>{me.role==='admin'?'Quality feedback · all accounts':'Your quality feedback'}</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Report a problem from an image in Search jobs. Each report stays linked to its result and job.</p>{loading?<Skeleton className="h-32"/>:<div className="overflow-hidden rounded-md border"><Table><TableHeader><TableRow>{(['When','Reason','Job','Result','Status',...(me.role==='admin'?['Action']:[])]).map((column,index)=><TableHead key={index}>{column}</TableHead>)}</TableRow></TableHeader><TableBody>{!(rows)?.length&&<TableRow><TableCell colSpan={(['When','Reason','Job','Result','Status',...(me.role==='admin'?['Action']:[])]).length} className="h-24 text-center text-muted-foreground">No records yet.</TableCell></TableRow>}{rows.map(item=><TableRow key={item.id}><TableCell>{format(item.created)}</TableCell><TableCell><StatusBadge status={item.reason}/>{item.note&&<div className="feedbackNote">{item.note}</div>}</TableCell><TableCell><code>{short(item.job_id)}</code></TableCell><TableCell><code>{short(item.result_id)}</code></TableCell><TableCell>{item.status||'open'}</TableCell>{me.role==='admin'&&<TableCell>{item.status==='reviewed'?'—':<Button type="button" variant="outline" onClick={async()=>{try{await call('/api/admin/feedback',{id:item.id});toast('Feedback reviewed');load();}catch(error){toast(error.message)}}}>Mark reviewed</Button>}</TableCell>}</TableRow>)}</TableBody></Table></div>}</CardContent></Card>;
 }
-export function Docs(){return <><Card ><CardHeader><CardTitle>One search API. Any requested count.</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Use API keys only from your backend. Searches return jobs immediately; retrieve results in pages.</p><pre>{`POST /v1/images/search\nAuthorization: Bearer YOUR_API_KEY\n\n{ "query": "mountain landscape", "count": "15", "min_width": 1000 }`}</pre></CardContent></Card><Card ><CardHeader><CardTitle>Batch search</CardTitle></CardHeader><CardContent className="space-y-4"><pre>{`{ "queries": [{"query":"mountain landscape","count":"15"},{"query":"wireless headphones","count":"30"}] }`}</pre></CardContent></Card></>}
+export function Docs(){
+  const link=(href,text)=><Button asChild variant="outline"><a href={href} target="_blank" rel="noopener noreferrer">{text}<ArrowUpRight/></a></Button>;
+  return <>
+    <Card><CardHeader><CardTitle>One search API. Any requested count.</CardTitle><CardDescription>Use API keys only from your backend. A search returns a job immediately; read results in pages, or add a webhook to a project so Pluko tells you when a job finishes.</CardDescription></CardHeader><CardContent className="space-y-4">
+      <pre>{`curl -X POST $PLUKO_URL/v1/images/search \
+  -H "Authorization: Bearer $PLUKO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "query": "mountain landscape", "count": "15", "min_width": 1000 }'`}</pre>
+      <div className="flex flex-wrap gap-2">{link('/docs','Full documentation')}{link('/v1/openapi.json','OpenAPI file')}{link('/limits','Limits')}{link('/status','Status')}</div>
+    </CardContent></Card>
+    <Card><CardHeader><CardTitle>Batch searches and filters</CardTitle><CardDescription>Send several queries in one job, and narrow results with optional filters.</CardDescription></CardHeader><CardContent><pre>{`{
+  "queries": [
+    { "query": "mountain landscape", "count": "15" },
+    { "query": "wireless headphones", "count": "30" }
+  ],
+  "min_width": 800,
+  "image_type": "photo",
+  "layout": "wide",
+  "safe_search": "strict"
+}`}</pre></CardContent></Card>
+    <Card><CardHeader><CardTitle>Read results and check usage</CardTitle><CardDescription>Poll with backoff, or use a webhook instead.</CardDescription></CardHeader><CardContent><pre>{`GET /v1/jobs/JOB_ID
+GET /v1/jobs/JOB_ID/results?limit=100&after=0
+GET /v1/jobs?status=running
+GET /v1/usage`}</pre></CardContent></Card>
+  </>;
+}

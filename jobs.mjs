@@ -1,6 +1,7 @@
 import {get,all,run,tx,id,now,setting,audit} from './db.mjs';
 import {LIMITS} from './limits.mjs';
 import {parseFilters} from './filters.mjs';
+import {enqueueJobFinished} from './webhooks.mjs';
 export class ApiError extends Error{constructor(status,code,message){super(message);this.status=status;this.code=code;}}
 export function normalize(input){
   const count=value=>{const s=String(value??15);if(!/^[1-9]\d*$/.test(s)||s.length>1000)throw new ApiError(400,'INVALID_COUNT','count must be a positive integer; use a decimal string for very large values');return BigInt(s).toString();};
@@ -21,8 +22,8 @@ export function createJob(auth,input,idem){const payload=normalize(input);if(ide
   return {id:job,reused:false};
 });}
 export function jobView(job){const tasks=all('SELECT id,query,requested,found,page,status,reason FROM tasks WHERE job_id=? ORDER BY rowid',job.id);return {id:job.id,project_id:job.project_id,status:job.status,created:job.created,updated:job.updated,queries:tasks,returned:tasks.reduce((s,x)=>s+x.found,0),requested:tasks.reduce((s,x)=>s+BigInt(x.requested),0n).toString(),filters:JSON.parse(job.payload),expires:['queued','running'].includes(job.status)?null:job.updated+Number(setting('job_days')||30)*86400000};}
-export function settle(jobId){const job=get('SELECT * FROM jobs WHERE id=?',jobId);if(!job)return;const tasks=all('SELECT status FROM tasks WHERE job_id=?',jobId);let status='running';if(tasks.every(x=>!['queued','running'].includes(x.status)))status=job.cancel?'cancelled':tasks.every(x=>x.status==='complete')?'complete':'partial';run('UPDATE jobs SET status=?,updated=? WHERE id=?',status,now(),jobId);}
-export function cancelJob(job,actor){tx(()=>{run('UPDATE jobs SET cancel=1,status=?,updated=? WHERE id=?','cancelled',now(),job.id);run("UPDATE tasks SET status='cancelled',reason='user_cancelled',lease_owner=NULL,lease_until=0 WHERE job_id=? AND status IN ('queued','running')",job.id);audit(actor,'job.cancel',job.id);});}
+export function settle(jobId){const job=get('SELECT * FROM jobs WHERE id=?',jobId);if(!job)return;const tasks=all('SELECT status FROM tasks WHERE job_id=?',jobId);let status='running';if(tasks.every(x=>!['queued','running'].includes(x.status)))status=job.cancel?'cancelled':tasks.every(x=>x.status==='complete')?'complete':'partial';run('UPDATE jobs SET status=?,updated=? WHERE id=?',status,now(),jobId);if(status!==job.status&&['complete','partial','cancelled'].includes(status))enqueueJobFinished(jobView(get('SELECT * FROM jobs WHERE id=?',jobId)));}
+export function cancelJob(job,actor){if(!['queued','running'].includes(job.status))throw new ApiError(409,'JOB_FINISHED','This job has already finished');tx(()=>{run('UPDATE jobs SET cancel=1,status=?,updated=? WHERE id=?','cancelled',now(),job.id);run("UPDATE tasks SET status='cancelled',reason='user_cancelled',lease_owner=NULL,lease_until=0 WHERE job_id=? AND status IN ('queued','running')",job.id);audit(actor,'job.cancel',job.id);enqueueJobFinished(jobView(get('SELECT * FROM jobs WHERE id=?',job.id)));});}
 export function claim(owner){return tx(()=>{
   run("UPDATE tasks SET status='queued',lease_owner=NULL,lease_until=0 WHERE status='running' AND lease_until<?",now());
   const task=get(`SELECT t.*,j.project_id,j.user_id,j.key_id,j.payload FROM tasks t JOIN jobs j ON j.id=t.job_id JOIN users u ON u.id=j.user_id WHERE t.status='queued' AND t.next_at<=? AND j.cancel=0 AND u.active=1 ORDER BY t.updated,t.rowid LIMIT 1`,now());
