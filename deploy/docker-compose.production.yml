@@ -10,6 +10,9 @@ services:
       DATA_DIR: /var/lib/pluko
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       TRUST_PROXY: "true"
+    # Reachable only from this machine, for a reverse proxy already running on the host (see Caddyfile.host-proxy).
+    ports:
+      - "127.0.0.1:${API_PORT:-4180}:4180"
     volumes:
       - pluko-data:/var/lib/pluko
     restart: unless-stopped
@@ -35,6 +38,8 @@ services:
       DATA_DIR: /var/lib/pluko
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       TRUST_PROXY: "true"
+      PLUKO_PROVIDER: ${PLUKO_PROVIDER:-bing}
+      BRAVE_API_KEY: ${BRAVE_API_KEY:-}
     volumes:
       - pluko-data:/var/lib/pluko
     restart: unless-stopped
@@ -48,7 +53,9 @@ services:
         max-size: 10m
         max-file: "3"
 
+  # Optional bundled HTTPS proxy. Only starts with `--profile caddy`, for servers with nothing else on ports 80/443.
   caddy:
+    profiles: ["caddy"]
     image: caddy:2.10-alpine
     environment:
       PLUKO_DOMAIN: ${PLUKO_DOMAIN}

@@ -31,6 +31,12 @@ It returns **URLs and metadata**, not downloaded image files. Images stay with t
 | Search playground | Test a query before wiring it into your application. |
 | Request history | Inspect sanitized request/response logs and timing. |
 | Quality feedback | Report irrelevant, broken, or watermarked results. |
+| Filters | Safe search, image type, shape, size, colour, minimum width, and excluded sites. |
+| Results tools | Live results, preview, copy, and CSV/JSON export. |
+| Usage and limits | Daily provider-page usage in the dashboard and at `GET /v1/usage`; limits listed at `/limits`. |
+| Webhooks | Signed `job.finished` notifications with retries, instead of polling. |
+| OpenAPI and status | Machine-readable API description at `/v1/openapi.json` and a live check at `/status`. |
+| Account controls | Optional authenticator for every account, session list, data download, and account deletion. |
 | Admin workspace | Manage users, quotas, source rules, provider settings, audit history, retention, and backups. |
 
 ## Quick start
@@ -157,7 +163,7 @@ Your backend ─────── HTTP API (/v1/*)
 - **Storage:** SQLite in WAL mode on local persistent disk.
 - **Security:** hashed API keys, password hashing, administrator TOTP, session handling, CSRF protection, and account/key rate limits.
 
-The current provider reads Bing's public image-search responses through direct HTTP requests. It is not an official Bing API integration and does not require browser automation. Upstream changes or restrictions can affect availability.
+The default provider reads Bing's public image-search responses through direct HTTP requests. It is not an official Bing API integration and does not require browser automation. Upstream changes, blocking, or terms restrictions can affect availability, so review them before relying on it. A `brave` provider that uses the Brave Search API with your own key is also available (`PLUKO_PROVIDER=brave`, `BRAVE_API_KEY`); it has not been verified against the live API yet. An offline `mock` provider exists for tests and is refused in production.
 
 ```text
 app/                 Next.js routes and theme
@@ -166,7 +172,13 @@ api-server.mjs       API routes and access checks
 server.mjs           Next.js and API host
 worker.mjs           Background job processing
 jobs.mjs             Job validation and orchestration
-provider.mjs         Search provider integration
+provider.mjs         Image page parsing and safe fetching
+providers.mjs        Search providers (bing, brave, mock)
+filters.mjs          Search filter validation and mapping
+limits.mjs           Product limits shared by the API, dashboard, and docs
+webhooks.mjs         Signed webhook queue and delivery
+openapi.mjs          OpenAPI description of the public API
+account.mjs          Data export and account/project deletion
 db.mjs               Database schema and queries
 security.mjs         Authentication and security helpers
 test/                Backend tests
@@ -194,10 +206,12 @@ Configuration comes from environment variables. `.env.example` documents the set
 | `DATA_DIR` | `./data` |
 | `ENCRYPTION_KEY` | Required for non-local production; 64 random hexadecimal characters. |
 | `TRUST_PROXY` | Enable only behind a trusted, exclusive reverse proxy. |
+| `PLUKO_PROVIDER` | `bing` (default), `brave`, or `mock` (tests only, refused in production). |
+| `BRAVE_API_KEY` | Required when `PLUKO_PROVIDER=brave`. |
 
 ## Deployment
 
-The `deploy/` directory contains a single-server stack with an API container, worker, and Caddy for HTTPS.
+The `deploy/` directory contains a single-server stack with an API container and a worker. The API is published on `127.0.0.1:4180` for a reverse proxy on the host (see `deploy/Caddyfile.host-proxy`). If nothing else uses ports 80 and 443, add `--profile caddy` to also start the bundled Caddy for HTTPS.
 
 1. Point your domain at the server and allow ports 80 and 443.
 2. Copy `deploy/.env.production.example` to `deploy/.env`.

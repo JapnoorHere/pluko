@@ -1,0 +1,12 @@
+# Add this block to the Caddyfile of a server that already runs Caddy, then `sudo systemctl reload caddy`.
+# Pluko's compose file publishes the app on 127.0.0.1:4180 only.
+images.example.com {
+	encode zstd gzip
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000"
+	}
+	reverse_proxy 127.0.0.1:4180 {
+		health_uri /health
+	}
+}
