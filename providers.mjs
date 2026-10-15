@@ -34,40 +34,10 @@ export function createMockProvider({pages=3,perPage=LIMITS.imagesPerPage,fail=fa
   };
 }
 
-// Brave Search API (a licensed, keyed alternative to reading Bing's public page).
-// Only these parts are confirmed from Brave's documentation: GET /res/v1/images/search, the X-Subscription-Token header,
-// count up to 200, safesearch strict|off, and properties.url/width/height on each result. Other field names are read
-// defensively. Brave documents no pagination, so one call returns the whole result set and later pages are empty.
-// Image type, shape, size and colour filters are not supported by Brave and are ignored. NOT YET TESTED against the live API.
-export function createBraveProvider({apiKey,fetchImpl=fetch,timeoutMs=10000}={}) {
-  if(!apiKey)throw new Error('BRAVE_API_KEY is required when PLUKO_PROVIDER=brave');
-  return {
-    name:'brave',
-    async fetchPage(query,page) {
-      if(page>0)return [];
-      const url=new URL('https://api.search.brave.com/res/v1/images/search');
-      url.search=new URLSearchParams({q:query,count:'200',safesearch:'strict'}).toString();
-      const response=await fetchImpl(url,{headers:{Accept:'application/json','X-Subscription-Token':apiKey},signal:AbortSignal.timeout(timeoutMs)});
-      if(!response.ok)throw new Error(`Brave API returned HTTP ${response.status}`);
-      const data=await response.json();
-      const candidates=[],seen=new Set(),web=value=>{try{const u=new URL(value);return ['http:','https:'].includes(u.protocol)?u.href:null;}catch{return null;}};
-      for(const item of Array.isArray(data?.results)?data.results:[]){
-        const image=web(item?.properties?.url);
-        if(!image||seen.has(image))continue;
-        seen.add(image);
-        const host=new URL(image).hostname;
-        candidates.push({url:image,width:Number(item.properties.width)||0,height:Number(item.properties.height)||0,kind:'original',host,title:typeof item.title==='string'&&item.title?item.title:host,thumbnail:web(item?.thumbnail?.src),sourceUrl:web(item?.url)});
-      }
-      return candidates;
-    },
-  };
-}
-
-export const PROVIDER_NAMES=Object.freeze(['bing','brave','mock']);
+export const PROVIDER_NAMES=Object.freeze(['bing','mock']);
 
 export function selectProvider(name=process.env.PLUKO_PROVIDER||'bing',environment=process.env.NODE_ENV) {
   if(name==='bing')return bing;
-  if(name==='brave')return createBraveProvider({apiKey:process.env.BRAVE_API_KEY});
   if(name==='mock'){
     if(environment==='production')throw new Error('The mock provider is not available in production');
     return createMockProvider();

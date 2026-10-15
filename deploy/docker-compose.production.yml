@@ -39,7 +39,6 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       TRUST_PROXY: "true"
       PLUKO_PROVIDER: ${PLUKO_PROVIDER:-bing}
-      BRAVE_API_KEY: ${BRAVE_API_KEY:-}
     volumes:
       - pluko-data:/var/lib/pluko
     restart: unless-stopped
