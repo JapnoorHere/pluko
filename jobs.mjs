@@ -1,5 +1,6 @@
 import {get,all,run,tx,id,now,setting,audit} from './db.mjs';
 import {LIMITS} from './limits.mjs';
+import {parseFilters} from './filters.mjs';
 export class ApiError extends Error{constructor(status,code,message){super(message);this.status=status;this.code=code;}}
 export function normalize(input){
   const count=value=>{const s=String(value??15);if(!/^[1-9]\d*$/.test(s)||s.length>1000)throw new ApiError(400,'INVALID_COUNT','count must be a positive integer; use a decimal string for very large values');return BigInt(s).toString();};
@@ -10,7 +11,7 @@ export function normalize(input){
   const width=Number(input.min_width??800);if(!Number.isInteger(width)||width<0||width>20000)throw new ApiError(400,'INVALID_FILTER','min_width must be between 0 and 20000');
   const domains=input.exclude_domains??[];if(!Array.isArray(domains)||domains.some(x=>typeof x!=='string'||!/^([a-z0-9-]+\.)+[a-z]{2,}$/i.test(x)))throw new ApiError(400,'INVALID_DOMAIN','Use plain domains without URLs');
   const policy=input.watermark_policy??'prefer_clean';if(!['any','prefer_clean'].includes(policy))throw new ApiError(400,'INVALID_FILTER','watermark_policy must be any or prefer_clean');
-  return {queries:normalized,min_width:width,exclude_domains:domains.map(x=>x.toLowerCase()),watermark_policy:policy};
+  return {queries:normalized,min_width:width,exclude_domains:domains.map(x=>x.toLowerCase()),watermark_policy:policy,...parseFilters(input,(code,message)=>{throw new ApiError(400,code,message);})};
 }
 export function createJob(auth,input,idem){const payload=normalize(input);if(idem&&(!/^[\w.-]{1,128}$/.test(idem)))throw new ApiError(400,'INVALID_IDEMPOTENCY','Invalid Idempotency-Key');return tx(()=>{
   if(idem){const previous=get('SELECT * FROM jobs WHERE project_id=? AND idempotency=?',auth.project_id,idem);if(previous){if(previous.payload!==JSON.stringify(payload))throw new ApiError(409,'IDEMPOTENCY_CONFLICT','Key already used for a different payload');return {id:previous.id,reused:true};}}
@@ -34,8 +35,8 @@ export function claim(owner){return tx(()=>{
   run("UPDATE tasks SET status='running',lease_owner=?,lease_until=?,updated=? WHERE id=?",owner,now()+30000,now(),task.id);
   run("UPDATE jobs SET status='running',updated=? WHERE id=?",now(),task.job_id);return task;
 });}
-export async function tick(owner,fetchPage){if(setting('provider_enabled')!=='true')return false;const task=claim(owner);if(!task)return false;const start=now();let candidates=[],error=null;
-  try{candidates=await fetchPage(task.query,task.page);}catch(e){error=String(e.message).slice(0,500);}
+export async function tick(owner,provider){const source=provider.name||'bing',fetchPage=typeof provider==='function'?provider:(query,page,filters)=>provider.fetchPage(query,page,filters);if(setting('provider_enabled')!=='true')return false;const task=claim(owner);if(!task)return false;const start=now();let candidates=[],error=null;
+  try{candidates=await fetchPage(task.query,task.page,JSON.parse(task.payload));}catch(e){error=String(e.message).slice(0,500);}
   tx(()=>{
     const current=get('SELECT * FROM tasks WHERE id=?',task.id);if(!current||current.lease_owner!==owner||current.status!=='running')return;
     const job=get('SELECT * FROM jobs WHERE id=?',task.job_id),options=JSON.parse(job.payload);let accepted=0,status='queued',reason=null;
@@ -45,13 +46,13 @@ export async function tick(owner,fetchPage){if(setting('provider_enabled')!=='tr
       const matches=(host,domain)=>host===domain||host.endsWith('.'+domain);
       const candidatesSorted=candidates.map((x,index)=>({...x,index,penalty:rules.filter(r=>r.action==='downrank'&&matches(x.host,r.domain)).length+(options.watermark_policy==='prefer_clean'&&/watermark|stock photo|shutterstock|alamy|dreamstime|depositphotos/i.test(x.title+' '+x.host)?5:0)})).sort((a,b)=>a.penalty-b.penalty||a.index-b.index);
       for(const c of candidatesSorted){if(BigInt(task.found+accepted)>=BigInt(task.requested))break;if(c.width<options.min_width||blocked.some(d=>matches(c.host,d)))continue;
-        const data={id:id('img'),query:task.query,title:c.title,image_url:c.url,thumbnail_url:c.thumbnail,source_url:c.sourceUrl,source_domain:c.host,width:c.width,height:c.height,dimensions_verified:false,watermark_status:'unknown',watermark_hint:c.penalty?'source_or_title_signal':'not_assessed',license_status:'unknown',provider:'bing'};
+        const data={id:id('img'),query:task.query,title:c.title,image_url:c.url,thumbnail_url:c.thumbnail,source_url:c.sourceUrl,source_domain:c.host,width:c.width,height:c.height,dimensions_verified:false,watermark_status:'unknown',watermark_hint:c.penalty?'source_or_title_signal':'not_assessed',license_status:'unknown',provider:source};
         accepted+=Number(run('INSERT OR IGNORE INTO results(id,job_id,task_id,url,data) VALUES(?,?,?,?,?)',data.id,task.job_id,task.id,c.url,JSON.stringify(data)).changes);
       }
       if(BigInt(task.found+accepted)>=BigInt(task.requested)){status='complete';reason='requested_count_reached';}
       else if(!candidates.length||(!accepted&&task.empty_pages>=2)){status='partial';reason='source_exhausted_or_no_new_matches';}
     }
-    run('INSERT INTO attempts(job_id,task_id,provider,page,status,duration,candidates,accepted,error,created) VALUES(?,?,?,?,?,?,?,?,?,?)',task.job_id,task.id,'bing',task.page,error?'error':'ok',now()-start,candidates.length,accepted,error,now());
+    run('INSERT INTO attempts(job_id,task_id,provider,page,status,duration,candidates,accepted,error,created) VALUES(?,?,?,?,?,?,?,?,?,?)',task.job_id,task.id,source,task.page,error?'error':'ok',now()-start,candidates.length,accepted,error,now());
     run('UPDATE tasks SET found=found+?,page=page+?,empty_pages=?,attempts=?,status=?,reason=?,lease_owner=NULL,lease_until=0,next_at=?,updated=? WHERE id=?',accepted,error?0:1,accepted?0:task.empty_pages+1,error?task.attempts+1:0,status,reason,now()+(error?Math.min(30000,2000*2**task.attempts):1000),now(),task.id);
     settle(task.job_id);
   });return true;
