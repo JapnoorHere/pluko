@@ -1,4 +1,5 @@
 import {get,all,run,tx,id,now,setting,audit} from './db.mjs';
+import {LIMITS} from './limits.mjs';
 export class ApiError extends Error{constructor(status,code,message){super(message);this.status=status;this.code=code;}}
 export function normalize(input){
   const count=value=>{const s=String(value??15);if(!/^[1-9]\d*$/.test(s)||s.length>1000)throw new ApiError(400,'INVALID_COUNT','count must be a positive integer; use a decimal string for very large values');return BigInt(s).toString();};
@@ -13,7 +14,7 @@ export function normalize(input){
 }
 export function createJob(auth,input,idem){const payload=normalize(input);if(idem&&(!/^[\w.-]{1,128}$/.test(idem)))throw new ApiError(400,'INVALID_IDEMPOTENCY','Invalid Idempotency-Key');return tx(()=>{
   if(idem){const previous=get('SELECT * FROM jobs WHERE project_id=? AND idempotency=?',auth.project_id,idem);if(previous){if(previous.payload!==JSON.stringify(payload))throw new ApiError(409,'IDEMPOTENCY_CONFLICT','Key already used for a different payload');return {id:previous.id,reused:true};}}
-  if(get("SELECT count(*) n FROM jobs WHERE project_id=? AND status IN ('queued','running')",auth.project_id).n>=10)throw new ApiError(429,'QUEUE_FULL','Project has 10 active jobs; wait or cancel one');
+  if(get("SELECT count(*) n FROM jobs WHERE project_id=? AND status IN ('queued','running')",auth.project_id).n>=LIMITS.activeJobsPerProject)throw new ApiError(429,'QUEUE_FULL',`Project has ${LIMITS.activeJobsPerProject} active jobs; wait or cancel one`);
   const job=id('job'),t=now();run('INSERT INTO jobs(id,user_id,project_id,key_id,payload,status,created,updated,idempotency) VALUES(?,?,?,?,?,?,?,?,?)',job,auth.user_id,auth.project_id,auth.key_id||null,JSON.stringify(payload),'queued',t,t,idem||null);
   for(const q of payload.queries)run('INSERT INTO tasks(id,job_id,query,requested,status,updated) VALUES(?,?,?,?,?,?)',id('task'),job,q.query,q.count,'queued',t);
   return {id:job,reused:false};
