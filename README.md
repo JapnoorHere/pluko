@@ -163,7 +163,7 @@ Your backend ─────── HTTP API (/v1/*)
 - **Storage:** SQLite in WAL mode on local persistent disk.
 - **Security:** hashed API keys, password hashing, administrator TOTP, session handling, CSRF protection, and account/key rate limits.
 
-The default provider reads Bing's public image-search responses through direct HTTP requests. It is not an official Bing API integration and does not require browser automation. Upstream changes, blocking, or terms restrictions can affect availability, so review them before relying on it. A `brave` provider that uses the Brave Search API with your own key is also available (`PLUKO_PROVIDER=brave`, `BRAVE_API_KEY`); it has not been verified against the live API yet. An offline `mock` provider exists for tests and is refused in production.
+The default provider reads Bing's public image-search responses through direct HTTP requests. It is not an official Bing API integration and does not require browser automation. Upstream changes, blocking, or terms restrictions can affect availability, so review them before relying on it. An offline `mock` provider exists for tests and is refused in production.
 
 ```text
 app/                 Next.js routes and theme
@@ -173,7 +173,7 @@ server.mjs           Next.js and API host
 worker.mjs           Background job processing
 jobs.mjs             Job validation and orchestration
 provider.mjs         Image page parsing and safe fetching
-providers.mjs        Search providers (bing, brave, mock)
+providers.mjs        Search providers (bing, mock)
 filters.mjs          Search filter validation and mapping
 limits.mjs           Product limits shared by the API, dashboard, and docs
 webhooks.mjs         Signed webhook queue and delivery
@@ -206,8 +206,7 @@ Configuration comes from environment variables. `.env.example` documents the set
 | `DATA_DIR` | `./data` |
 | `ENCRYPTION_KEY` | Required for non-local production; 64 random hexadecimal characters. |
 | `TRUST_PROXY` | Enable only behind a trusted, exclusive reverse proxy. |
-| `PLUKO_PROVIDER` | `bing` (default), `brave`, or `mock` (tests only, refused in production). |
-| `BRAVE_API_KEY` | Required when `PLUKO_PROVIDER=brave`. |
+| `PLUKO_PROVIDER` | `bing` (default) or `mock` (tests only, refused in production). |
 
 ## Deployment
 

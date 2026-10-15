@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {FILTER_VALUES,parseFilters,bingParameters} from '../filters.mjs';
-import {selectProvider,createMockProvider,createBraveProvider,PROVIDER_NAMES} from '../providers.mjs';
+import {selectProvider,createMockProvider,PROVIDER_NAMES} from '../providers.mjs';
 
 const fail=(code,message)=>{const error=new Error(message);error.code=code;throw error;};
 
@@ -33,52 +33,11 @@ test('Bing parameters always carry a safe-search level and only add filters that
 });
 
 test('providers are chosen by name and the mock never runs in production',()=>{
-  assert.deepEqual([...PROVIDER_NAMES],['bing','brave','mock']);
+  assert.deepEqual([...PROVIDER_NAMES],['bing','mock']);
   assert.equal(selectProvider('bing','production').name,'bing');
   assert.equal(selectProvider('mock','test').name,'mock');
   assert.throws(()=>selectProvider('mock','production'),/not available in production/);
   assert.throws(()=>selectProvider('nonsense','test'),/Unknown PLUKO_PROVIDER/);
-});
-
-// These tests check our handling of a response shaped like Brave's documented fields. They do not prove the live API matches.
-test('the Brave provider needs a key, sends it as a header, and maps results',async()=>{
-  assert.throws(()=>createBraveProvider({}),/BRAVE_API_KEY/);
-  const saved=process.env.BRAVE_API_KEY;delete process.env.BRAVE_API_KEY;
-  try{assert.throws(()=>selectProvider('brave','test'),/BRAVE_API_KEY/);}finally{if(saved)process.env.BRAVE_API_KEY=saved;}
-
-  const calls=[];
-  const body={results:[
-    {title:'Skyline',url:'https://page.example.com/a',thumbnail:{src:'https://imgs.example.com/t1.jpg'},properties:{url:'https://cdn.example.com/1.jpg',width:1600,height:900}},
-    {title:'Duplicate',url:'https://page.example.com/b',properties:{url:'https://cdn.example.com/1.jpg',width:1600,height:900}},
-    {url:'https://page.example.com/c',properties:{url:'https://cdn.example.com/2.png'}},
-    {title:'No image',url:'https://page.example.com/d',properties:{}},
-    {title:'Bad scheme',properties:{url:'javascript:alert(1)'}},
-    null,
-  ]};
-  const provider=createBraveProvider({apiKey:'test-key',fetchImpl:async(url,options)=>{calls.push({url:String(url),options});return {ok:true,status:200,json:async()=>body};}});
-  const items=await provider.fetchPage('city skyline',0,{image_type:'photo',safe_search:'moderate'});
-  assert.equal(provider.name,'brave');
-  assert.equal(calls.length,1);
-  assert.equal(calls[0].options.headers['X-Subscription-Token'],'test-key');
-  const sent=new URL(calls[0].url);
-  assert.equal(sent.origin+sent.pathname,'https://api.search.brave.com/res/v1/images/search');
-  assert.equal(sent.searchParams.get('q'),'city skyline');
-  assert.equal(sent.searchParams.get('count'),'200');
-  assert.equal(sent.searchParams.get('safesearch'),'strict','never less strict than the requested level');
-  assert.equal(items.length,2,'duplicates and unusable results are dropped');
-  assert.deepEqual(items[0],{url:'https://cdn.example.com/1.jpg',width:1600,height:900,kind:'original',host:'cdn.example.com',title:'Skyline',thumbnail:'https://imgs.example.com/t1.jpg',sourceUrl:'https://page.example.com/a'});
-  assert.equal(items[1].title,'cdn.example.com');
-  assert.equal(items[1].width,0);
-  assert.equal(items[1].thumbnail,null);
-  assert.deepEqual(await provider.fetchPage('city skyline',1),[],'no second page');
-  assert.equal(calls.length,1);
-});
-
-test('the Brave provider reports API failures and tolerates empty bodies',async()=>{
-  const failing=createBraveProvider({apiKey:'k',fetchImpl:async()=>({ok:false,status:429,json:async()=>({})})});
-  await assert.rejects(failing.fetchPage('x',0),/HTTP 429/);
-  const empty=createBraveProvider({apiKey:'k',fetchImpl:async()=>({ok:true,status:200,json:async()=>({})})});
-  assert.deepEqual(await empty.fetchPage('x',0),[]);
 });
 
 test('the mock provider is deterministic and runs out of pages',async()=>{
