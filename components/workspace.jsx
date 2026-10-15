@@ -105,8 +105,8 @@ export default function Workspace({ audience = "customer" }) {
   const finishMfaSetup = useCallback(async () => {
     await refresh();
     setModal(null);
-    setView("overview");
-  }, [refresh]);
+    if (mfaRequired) setView("overview");
+  }, [refresh, mfaRequired]);
   const wrongPortal = me && (audience === "admin" ? me.role !== "admin" : me.role === "admin");
   useEffect(() => {
     if (wrongPortal) router.replace(me.role === "admin" ? "/admin" : "/app");

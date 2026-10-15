@@ -40,6 +40,19 @@ if(!db.prepare('SELECT 1 FROM migrations WHERE version=2').get()){
     db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}
 }
+if(!db.prepare('SELECT 1 FROM migrations WHERE version=3').get()){
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.exec(`ALTER TABLE sessions ADD COLUMN label TEXT;
+ALTER TABLE projects ADD COLUMN webhook_url TEXT;
+ALTER TABLE projects ADD COLUMN webhook_secret TEXT;
+CREATE TABLE IF NOT EXISTS webhook_deliveries(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,job_id TEXT NOT NULL,event TEXT NOT NULL,payload TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL,last_status INTEGER,last_error TEXT,created INTEGER NOT NULL,delivered INTEGER);
+CREATE INDEX IF NOT EXISTS webhook_due ON webhook_deliveries(status,next_at);
+CREATE INDEX IF NOT EXISTS webhook_project ON webhook_deliveries(project_id,created);`);
+    db.prepare('INSERT INTO migrations(version,applied) VALUES(3,?)').run(Date.now());
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+}
 export const now=()=>Date.now();
 export const id=prefix=>prefix+'_'+randomUUID().replaceAll('-','');
 export const get=(sql,...p)=>db.prepare(sql).get(...p);
@@ -57,6 +70,7 @@ export function cleanup(table){const t=now(),day=86400000;tx(()=>{
     jobs:()=>run("DELETE FROM jobs WHERE updated<? AND status NOT IN ('queued','running')",t-Number(setting('job_days'))*day),
     audit:()=>run('DELETE FROM audit WHERE created<?',t-Number(setting('audit_days'))*day),
     feedback:()=>run('DELETE FROM feedback WHERE created<?',t-Number(setting('summary_days'))*day),
+    webhook_deliveries:()=>run("DELETE FROM webhook_deliveries WHERE created<? AND status<>'pending'",t-Number(setting('summary_days'))*day),
     sessions:()=>run('DELETE FROM sessions WHERE expires<?',t),
     tokens:()=>run('DELETE FROM tokens WHERE expires<?',t),
     rate_limits:()=>run('DELETE FROM rate_limits WHERE expires<?',t),
