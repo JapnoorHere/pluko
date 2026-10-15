@@ -70,6 +70,9 @@ export function SiteHeader() {
                 {[
                   ...links,
                   ["/docs", "Documentation"],
+                  ["/limits", "Limits"],
+                  ["/status", "Status"],
+                  ["/contact", "Contact"],
                   ["/app", "Sign in"],
                 ].map(([href, text]) => (
                   <Link onClick={() => setOpen(false)} key={href} href={href}>
@@ -96,6 +99,9 @@ export function SiteFooter() {
         <Link href="/#product">Product</Link>
         <Link href="/#developers">Developers</Link>
         <Link href="/docs">Documentation</Link>
+        <Link href="/limits">Limits</Link>
+        <Link href="/status">Status</Link>
+        <Link href="/contact">Contact</Link>
         <Link href="/app">Sign in</Link>
         <Link href="/privacy">Privacy</Link>
         <Link href="/terms">Terms</Link>

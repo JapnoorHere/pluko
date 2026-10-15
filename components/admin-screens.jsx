@@ -36,6 +36,7 @@ const cleanupPolicies = {
   jobs: settings => `Removes completed jobs older than ${settings.job_days} days, along with their tasks and result URLs. Queued and running jobs are kept.`,
   audit: settings => `Removes administrator audit records older than ${settings.audit_days} days.`,
   feedback: settings => `Removes feedback older than ${settings.summary_days} days.`,
+  webhook_deliveries: settings => `Removes finished or failed webhook delivery records older than ${settings.summary_days} days. Deliveries still waiting to be sent are kept.`,
   sessions: () => 'Removes expired login sessions only.',
   tokens: () => 'Removes expired invitation, reset, and setup tokens only.',
   rate_limits: () => 'Removes expired rate-limit counters only.',

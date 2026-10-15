@@ -33,9 +33,15 @@ const sections = [
           </li>
           <li>
             <strong>Access information:</strong> hashed session tokens, session
-            expiry, CSRF values, API-key hashes and prefixes, scopes, expiry,
-            and last-use information. Enabled authenticator secrets are
-            encrypted.
+            expiry, CSRF values, a short device description for each session
+            (browser and operating system), API-key hashes and prefixes,
+            scopes, expiry, and last-use information. Enabled authenticator
+            secrets are encrypted.
+          </li>
+          <li>
+            <strong>Webhook settings:</strong> if you set a webhook, its URL, an
+            encrypted signing secret, and a record of each delivery attempt
+            (event type, time, response status, and error text).
           </li>
           <li>
             <strong>Search data:</strong> queries, filters, requested counts,
@@ -89,9 +95,15 @@ const sections = [
     content: (
       <>
         <p>
-          Search queries are sent to Bing to retrieve image-search results. Bing
+          Search queries are sent to the image-search provider the service is
+          configured to use, currently Bing, to retrieve results. That provider
           processes those requests under its own terms and privacy practices.
           Pluko does not send your password or API key to the search provider.
+        </p>
+        <p>
+          If you set a webhook, Pluko sends signed event notifications (job
+          identifiers, status, and counts) to the address you provide. That
+          server is yours or your provider’s, and its own policies apply.
         </p>
         <p>
           The landing page loads sample photography from Unsplash. Search-result
@@ -135,7 +147,10 @@ const sections = [
         <p>The current default retention settings are:</p>
         <ul>
           <li>Sanitized request and response bodies: 30 days.</li>
-          <li>Request summaries, provider attempts, and feedback: 90 days.</li>
+          <li>
+            Request summaries, provider attempts, feedback, and finished webhook
+            delivery records: 90 days.
+          </li>
           <li>Inactive jobs and their result metadata: 30 days.</li>
           <li>Audit history and usage summaries: approximately one year.</li>
         </ul>
@@ -161,15 +176,19 @@ const sections = [
     content: (
       <>
         <p>
-          You can change your password, revoke API keys, and stop using the
-          service. For access, correction, deletion, account closure, or other
-          privacy requests, contact pStack using the details below. We may need
-          to verify that you own the account before releasing or changing
+          You can change your password, sign out other devices, revoke or rotate
+          API keys, download your data, and stop using the service from the
+          Account page of your workspace. For correction or other privacy
+          requests, contact pStack using the details below. We may need to
+          verify that you own the account before releasing or changing
           information.
         </p>
         <p>
-          Account deletion is currently handled by request, not by an automatic
-          dashboard button. Rights and available remedies depend on applicable
+          You can delete your account yourself from the Account page. This
+          permanently removes your projects, API keys, search jobs and results,
+          feedback, and request logs. Audit history is kept without naming your
+          account, and backups can retain earlier copies until they are
+          separately removed. Rights and available remedies depend on applicable
           law. This policy does not limit those rights.
         </p>
         <LegalContact />

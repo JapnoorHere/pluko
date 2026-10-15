@@ -1,6 +1,7 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
-import {Copy,Pencil,Trash2} from 'lucide-react';
+import {Copy,Pencil,Trash2,Webhook} from 'lucide-react';
+import {WebhookDialog} from '@/components/webhook-panel';
 import {Button} from '@/components/ui/button';
 import {Card,CardHeader,CardTitle,CardDescription,CardContent} from '@/components/ui/card';
 import {Field,FieldLabel} from '@/components/ui/field';
@@ -59,7 +60,7 @@ export function Projects({call,me,toast,modal,extraActions}) {
               <TableCell>{format(project.created)}</TableCell>
               <TableCell><div className="flex flex-wrap gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={()=>modal(<RenameProject project={project} call={call} toast={toast} close={close} refresh={load}/>)}><Pencil/>Rename</Button>
-                {extraActions?.(project,load)}
+                <Button type="button" variant="outline" size="sm" onClick={()=>modal(<WebhookDialog project={project} call={call} toast={toast} close={close} refresh={load}/>)}><Webhook/>Webhook{project.webhook_url&&<span className="size-1.5 rounded-full bg-primary" aria-label="configured"/>}</Button>
                 {admin&&<Button type="button" variant="outline" size="sm" onClick={()=>modal(<QuotaForm project={project} call={call} toast={toast} close={close} refresh={load}/>)}>Edit quota</Button>}
                 <Button type="button" variant="outline" size="sm" onClick={()=>modal(<DeleteProject project={project} call={call} toast={toast} close={close} refresh={load}/>)}><Trash2/>Delete</Button>
               </div></TableCell>

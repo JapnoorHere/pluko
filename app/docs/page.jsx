@@ -4,6 +4,9 @@ import { SiteHeader, SiteFooter } from "@/components/marketing/site-header";
 import { CodePlayground } from "@/components/marketing/code-playground";
 import { Button } from "@/components/ui/button";
 import styles from "@/components/marketing/marketing.module.css";
+import { LIMITS } from "@/limits.mjs";
+import { FILTER_VALUES } from "@/filters.mjs";
+import { SAMPLE_EVENT, VERIFY_SNIPPET } from "@/lib/webhook-example";
 
 export const metadata = {
   title: "API documentation — Pluko",
@@ -15,10 +18,13 @@ const sections = [
   ["authentication", "Authentication"],
   ["requests", "Requests & responses"],
   ["batches", "Batch searches"],
+  ["filters", "Filters"],
   ["pagination", "Jobs & pagination"],
+  ["webhooks", "Webhooks"],
   ["errors", "Limits & errors"],
   ["quality", "Image metadata"],
   ["actions", "Cancel, retry & feedback"],
+  ["tools", "Usage, status & OpenAPI"],
 ];
 
 export default function Documentation() {
@@ -94,9 +100,10 @@ export default function Documentation() {
             <CodePlayground />
             <p>
               Send <code>count</code> as a positive decimal string. Optional
-              filters include <code>min_width</code>,{" "}
+              settings include <code>min_width</code>,{" "}
               <code>exclude_domains</code>, and <code>watermark_policy</code> (
-              <code>prefer_clean</code> or <code>any</code>).
+              <code>prefer_clean</code> or <code>any</code>); see{" "}
+              <a href="#filters">Filters</a> for the rest.
             </p>
             <p>
               Add a unique <code>Idempotency-Key</code> header when submitting a
@@ -131,6 +138,47 @@ export default function Documentation() {
               availability and project quotas still apply.
             </p>
           </section>
+          <section id="filters">
+            <h2>Filters</h2>
+            <p>
+              Narrow a search with optional fields next to{" "}
+              <code>query</code>. Omit a field, or send <code>any</code>, to
+              leave it unfiltered. Filters are passed to the image source on a
+              best-effort basis, so some results may not match exactly.
+            </p>
+            <ul>
+              {Object.entries(FILTER_VALUES).map(([name, values]) => (
+                <li key={name}>
+                  <code>{name}</code>:{" "}
+                  {values.map((value, index) => (
+                    <span key={value}>
+                      {index > 0 && ", "}
+                      <code>{value}</code>
+                    </span>
+                  ))}
+                </li>
+              ))}
+            </ul>
+            <p>
+              <code>safe_search</code> defaults to <code>moderate</code> and
+              cannot be switched off. An invalid value returns{" "}
+              <code>400 INVALID_FILTER</code>.
+            </p>
+            <pre>
+              {JSON.stringify(
+                {
+                  query: "city skyline",
+                  count: "20",
+                  image_type: "photo",
+                  layout: "wide",
+                  size: "large",
+                  safe_search: "strict",
+                },
+                null,
+                2,
+              )}
+            </pre>
+          </section>
           <section id="pagination">
             <h2>Jobs & pagination</h2>
             <p>
@@ -151,13 +199,54 @@ export default function Documentation() {
               without reading earlier rows again.
             </p>
           </section>
+          <section id="webhooks">
+            <h2>Webhooks</h2>
+            <p>
+              Skip polling: add a webhook to a project (Projects, then Webhook)
+              and Pluko sends a signed <code>POST</code> to your https endpoint
+              when a job becomes <code>complete</code>, <code>partial</code> or{" "}
+              <code>cancelled</code>. Fetch the results with the usual results
+              endpoint using the <code>job_id</code> in the event.
+            </p>
+            <pre>{JSON.stringify(SAMPLE_EVENT, null, 2)}</pre>
+            <p>
+              Each request carries <code>Pluko-Event</code>,{" "}
+              <code>Pluko-Delivery</code> (unique per event; use it to ignore
+              duplicates), and <code>Pluko-Signature</code> in the form{" "}
+              <code>t=&lt;ms&gt;,v1=&lt;hex&gt;</code>. <code>v1</code> is the
+              HMAC-SHA256 of <code>&quot;&lt;t&gt;.&lt;raw body&gt;&quot;</code>{" "}
+              using your signing secret, which is shown once when you save the
+              webhook. Verify it, and reject timestamps more than five minutes
+              old.
+            </p>
+            <pre>{VERIFY_SNIPPET}</pre>
+            <ul>
+              <li>Answer with any <code>2xx</code> status within 8 seconds.</li>
+              <li>
+                Failed deliveries are retried up to 5 times, after about 30
+                seconds, 2 minutes, 10 minutes, 1 hour and 6 hours. You can
+                retry a failed one from the dashboard.
+              </li>
+              <li>
+                Endpoints must use https on port 443 with a public domain name.
+                Private and internal addresses are refused.
+              </li>
+              <li>
+                Delivery is at least once and not strictly ordered. Treat the
+                job status as the source of truth.
+              </li>
+            </ul>
+          </section>
           <section id="errors">
             <h2>Limits & errors</h2>
             <p>
-              Public API traffic is limited to 120 requests per minute per key
-              and 240 per minute across an account’s keys. Project provider-page
-              quotas apply separately. Respect the <code>Retry-After</code>{" "}
-              header on <code>429</code> responses.
+              Public API traffic is limited to {LIMITS.keyPerMinute} requests
+              per minute per key and {LIMITS.accountPerMinute} per minute across
+              an account’s keys. At most {LIMITS.activeJobsPerProject} jobs per
+              project can be queued or running. Project provider-page quotas
+              apply separately; see <code>GET /v1/usage</code>. Respect the{" "}
+              <code>Retry-After</code> header on <code>429</code> responses. All
+              limits are listed on the <Link href="/limits">limits page</Link>.
             </p>
             <pre>
               {JSON.stringify(
@@ -221,7 +310,9 @@ export default function Documentation() {
           <section id="actions">
             <h2>Cancel, retry & feedback</h2>
             <p>
-              Use <code>POST /v1/jobs/JOB_ID/cancel</code> to stop a job.{" "}
+              Use <code>POST /v1/jobs/JOB_ID/cancel</code> to stop a queued or
+              running job; a job that already finished returns{" "}
+              <code>409 JOB_FINISHED</code> and keeps its status.{" "}
               <code>POST /v1/jobs/JOB_ID/retry</code> creates a new job from its
               payload. Both require the search scope.
             </p>
@@ -242,6 +333,39 @@ export default function Documentation() {
                 2,
               )}
             </pre>
+          </section>
+          <section id="tools">
+            <h2>Usage, status & OpenAPI</h2>
+            <ul>
+              <li>
+                <code>GET /v1/usage</code> (read scope) returns today’s provider
+                pages used, your daily limit, pages remaining, when it resets
+                (00:00 UTC), and the last week. A page is one request to the
+                image source and returns up to {LIMITS.imagesPerPage} images.
+              </li>
+              <li>
+                <code>GET /v1/jobs</code> (read scope) lists your project’s jobs,
+                newest first. Filter with <code>status</code> and page with{" "}
+                <code>before=&lt;next_cursor&gt;</code>.
+              </li>
+              <li>
+                <code>GET /v1/status</code> needs no key and reports whether the
+                API, worker and image source are working. Also shown on the{" "}
+                <Link href="/status">status page</Link>.
+              </li>
+              <li>
+                <a href="/v1/openapi.json">
+                  <code>GET /v1/openapi.json</code>
+                </a>{" "}
+                is the OpenAPI 3.1 description. Import it into Postman,
+                Insomnia, or a code generator.
+              </li>
+            </ul>
+            <p>
+              Results are removed after the retention period shown on each job
+              (<code>expires</code>), 30 days after it finishes by default.
+              Export what you need before then.
+            </p>
           </section>
         </div>
       </main>

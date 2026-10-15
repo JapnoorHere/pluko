@@ -1,0 +1,61 @@
+import {LIMITS} from './limits.mjs';
+import {FILTER_VALUES} from './filters.mjs';
+
+const ref=name=>({$ref:`#/components/schemas/${name}`});
+const json=schema=>({'application/json':{schema}});
+const errorResponses=codes=>Object.fromEntries(codes.map(code=>[String(code),{description:{400:'The request was rejected. See error.code.',401:'Missing, invalid, expired or revoked API key.',403:'The key lacks the required scope.',404:'No such job or resource for this key.',409:'The request conflicts with the current state.',413:'The request body is larger than 64 KiB.',429:'A rate limit or queue limit was reached. Retry after the Retry-After seconds.'}[code],content:json(ref('Error'))}]));
+const idParam={name:'job_id',in:'path',required:true,schema:{type:'string'},description:'The job_id returned when the search was created.'};
+const secured=[{BearerAuth:[]}];
+
+// Builds the public API description. Limits and filter values come from the same modules the server uses.
+export function openApiDocument(origin) {
+  const filters=Object.fromEntries(Object.entries(FILTER_VALUES).map(([name,values])=>[name,{type:'string',enum:values,description:name==='safe_search'?'Defaults to moderate. Safe search cannot be switched off.':'Optional filter. Applied on a best-effort basis by the image source.'}]));
+  return {
+    openapi:'3.1.0',
+    info:{title:'Pluko API',version:'1.0.0',description:`Image search that returns source image URLs and metadata, never image files.\n\nSearches run as background jobs: create one, poll its status (or use a webhook), then read results in pages. Keys go in your backend only. Each key is limited to ${LIMITS.keyPerMinute} requests per minute, and all keys of an account share ${LIMITS.accountPerMinute} per minute.`},
+    servers:[{url:origin}],
+    security:secured,
+    tags:[{name:'Search'},{name:'Jobs'},{name:'Account'},{name:'Service'}],
+    paths:{
+      '/v1/images/search':{post:{tags:['Search'],operationId:'createSearch',summary:'Start a search job',description:'Returns 202 immediately. Send an Idempotency-Key header when retrying after an uncertain network failure.',parameters:[{name:'Idempotency-Key',in:'header',required:false,schema:{type:'string',pattern:'^[\\w.-]{1,128}$'}}],requestBody:{required:true,content:json(ref('SearchRequest'))},responses:{202:{description:'Accepted.',content:json(ref('SearchAccepted'))},...errorResponses([400,401,403,409,413,429])}}},
+      '/v1/jobs':{get:{tags:['Jobs'],operationId:'listJobs',summary:'List jobs for this key’s project',parameters:[{name:'limit',in:'query',schema:{type:'integer',minimum:1,maximum:LIMITS.resultsPageMax,default:50}},{name:'before',in:'query',schema:{type:'integer'},description:'Pass next_cursor from the previous page.'},{name:'status',in:'query',schema:{type:'string',enum:['queued','running','complete','partial','cancelled']}}],responses:{200:{description:'A page of jobs, newest first.',content:json(ref('JobList'))},...errorResponses([400,401,403,429])}}},
+      '/v1/jobs/{job_id}':{get:{tags:['Jobs'],operationId:'getJob',summary:'Get a job’s status',parameters:[idParam],responses:{200:{description:'The job.',content:json(ref('JobResponse'))},...errorResponses([401,403,404,429])}}},
+      '/v1/jobs/{job_id}/results':{get:{tags:['Jobs'],operationId:'getResults',summary:'Read a page of results',description:'Use next_cursor as `after` until it is null. While a job is running, poll with poll_after to read only new results.',parameters:[idParam,{name:'limit',in:'query',schema:{type:'integer',minimum:1,maximum:LIMITS.resultsPageMax,default:50}},{name:'after',in:'query',schema:{type:'integer',minimum:0,default:0}}],responses:{200:{description:'A page of results.',content:json(ref('ResultsPage'))},...errorResponses([400,401,403,404,429])}}},
+      '/v1/jobs/{job_id}/cancel':{post:{tags:['Jobs'],operationId:'cancelJob',summary:'Cancel a queued or running job',parameters:[idParam],responses:{200:{description:'Cancelled.',content:json({type:'object',properties:{ok:{type:'boolean'},request_id:{type:'string'}}})},...errorResponses([401,403,404,409,429])}}},
+      '/v1/jobs/{job_id}/retry':{post:{tags:['Jobs'],operationId:'retryJob',summary:'Start a new job from a job’s original request',parameters:[idParam],responses:{202:{description:'A new job was created.',content:json({type:'object',properties:{job_id:{type:'string'},request_id:{type:'string'}}})},...errorResponses([401,403,404,429])}}},
+      '/v1/feedback':{post:{tags:['Jobs'],operationId:'sendFeedback',summary:'Report a problem with a result',requestBody:{required:true,content:json(ref('FeedbackRequest'))},responses:{201:{description:'Recorded.',content:json({type:'object',properties:{id:{type:'string'},request_id:{type:'string'}}})},...errorResponses([400,401,403,404,429])}}},
+      '/v1/usage':{get:{tags:['Account'],operationId:'getUsage',summary:'Daily page usage for this key’s project',description:'A page is one request to the image source and returns up to 35 images. Usage resets at 00:00 UTC.',responses:{200:{description:'Usage for the current day and the previous days.',content:json(ref('Usage'))},...errorResponses([401,403,429])}}},
+      '/v1/status':{get:{tags:['Service'],operationId:'getStatus',summary:'Current service status',security:[],responses:{200:{description:'Live status, with no history.',content:json(ref('Status'))}}}},
+      '/v1/openapi.json':{get:{tags:['Service'],operationId:'getOpenApi',summary:'This document',security:[],responses:{200:{description:'The OpenAPI 3.1 description.',content:json({type:'object'})}}}},
+    },
+    webhooks:{
+      jobFinished:{post:{summary:'A job finished',description:'Sent to the project’s webhook URL when a job becomes complete, partial or cancelled. Verify the Pluko-Signature header (`t=<ms>,v1=<hex HMAC-SHA256 of "<t>.<raw body>">`) with your webhook secret before trusting it, and respond with any 2xx status. Failed deliveries are retried up to 5 times with increasing delays. Headers: Pluko-Event, Pluko-Delivery, Pluko-Signature.',requestBody:{content:json(ref('WebhookEvent'))},responses:{200:{description:'Return any 2xx status to acknowledge.'}}}},
+    },
+    components:{
+      securitySchemes:{BearerAuth:{type:'http',scheme:'bearer',description:'An API key starting with plk_live_. Create one in the dashboard.'}},
+      schemas:{
+        Error:{type:'object',required:['error','request_id'],properties:{error:{type:'object',required:['code','message'],properties:{code:{type:'string'},message:{type:'string'}}},request_id:{type:'string'}}},
+        SearchRequest:{type:'object',description:'Provide either query (with optional count) or queries.',properties:{
+          query:{type:'string',minLength:1,maxLength:LIMITS.queryMaxLength},
+          count:{type:'string',pattern:'^[1-9][0-9]*$',default:'15',description:'Images wanted per query, as a decimal string. There is no product cap; the source may have fewer.'},
+          queries:{type:'array',minItems:1,items:{type:'object',required:['query'],properties:{query:{type:'string',maxLength:LIMITS.queryMaxLength},count:{type:'string',pattern:'^[1-9][0-9]*$'}}},description:'A batch. Queries must be unique. The whole body is limited to 64 KiB.'},
+          min_width:{type:'integer',minimum:0,maximum:20000,default:800},
+          exclude_domains:{type:'array',items:{type:'string'},description:'Plain domains such as example.com.'},
+          watermark_policy:{type:'string',enum:['any','prefer_clean'],default:'prefer_clean',description:'A hint based on titles and domains, not a guarantee.'},
+          ...filters,
+        }},
+        SearchAccepted:{type:'object',required:['job_id','reused','status_url','results_url','request_id'],properties:{job_id:{type:'string'},reused:{type:'boolean'},status_url:{type:'string'},results_url:{type:'string'},request_id:{type:'string'}}},
+        Task:{type:'object',required:['id','query','requested','found','page','status','reason'],properties:{id:{type:'string'},query:{type:'string'},requested:{type:'string'},found:{type:'integer'},page:{type:'integer'},status:{type:'string',enum:['queued','running','complete','partial','cancelled']},reason:{type:['string','null'],description:'Why a query ended early, for example source_exhausted_or_no_new_matches, daily_page_quota, provider_failed or user_cancelled.'}}},
+        Job:{type:'object',required:['id','project_id','status','created','updated','queries','returned','requested','filters','expires'],properties:{id:{type:'string'},project_id:{type:'string'},status:{type:'string',enum:['queued','running','complete','partial','cancelled']},created:{type:'integer',description:'Epoch milliseconds.'},updated:{type:'integer'},queries:{type:'array',items:ref('Task')},returned:{type:'integer'},requested:{type:'string'},filters:{type:'object'},expires:{type:['integer','null'],description:'When results are removed. Null while the job is still running.'}}},
+        JobResponse:{type:'object',required:['job','request_id'],properties:{job:ref('Job'),request_id:{type:'string'}}},
+        JobList:{type:'object',required:['jobs','next_cursor','request_id'],properties:{jobs:{type:'array',items:ref('Job')},next_cursor:{type:['integer','null']},request_id:{type:'string'}}},
+        Image:{type:'object',required:['id','query','title','image_url','source_domain','width','height','dimensions_verified','watermark_status','watermark_hint','license_status','provider'],properties:{id:{type:'string'},query:{type:'string'},title:{type:'string'},image_url:{type:'string'},thumbnail_url:{type:['string','null']},source_url:{type:['string','null']},source_domain:{type:'string'},width:{type:'integer'},height:{type:'integer'},dimensions_verified:{type:'boolean'},watermark_status:{type:'string'},watermark_hint:{type:'string'},license_status:{type:'string',description:'Always unknown unless a source supplies verifiable licence data. Check the source before reuse.'},provider:{type:'string'}}},
+        ResultsPage:{type:'object',required:['job_id','status','images','next_cursor','poll_after','request_id'],properties:{job_id:{type:'string'},status:{type:'string'},images:{type:'array',items:ref('Image')},next_cursor:{type:['integer','null']},poll_after:{type:'integer'},request_id:{type:'string'}}},
+        FeedbackRequest:{type:'object',required:['job_id','result_id','reason'],properties:{job_id:{type:'string'},result_id:{type:'string'},reason:{type:'string',enum:['not_relevant','watermark','broken','other']},note:{type:'string',maxLength:1000}}},
+        Usage:{type:'object',required:['project_id','project','day','pages_used','pages_quota','pages_remaining','resets_at','images_per_page','history','request_id'],properties:{project_id:{type:'string'},project:{type:'string'},day:{type:'string',description:'UTC date, YYYY-MM-DD.'},pages_used:{type:'integer'},pages_quota:{type:'integer'},pages_remaining:{type:'integer'},resets_at:{type:'integer',description:'Epoch milliseconds of the next 00:00 UTC.'},images_per_page:{type:'integer'},history:{type:'array',items:{type:'object',required:['day','pages'],properties:{day:{type:'string'},pages:{type:'integer'}}}},request_id:{type:'string'}}},
+        Status:{type:'object',required:['status','api','worker','provider','checked_at','request_id'],properties:{status:{type:'string',enum:['ok','degraded']},api:{type:'string'},worker:{type:'string',enum:['online','offline']},provider:{type:'string',enum:['enabled','paused']},checked_at:{type:'integer'},request_id:{type:'string'}}},
+        WebhookEvent:{type:'object',required:['id','type','created','data'],properties:{id:{type:'string'},type:{type:'string',enum:['job.finished','webhook.test']},created:{type:'integer'},data:{type:'object',properties:{job_id:{type:'string'},project_id:{type:'string'},status:{type:'string'},requested:{type:'string'},returned:{type:'integer'},queries:{type:'array',items:{type:'object'}},results_url:{type:'string'}}}}},
+      },
+    },
+  };
+}
