@@ -4,8 +4,13 @@ import {useId,useState} from 'react';
 import {Field,FieldContent,FieldLabel,FieldDescription} from '@/components/ui/field';
 import {Button as ShadButton} from '@/components/ui/button';
 import {Switch} from '@/components/ui/switch';
+import {Badge} from '@/components/ui/badge';
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter} from '@/components/ui/alert-dialog';
+
+export function StatusBadge({status}) {
+  return <Badge variant="outline" className={["queued","running"].includes(status)?"border-primary/25 bg-primary/10 text-primary":undefined}>{status}</Badge>;
+}
 
 export function Toggle({label,description,checked,onChange,disabled=false}) {
   const id=useId();

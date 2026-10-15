@@ -72,7 +72,14 @@ export default function Workspace({ audience = "customer" }) {
         body: body === undefined ? undefined : JSON.stringify(body),
       });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.error?.message || "Request failed");
+      if (!r.ok) {
+        if (r.status === 401 && d.error?.code === "LOGIN_REQUIRED" && path !== "/api/me" && !options.apiKey) {
+          setMe(null);
+          setCsrf("");
+          notify("Your session expired. Please sign in again.");
+        }
+        throw new Error(d.error?.message || "Request failed");
+      }
       return d;
     },
     [csrf],
