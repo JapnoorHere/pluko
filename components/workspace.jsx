@@ -1,84 +1,99 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast as notify } from "sonner";
-import { DashboardShell } from "@/components/dashboard-shell";
-import { Modal } from "@/components/dashboard-primitives";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Auth,
-  Overview,
-  Playground,
-  Jobs,
-  Projects,
-  Keys,
-  Logs,
-  Feedback,
-  Docs,
-  Account,
-} from "@/components/customer-screens";
-import { Users, Provider, Audit, Storage } from "@/components/admin-screens";
-import {
-  Activity,
-  BookOpen,
-  Boxes,
-  CheckCircle2,
-  ClipboardList,
-  CloudCog,
-  FolderKanban,
-  KeyRound,
-  LayoutDashboard,
-  Search,
-  Settings2,
-  Sparkles,
-  UsersRound,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { WorkspaceContext } from "@/components/workspace/context";
+import { WorkspaceShell } from "@/components/workspace/shell";
+import { useWorkspaceTheme } from "@/components/workspace/theme";
+import { Shimmer } from "@/components/workspace/ui";
+import { parseRoute, routePath } from "@/lib/ui-helpers";
+import { AuthScreen } from "@/components/screens/auth";
+import { Overview } from "@/components/screens/overview";
+import { Playground } from "@/components/screens/playground";
+import { Jobs } from "@/components/screens/jobs";
+import { JobPage } from "@/components/screens/job-detail";
+import { Projects } from "@/components/screens/projects";
+import { ProjectPage } from "@/components/screens/project-detail";
+import { Keys } from "@/components/screens/keys";
+import { Logs } from "@/components/screens/logs";
+import { Feedback } from "@/components/screens/feedback";
+import { Guide } from "@/components/screens/guide";
+import { Account } from "@/components/screens/account";
+import { AdminUsers } from "@/components/screens/admin-users";
+import { AdminProvider } from "@/components/screens/admin-provider";
+import { AdminAudit } from "@/components/screens/admin-audit";
+import { AdminStorage } from "@/components/screens/admin-storage";
+import { AdminSettings } from "@/components/screens/admin-settings";
 
-const nav = [
-  ["overview", "Overview", LayoutDashboard],
-  ["playground", "Playground", Sparkles],
-  ["jobs", "Search jobs", Search],
-  ["projects", "Projects", FolderKanban],
-  ["keys", "API keys", KeyRound],
-  ["logs", "Request logs", ClipboardList],
-  ["feedback", "Quality feedback", CheckCircle2],
-  ["docs", "API guide", BookOpen],
-  ["account", "Account", Settings2],
-];
-const adminNav = [
-  ["users", "Users & invites", UsersRound],
-  ["provider", "Provider & rules", CloudCog],
-  ["audit", "Audit history", Activity],
-  ["storage", "Storage & retention", Boxes],
-];
+const SCREENS = {
+  overview: Overview,
+  playground: Playground,
+  jobs: Jobs,
+  projects: Projects,
+  keys: Keys,
+  logs: Logs,
+  feedback: Feedback,
+  guide: Guide,
+  account: Account,
+  users: AdminUsers,
+  provider: AdminProvider,
+  audit: AdminAudit,
+  storage: AdminStorage,
+  settings: AdminSettings,
+};
+
+export const TITLES = {
+  overview: "Overview",
+  playground: "Playground",
+  jobs: "Search jobs",
+  projects: "Projects",
+  keys: "API keys",
+  logs: "Request logs",
+  feedback: "Quality feedback",
+  guide: "API guide",
+  account: "Account settings",
+  users: "Users & invites",
+  provider: "Provider & rules",
+  audit: "Audit history",
+  storage: "Storage & retention",
+  settings: "Platform settings",
+};
 
 export default function Workspace({ audience = "customer" }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const route = useMemo(() => parseRoute(pathname, audience), [pathname, audience]);
   const [me, setMe] = useState(null),
     [csrf, setCsrf] = useState(""),
-    [view, setView] = useState("overview"),
-    [modal, setModal] = useState(null),
-    [sessionReady, setSessionReady] = useState(false);
+    [sessionReady, setSessionReady] = useState(false),
+    [intent, setIntent] = useState(null);
+  const [theme, setTheme] = useWorkspaceTheme();
+
   const call = useCallback(
     async (path, body, options = {}) => {
-      const r = await fetch(path, {
-        method: body === undefined ? "GET" : "POST",
-        headers: {
-          ...(body === undefined ? {} : { "Content-Type": "application/json" }),
-          ...(options.apiKey
-            ? { Authorization: `Bearer ${options.apiKey}` }
-            : { "X-CSRF-Token": csrf }),
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-      const d = await r.json();
+      let r;
+      try {
+        r = await fetch(path, {
+          method: body === undefined ? "GET" : "POST",
+          headers: {
+            ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+            ...(options.apiKey
+              ? { Authorization: `Bearer ${options.apiKey}` }
+              : { "X-CSRF-Token": csrf }),
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
+      } catch {
+        throw Object.assign(new Error("Can’t reach Pluko. Check your connection and try again."), { code: "NETWORK" });
+      }
+      const d = await r.json().catch(() => ({}));
       if (!r.ok) {
         if (r.status === 401 && d.error?.code === "LOGIN_REQUIRED" && path !== "/api/me" && !options.apiKey) {
           setMe(null);
           setCsrf("");
-          notify("Your session expired. Please sign in again.");
+          toast.warning("Your session expired. Please sign in again.");
         }
-        throw new Error(d.error?.message || "Request failed");
+        throw Object.assign(new Error(d.error?.message || "Request failed"), { code: d.error?.code, status: r.status });
       }
       return d;
     },
@@ -98,82 +113,82 @@ export default function Workspace({ audience = "customer" }) {
   }, [call]);
   useEffect(() => {
     refresh();
-  }, [refresh]);
-  const toast = useCallback((message) => notify(message), []);
+    // Only on first load; later calls go through `refresh` directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const href = useCallback((view, id, tab) => routePath(route.base, view, id, tab), [route.base]);
+  const navigate = useCallback((view, id, tab, { replace = false } = {}) => {
+    const target = routePath(route.base, view, id, tab);
+    if (replace) router.replace(target);
+    else router.push(target);
+  }, [route.base, router]);
+  // Opens a page and asks it to start an action, such as the "new project" dialog.
+  const start = useCallback((view, action) => {
+    setIntent({ view, action, at: Date.now() });
+    if (route.view !== view || route.id) navigate(view);
+  }, [navigate, route.view, route.id]);
+  const takeIntent = useCallback((view, action) => {
+    if (intent?.view === view && intent.action === action) {
+      setIntent(null);
+      return true;
+    }
+    return false;
+  }, [intent]);
+
+  const signOut = useCallback(async () => {
+    try { await call("/api/logout", {}); } catch {}
+    setMe(null);
+    setCsrf("");
+    toast.success("Signed out");
+  }, [call]);
+
   const mfaRequired = me?.role === "admin" && !me.mfa;
-  const activeView = mfaRequired ? "account" : view;
-  const finishMfaSetup = useCallback(async () => {
-    await refresh();
-    setModal(null);
-    if (mfaRequired) setView("overview");
-  }, [refresh, mfaRequired]);
   const wrongPortal = me && (audience === "admin" ? me.role !== "admin" : me.role === "admin");
   useEffect(() => {
     if (wrongPortal) router.replace(me.role === "admin" ? "/admin" : "/app");
   }, [wrongPortal, me, router]);
+  useEffect(() => {
+    if (me && mfaRequired && !(route.view === "account" && route.tab === "security")) navigate("account", null, "security", { replace: true });
+  }, [me, mfaRequired, route.view, route.tab, navigate]);
+  useEffect(() => {
+    if (!me) return;
+    // Next applies the layout's metadata title after a client navigation, so set ours just after it.
+    const title = `${TITLES[route.view] || "Workspace"} — Pluko`;
+    document.title = title;
+    const timer = setTimeout(() => { document.title = title; }, 60);
+    return () => clearTimeout(timer);
+  }, [me, route.view, route.id, route.tab]);
+
+  const value = useMemo(() => ({
+    me, call, audience, route, href, navigate, start, takeIntent, intent, refreshMe: refresh, signOut, theme, setTheme, mfaRequired,
+  }), [me, call, audience, route, href, navigate, start, takeIntent, intent, refresh, signOut, theme, setTheme, mfaRequired]);
+
   if (!sessionReady || wrongPortal)
     return (
-      <main className="sessionLoading">
-        <Skeleton className="h-8 w-28" />
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-28 w-full" />
-      </main>
+      <div className="flex min-h-svh">
+        <div className="hidden w-64 shrink-0 flex-col gap-3 border-r p-4 md:flex">
+          <Shimmer className="h-10 w-full" />
+          {Array.from({ length: 8 }, (_, index) => <Shimmer key={index} className="h-7 w-full" />)}
+        </div>
+        <div className="flex flex-1 flex-col gap-6 p-6 lg:p-10">
+          <Shimmer className="h-7 w-48" />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((index) => <Shimmer key={index} className="h-32" />)}</div>
+          <Shimmer className="h-72 w-full" />
+        </div>
+      </div>
     );
-  if (!me) return <Auth call={call} onAuthenticated={refresh} toast={toast} adminOnly={audience === "admin"} />;
+  if (!me) return <AuthScreen call={call} onAuthenticated={refresh} adminOnly={audience === "admin"} />;
+  const Screen = SCREENS[route.view] || Overview;
+  // Until an administrator turns on the authenticator, every other API call is refused, so only Security renders.
+  const Detail = mfaRequired ? Account : route.view === "jobs" && route.id ? JobPage : route.view === "projects" && route.id ? ProjectPage : Screen;
   return (
-    <>
-      <DashboardShell
-        me={me}
-        view={activeView}
-        setView={setView}
-        nav={nav}
-        adminNav={adminNav}
-        signOut={async () => {
-          await call("/api/logout", {});
-          setMe(null);
-        }}
-      >
-        <Screen
-          view={activeView}
-          call={call}
-          me={me}
-          toast={toast}
-          modal={setModal}
-          setView={setView}
-          onMfaEnabled={finishMfaSetup}
-        />
-      </DashboardShell>
-      {modal && <Modal close={() => setModal(null)}>{modal}</Modal>}
-    </>
-  );
-}
-
-function Screen({ view, call, me, toast, modal, setView, onMfaEnabled }) {
-  const screens = {
-    overview: Overview,
-    playground: Playground,
-    jobs: Jobs,
-    projects: Projects,
-    keys: Keys,
-    logs: Logs,
-    feedback: Feedback,
-    docs: Docs,
-    account: Account,
-    users: Users,
-    provider: Provider,
-    audit: Audit,
-    storage: Storage,
-  };
-  const Component = screens[view] || Overview;
-  return (
-    <Component
-      call={call}
-      me={me}
-      toast={toast}
-      modal={modal}
-      setView={setView}
-      onMfaEnabled={onMfaEnabled}
-      required={view === "account" && me.role === "admin" && !me.mfa}
-    />
+    <WorkspaceContext.Provider value={value}>
+      <WorkspaceShell titles={TITLES}>
+        <div key={`${route.view}/${route.id || ""}`} className="page-enter grid gap-6">
+          <Detail />
+        </div>
+      </WorkspaceShell>
+    </WorkspaceContext.Provider>
   );
 }

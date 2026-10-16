@@ -5,17 +5,34 @@
 :root,.dark {
  color-scheme:dark;
  --background:oklch(.145 0 0);--foreground:oklch(.985 0 0);
- --card:oklch(.205 0 0);--card-foreground:oklch(.985 0 0);
+ --card:oklch(.185 0 0);--card-foreground:oklch(.985 0 0);
  --popover:oklch(.205 0 0);--popover-foreground:oklch(.985 0 0);
  --primary:#818cf8;--primary-foreground:#171717;
  --secondary:oklch(.269 0 0);--secondary-foreground:oklch(.985 0 0);
  --muted:oklch(.269 0 0);--muted-foreground:oklch(.708 0 0);
  --accent:oklch(.269 0 0);--accent-foreground:oklch(.985 0 0);
  --destructive:oklch(.704 .191 22.216);--border:oklch(1 0 0 / 10%);--input:oklch(1 0 0 / 15%);--ring:var(--primary);
- --sidebar:oklch(.205 0 0);--sidebar-foreground:oklch(.985 0 0);
+ --sidebar:oklch(.165 0 0);--sidebar-foreground:oklch(.985 0 0);
  --sidebar-primary:var(--primary);--sidebar-primary-foreground:var(--primary-foreground);
  --sidebar-accent:color-mix(in srgb,var(--primary) 12%,var(--sidebar));--sidebar-accent-foreground:oklch(.985 0 0);
  --sidebar-border:oklch(1 0 0 / 10%);--sidebar-ring:var(--primary);--radius:.625rem;
+ --shimmer:oklch(1 0 0 / 6%);
+}
+/* Light theme for the signed-in workspace only. The public site stays dark. */
+html.light {
+ color-scheme:light;
+ --background:oklch(.99 0 0);--foreground:oklch(.145 0 0);
+ --card:oklch(1 0 0);--card-foreground:oklch(.145 0 0);
+ --popover:oklch(1 0 0);--popover-foreground:oklch(.145 0 0);
+ --primary:#4f46e5;--primary-foreground:#ffffff;
+ --secondary:oklch(.967 0 0);--secondary-foreground:oklch(.205 0 0);
+ --muted:oklch(.962 0 0);--muted-foreground:oklch(.52 0 0);
+ --accent:oklch(.962 0 0);--accent-foreground:oklch(.205 0 0);
+ --destructive:oklch(.577 .245 27.325);--border:oklch(.91 0 0);--input:oklch(.9 0 0);--ring:var(--primary);
+ --sidebar:oklch(.975 0 0);--sidebar-foreground:oklch(.145 0 0);
+ --sidebar-accent:color-mix(in srgb,var(--primary) 8%,var(--sidebar));--sidebar-accent-foreground:oklch(.145 0 0);
+ --sidebar-border:oklch(.91 0 0);
+ --shimmer:oklch(1 0 0 / 70%);
 }
 @theme inline {
   --font-sans:var(--font-geist-sans),Arial,sans-serif;--font-mono:var(--font-geist-mono),Consolas,monospace;
@@ -38,47 +55,15 @@
 }
 /* Page composition only. Component appearance comes from components/ui. */
 @layer components {
- .cards { @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-4; }
- .metric { @apply text-3xl font-semibold tracking-tight; }
- .row { @apply flex flex-wrap items-end gap-3; }
- .row > input { @apply min-w-0 flex-1; }
- .grid3,.keyForm { @apply grid gap-4 md:grid-cols-3; }
- .ruleForm { @apply grid items-end gap-4 md:grid-cols-2 xl:grid-cols-4; }
- .grid4 { @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-4; }
- form { @apply space-y-4; }
- form.row,form.keyForm,form.ruleForm,form.grid4 { @apply space-y-0; }
- .muted,.fieldOptional,.fieldHint,.feedbackNote { @apply text-sm text-muted-foreground; }
- .notice { @apply rounded-lg border p-4 text-sm text-muted-foreground; }
- .steps { @apply flex flex-wrap gap-4 text-sm text-muted-foreground; }
- .gallery { @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-3; }
- .image { @apply overflow-hidden rounded-xl border; }
- .image img { @apply aspect-video w-full bg-muted object-cover; }
- .image > div { @apply space-y-2 p-4; }
- .image a { @apply block truncate text-sm font-medium text-primary hover:underline; }
- .image small { @apply block text-sm text-muted-foreground; }
- .imageActions { @apply flex items-center justify-between gap-2; }
- .adminActions,.jobToolbar { @apply flex flex-wrap items-center gap-2; }
- .toggleRow { @apply flex items-center justify-between gap-6 rounded-lg border p-4; }
- .toggleRow strong { @apply text-sm font-medium; }
- .toggleRow small { @apply mt-1 block text-sm text-muted-foreground; }
- .storageStats { @apply grid gap-4 sm:grid-cols-3; }
- .storageStats span { @apply rounded-lg border p-4 text-sm text-muted-foreground; }
- .storageStats strong { @apply mb-1 block text-2xl font-semibold text-foreground; }
- .auth { @apply mx-auto flex min-h-svh w-full max-w-sm flex-col justify-center gap-6 px-4 py-12; }
- .authIntro { @apply space-y-4 text-center; }
- .authIntro h1,.authIntro p,.authIntro > .pill,.trustRow { @apply hidden; }
- .brand { @apply flex items-center justify-center gap-2 text-xl font-semibold; }
- .brand i { @apply hidden; }
- .logoMark { @apply flex size-8 items-center justify-center rounded-lg; }
- .logoMark img { @apply size-8; }
- .submitButton { @apply w-full; }
- .authLink { @apply h-auto px-1; }
- .modalBody { @apply space-y-4; }
- .modalBody h2 { @apply text-lg font-semibold; }
- .modalBody p { @apply text-sm text-muted-foreground; }
- .sessionLoading { @apply mx-auto grid w-full max-w-lg gap-4 px-4 pt-32; }
- .auditDetails,.feedbackNote { @apply max-w-xs whitespace-normal break-words; }
- pre { @apply overflow-auto rounded-lg border bg-muted/50 p-4 font-mono text-sm whitespace-pre-wrap break-all; }
+ pre:not(.code-block) { @apply overflow-auto rounded-lg border bg-muted/50 p-4 font-mono text-sm whitespace-pre-wrap break-all; }
+ .code-block { @apply m-0 overflow-auto p-4 pr-12 whitespace-pre; }
  code { @apply font-mono text-xs; }
+ /* A light sweep over skeletons so loading reads as progress, not an empty box. */
+ .shimmer { position:relative; overflow:hidden; }
+ .shimmer::after { content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,var(--shimmer),transparent); animation:shimmer 1.6s ease-in-out infinite; }
+ .page-enter { animation:page-enter .22s ease-out both; }
+ .lightbox-image { max-height:calc(100svh - 14rem); }
 }
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+@keyframes shimmer { 100% { transform:translateX(100%); } }
+@keyframes page-enter { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.shimmer::after{display:none}}
