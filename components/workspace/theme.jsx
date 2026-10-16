@@ -1,7 +1,7 @@
 'use client';
 import {useCallback,useEffect,useState} from 'react';
+import {THEME_KEY as KEY} from '@/lib/theme-script';
 
-const KEY='pluko-theme';
 export const THEMES=['system','light','dark'];
 
 function read(){
@@ -18,12 +18,6 @@ function apply(choice){
   root.classList.toggle('light',mode==='light');
 }
 
-// Runs before first paint on workspace pages so a light-theme user never sees a dark flash.
-export const THEME_SCRIPT=`try{var t=localStorage.getItem('${KEY}')||'system';var m=t==='system'?(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'):t;var r=document.documentElement;r.classList.toggle('dark',m==='dark');r.classList.toggle('light',m==='light');}catch(e){}`;
-
-export function ThemeScript(){
-  return <script dangerouslySetInnerHTML={{__html:THEME_SCRIPT}}/>;
-}
 
 // Workspace theme preference. The public site is always dark, so leaving the workspace restores it.
 export function useWorkspaceTheme(){
