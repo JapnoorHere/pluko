@@ -1,9 +1,14 @@
-import LandingPage from "@/components/marketing/landing-page";
+import LandingPage from "@/components/landing/landing-page";
 
 export const metadata = {
-  title: "Pluko — Image search, built into your product",
+  title: "Pluko — Every image. One API.",
   description:
-    "Find images across the web and retrieve URLs, sources, and metadata through the Pluko API. Explore batch searches, background jobs, and a workspace for your integrations.",
+    "Search the web for images and get back URLs, sources and metadata your product can use. One query or thousands, in a single job, with signed webhooks and a full workspace.",
+  openGraph: {
+    title: "Pluko — Every image. One API.",
+    description: "Image search infrastructure that returns URLs, sources and metadata through a small, versioned API.",
+    type: "website",
+  },
 };
 
 export default function Home() {
