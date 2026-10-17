@@ -5,12 +5,14 @@ import {useWorkspace} from '@/components/workspace/context';
 import {CodeBlock,DataTable,DescriptionList,Duration,EmptyState,ErrorState,IdPill,LoadMore,PageHeader,SearchInput,Shimmer,TableToolbar,TimeAgo,ToneBadge,MethodBadge} from '@/components/workspace/ui';
 import {format} from '@/lib/display';
 import {httpTone} from '@/lib/ui-helpers';
+import {cn} from '@/lib/utils';
 import {Button} from '@/components/ui/button';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {Sheet,SheetContent,SheetDescription,SheetHeader,SheetTitle} from '@/components/ui/sheet';
 import {Tabs,TabsContent,TabsList,TabsTrigger} from '@/components/ui/tabs';
 
-const STATUS=[['all','All statuses'],['200','200 OK'],['201','201 Created'],['202','202 Accepted'],['400','400 Bad request'],['401','401 Unauthorized'],['403','403 Forbidden'],['404','404 Not found'],['409','409 Conflict'],['429','429 Rate limited'],['500','500 Server error']];
+const CLASSES=[['all','All'],['2xx','Success'],['4xx','Client errors'],['5xx','Server errors']];
+const STATUS=[['all','Any exact code'],['200','200 OK'],['201','201 Created'],['202','202 Accepted'],['400','400 Bad request'],['401','401 Unauthorized'],['403','403 Forbidden'],['404','404 Not found'],['409','409 Conflict'],['429','429 Rate limited'],['500','500 Server error']];
 
 function StatusCode({status}){
   return <ToneBadge tone={httpTone(status)} className="font-mono normal-case">{status||'Interrupted'}</ToneBadge>;
@@ -68,12 +70,16 @@ export function Logs(){
     {key:'created',header:'Time',headClassName:'text-right',className:'text-right text-muted-foreground',cell:row=><TimeAgo value={row.created}/>},
   ];
   const filtered=query||status!=='all';
+  useEffect(()=>{const value=new URLSearchParams(window.location.search).get('status');if(value&&(CLASSES.some(([key])=>key===value)||STATUS.some(([key])=>key===value)))setStatus(value);},[]);
+  useEffect(()=>{const url=new URL(window.location.href);if(status==='all')url.searchParams.delete('status');else url.searchParams.set('status',status);window.history.replaceState(window.history.state,'',url);},[status]);
+  const exact=!CLASSES.some(([key])=>key===status);
   return <>
     <PageHeader title="Request logs" description="Every dashboard and API request, with sanitized request and response bodies. Secrets are never stored."/>
     <DataTable columns={columns} rows={logs} loading={loading} error={error} onRetry={()=>load()} onRowClick={row=>setSelected(row.id)} selectedKey={selected} skeletonRows={8} caption="Request logs"
       toolbar={<TableToolbar end={<Button type="button" variant="outline" size="sm" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'animate-spin':undefined}/>Refresh</Button>}>
         <SearchInput value={query} onChange={setQuery} placeholder="Search routes or bodies…" className="sm:w-72"/>
-        <Select value={status} onValueChange={setStatus}><SelectTrigger size="sm" className="w-40" aria-label="Filter by status"><SelectValue/></SelectTrigger><SelectContent>{STATUS.map(([value,label])=><SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
+        <div role="radiogroup" aria-label="Status" className="flex flex-wrap gap-1.5">{CLASSES.map(([value,label])=><button key={value} type="button" role="radio" aria-checked={status===value} onClick={()=>setStatus(value)} className={cn('h-8 rounded-full border px-3 text-[13px] transition-colors',status===value?'border-foreground bg-foreground text-background':'bg-card text-muted-foreground hover:text-foreground')}>{label}</button>)}</div>
+        <Select value={exact?status:'all'} onValueChange={setStatus}><SelectTrigger size="sm" className={cn('w-40',exact&&status!=='all'&&'border-foreground')} aria-label="More: exact status code"><SelectValue/></SelectTrigger><SelectContent>{STATUS.map(([value,label])=><SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
         {filtered&&<Button type="button" variant="ghost" size="sm" onClick={()=>{setQuery('');setStatus('all');}}>Clear</Button>}
       </TableToolbar>}
       empty={filtered?<EmptyState icon={Search} title="No matching requests" description="Try a different search or status." action={<Button variant="outline" onClick={()=>{setQuery('');setStatus('all');}}>Clear filters</Button>}/>

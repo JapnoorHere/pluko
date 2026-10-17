@@ -73,8 +73,9 @@ function Section({id,title,children}){
   return <section className="border-t pt-14 pb-4 first:border-t-0 first:pt-0"><Heading id={id}>{title}</Heading><div className="mt-6 grid gap-6">{children}</div></section>;
 }
 
-const METHOD_TONES={GET:'bg-emerald-500/12 text-emerald-700 ring-emerald-600/20',POST:'bg-indigo-500/12 text-indigo-700 ring-indigo-600/20'};
-function Endpoint({method,path,scope}){
+const METHOD_TONES={GET:'bg-emerald-500/12 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300',POST:'bg-indigo-500/12 text-indigo-700 ring-indigo-600/20 dark:text-indigo-300'};
+// Shared with the in-app API guide so both stay identical.
+export function Endpoint({method,path,scope}){
   return <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-muted/30 px-4 py-3">
     <span className={cn('rounded-md px-2 py-0.5 font-mono text-xs font-semibold ring-1',METHOD_TONES[method])}>{method}</span>
     <code className="font-mono text-sm break-all">{path}</code>
@@ -82,16 +83,16 @@ function Endpoint({method,path,scope}){
   </div>;
 }
 
-const c=text=><code className="font-mono">{text}</code>;
-function Params({rows}){
+export const c=text=><code className="font-mono">{text}</code>;
+export function Params({rows}){
   return <SimpleTable columns={['Field','Type','Description']} rows={rows.map(([name,type,required,text])=>[<span key="n" className="font-mono text-sm">{name}{required&&<span className="ml-1.5 font-sans text-[11px] font-medium text-rose-700">required</span>}</span>,<span key="t" className="font-mono text-sm text-muted-foreground">{type}</span>,text])}/>;
 }
 
-function curl(method,route,body){
+export function curl(method,route,body){
   return `curl ${method==='POST'?'-X POST ':''}"$PLUKO_URL${route}" \\\n  -H "Authorization: Bearer $PLUKO_API_KEY"${body?` \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(body,null,2)}'`:''}`;
 }
-const allLanguages=step=>({cURL:requestExample('cURL',step),JavaScript:requestExample('JavaScript',step),Python:requestExample('Python',step)});
-const json=value=>JSON.stringify(value,null,2);
+export const allLanguages=step=>({cURL:requestExample('cURL',step),JavaScript:requestExample('JavaScript',step),Python:requestExample('Python',step)});
+export const json=value=>JSON.stringify(value,null,2);
 
 const REASONS=[
   ['requested_count_reached','All requested images were found.'],

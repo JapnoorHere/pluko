@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';
+import {useState,useEffect,useMemo,useRef} from 'react';
 import Link from 'next/link';
 import {Download,KeyRound,Laptop,LogOut,Monitor,Moon,Palette,ShieldCheck,Sun,Trash2,UserRound,Database,MonitorSmartphone} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
@@ -7,6 +7,7 @@ import {ConfirmDialog,CopyField,DataTable,DescriptionList,FormDialog,PageHeader,
 import {downloadText} from '@/lib/display';
 import {initials} from '@/lib/ui-helpers';
 import {cn} from '@/lib/utils';
+import {useActiveSection} from '@/components/design/system';
 import {Avatar,AvatarFallback} from '@/components/ui/avatar';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -149,25 +150,42 @@ function DataPrivacy(){
   </div>;
 }
 
+// All settings on one page with numbered sections, like the legal pages.
+// /app/account/<section> still works: it scrolls to that section.
 export function Account(){
-  const {route,href,mfaRequired}=useWorkspace();
-  const tab=mfaRequired?'security':route.tab;
+  const {route,navigate,mfaRequired}=useWorkspace();
+  const sections=useMemo(()=>mfaRequired?TABS.filter(([value])=>value==='security'):TABS,[mfaRequired]);
+  const ids=useMemo(()=>sections.map(([value])=>`account-${value}`),[sections]);
+  const active=useActiveSection(ids);
+  const first=useRef(true);
+  useEffect(()=>{
+    const target=document.getElementById(`account-${mfaRequired?'security':route.tab}`);
+    if(!target)return;
+    // On first load, only jump when a section other than the first was asked for.
+    if(first.current&&route.tab===sections[0][0]){first.current=false;return;}
+    first.current=false;
+    target.scrollIntoView({behavior:'smooth',block:'start'});
+  },[route.tab,mfaRequired,sections]);
+  const go=value=>navigate('account','',value,{replace:true});
+  const panels={profile:<Profile/>,security:<Security required={mfaRequired}/>,sessions:<Sessions/>,appearance:<Appearance/>,data:<DataPrivacy/>};
   return <>
     <PageHeader title="Account settings" description="Manage your profile, sign-in security and data."/>
-    <div className="grid items-start gap-6 md:grid-cols-[13rem_1fr]">
-      <nav aria-label="Account sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 md:sticky md:top-20 md:flex-col">
-        {TABS.map(([value,label,Icon])=>{
-          const disabled=mfaRequired&&value!=='security';
-          return <Link key={value} href={disabled?'#':href('account','',value)} aria-current={tab===value?'page':undefined} aria-disabled={disabled} onClick={event=>{if(disabled)event.preventDefault();}}
-            className={cn('flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',tab===value&&'bg-muted font-medium text-foreground',disabled&&'pointer-events-none opacity-40')}><Icon className="size-4"/>{label}</Link>;
+    <div className="grid items-start gap-10 lg:grid-cols-[13rem_minmax(0,1fr)]">
+      <nav aria-label="Account sections" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 lg:sticky lg:top-24 lg:flex-col lg:gap-0 lg:border-l lg:pb-0">
+        <p className="mb-3 hidden pl-4 text-xs font-medium tracking-wide text-muted-foreground uppercase lg:block">On this page</p>
+        {sections.map(([value,label,Icon],index)=>{
+          const on=active===`account-${value}`;
+          return <button key={value} type="button" onClick={()=>go(value)} aria-current={on?'location':undefined}
+            className={cn('flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors lg:-ml-px lg:rounded-none lg:border-0 lg:border-l lg:py-1.5 lg:pl-4',on?'border-foreground bg-foreground text-background lg:border-foreground lg:bg-transparent lg:font-medium lg:text-foreground':'bg-card text-muted-foreground hover:text-foreground lg:border-transparent lg:bg-transparent')}>
+            <span className="hidden font-mono text-xs text-muted-foreground lg:inline">{String(index+1).padStart(2,'0')}</span><Icon className="size-4 lg:hidden"/>{label}
+          </button>;
         })}
       </nav>
-      <div className="min-w-0">
-        {tab==='profile'&&<Profile/>}
-        {tab==='security'&&<Security required={mfaRequired}/>}
-        {tab==='sessions'&&<Sessions/>}
-        {tab==='appearance'&&<Appearance/>}
-        {tab==='data'&&<DataPrivacy/>}
+      <div className="grid min-w-0 gap-14">
+        {sections.map(([value,label],index)=><section key={value} id={`account-${value}`} aria-labelledby={`account-${value}-title`} className="scroll-mt-24">
+          <h2 id={`account-${value}-title`} className="mb-5 flex items-baseline gap-3 text-[1.5rem] leading-tight font-semibold tracking-[-0.03em]"><span className="font-mono text-base font-normal text-muted-foreground">{String(index+1).padStart(2,'0')}</span>{label}</h2>
+          {panels[value]}
+        </section>)}
       </div>
     </div>
   </>;

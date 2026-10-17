@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useMemo,useState} from 'react';
-import {Activity,Ban,CheckCircle2,Clock,Plus,ShieldBan,Trash2} from 'lucide-react';
+import {Activity,Ban,CheckCircle2,Clock,Plus,ShieldBan,Trash2,LayoutGrid,List} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
 import {CardSkeleton,ConfirmDialog,DataTable,Duration,EmptyState,ErrorState,FormDialog,IdPill,PageHeader,RowActions,SearchInput,StatCard,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast,StatGrid,Card,CardContent,CardDescription,CardHeader,CardTitle,MiniBars} from '@/components/workspace/ui';
 import {formatDuration,matches,percent,settingsPayload} from '@/lib/ui-helpers';
@@ -11,13 +11,19 @@ import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {RadioGroup,RadioGroupItem} from '@/components/ui/radio-group';
 import {Switch} from '@/components/ui/switch';
+import {ToggleGroup,ToggleGroupItem} from '@/components/ui/toggle-group';
+
+const RULES_VIEW_KEY='pluko-rules-view';
 
 export function AdminProvider(){
   const {call,takeIntent}=useWorkspace();
   const settings=useResource('/api/admin/settings');
   const rules=useResource('/api/admin/rules');
   const attempts=useResource('/api/admin/attempts',{poll:20000});
-  const [pausing,setPausing]=useState(false),[adding,setAdding]=useState(false),[removing,setRemoving]=useState(null),[query,setQuery]=useState('');
+  const [pausing,setPausing]=useState(false),[adding,setAdding]=useState(false),[removing,setRemoving]=useState(null),[query,setQuery]=useState(''),[view,setViewState]=useState('cards');
+  // Cards or table, remembered in this browser.
+  useEffect(()=>{try{const saved=localStorage.getItem(RULES_VIEW_KEY);if(saved==='cards'||saved==='table')setViewState(saved);}catch{}},[]);
+  const setView=value=>{if(!value)return;setViewState(value);try{localStorage.setItem(RULES_VIEW_KEY,value);}catch{}};
   const [domain,setDomain]=useState(''),[action,setAction]=useState('block'),[reason,setReason]=useState('');
   useEffect(()=>{if(takeIntent('provider','rule')){setDomain('');setReason('');setAction('block');setAdding(true);}},[takeIntent]);
   const enabled=settings.data?.settings.provider_enabled==='true';
@@ -55,15 +61,22 @@ export function AdminProvider(){
 
     <section className="grid gap-3">
       <div><h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Source rules</h2><p className="text-sm text-muted-foreground">Blocked domains never appear in results. Downranked domains appear only when there’s nothing better.</p></div>
-      <DataTable rows={ruleRows} loading={rules.loading} error={rules.error} onRetry={rules.reload} rowKey="domain" caption="Source rules"
-        toolbar={rules.data?.rules.length>0&&<TableToolbar><SearchInput value={query} onChange={setQuery} placeholder="Search domains…"/></TableToolbar>}
-        columns={[
+      {/* Cards or a table of the same rules. */}
+      <TableToolbar end={rules.data?.rules.length>0&&<ToggleGroup type="single" variant="outline" size="sm" value={view} onValueChange={setView} aria-label="Layout"><ToggleGroupItem value="cards" aria-label="Card view"><LayoutGrid/></ToggleGroupItem><ToggleGroupItem value="table" aria-label="Table view"><List/></ToggleGroupItem></ToggleGroup>}>{rules.data?.rules.length>0&&<SearchInput value={query} onChange={setQuery} placeholder="Search domains…"/>}</TableToolbar>
+      {view==='table'||rules.error||!rules.data||!ruleRows?.length
+        ?<DataTable rows={ruleRows} loading={rules.loading} error={rules.error} onRetry={rules.reload} rowKey="domain" caption="Source rules" columns={[
           {key:'domain',header:'Domain',cell:rule=><code className="text-sm">{rule.domain}</code>},
           {key:'action',header:'Rule',cell:rule=><ToneBadge tone={rule.action==='block'?'danger':'warning'}>{rule.action==='block'?'Blocked':'Downranked'}</ToneBadge>},
           {key:'reason',header:'Reason',className:'max-w-0 w-full truncate text-muted-foreground',cell:rule=><span title={rule.reason}>{rule.reason}</span>},
           {key:'actions',header:<span className="sr-only">Actions</span>,className:'w-10 text-right',cell:rule=><RowActions items={[{label:'Remove rule',icon:Trash2,destructive:true,onSelect:()=>setRemoving(rule)}]}/>},
-        ]}
-        empty={<EmptyState icon={ShieldBan} title={query?'No matching rules':'No source rules yet'} description="Add a rule to block or downrank a domain, for example one that often serves watermarked images." action={!query&&<Button onClick={()=>setAdding(true)}><Plus/>Add source rule</Button>}/>}/>
+        ]} empty={<EmptyState icon={ShieldBan} title={query?'No matching rules':'No source rules yet'} description="Add a rule to block or downrank a domain, for example one that often serves watermarked images." action={!query&&<Button className="rounded-full px-4" onClick={()=>setAdding(true)}><Plus/>Add source rule</Button>}/>}/>
+        :<ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Source rules">
+          {ruleRows.map(rule=><li key={rule.domain} className={cn('flex flex-col gap-3 rounded-2xl border bg-card p-5',rule.action==='block'?'border-l-[3px] border-l-destructive':'border-l-[3px] border-l-amber-500')}>
+            <div className="flex items-start gap-2"><code className="min-w-0 flex-1 truncate font-mono text-[15px] font-medium">{rule.domain}</code><RowActions items={[{label:'Remove rule',icon:Trash2,destructive:true,onSelect:()=>setRemoving(rule)}]}/></div>
+            <ToneBadge tone={rule.action==='block'?'danger':'warning'} className="self-start">{rule.action==='block'?'Blocked':'Downranked'}</ToneBadge>
+            <p className="text-sm leading-relaxed text-muted-foreground">{rule.reason}</p>
+          </li>)}
+        </ul>}
     </section>
 
     <section className="grid gap-3">
