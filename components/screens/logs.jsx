@@ -5,7 +5,6 @@ import {useWorkspace} from '@/components/workspace/context';
 import {CodeBlock,DataTable,DescriptionList,Duration,EmptyState,ErrorState,IdPill,LoadMore,PageHeader,SearchInput,Shimmer,TableToolbar,TimeAgo,ToneBadge,MethodBadge} from '@/components/workspace/ui';
 import {format} from '@/lib/display';
 import {httpTone} from '@/lib/ui-helpers';
-import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {Sheet,SheetContent,SheetDescription,SheetHeader,SheetTitle} from '@/components/ui/sheet';

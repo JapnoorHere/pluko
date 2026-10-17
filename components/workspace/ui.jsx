@@ -9,7 +9,7 @@ import {formatDuration,passwordStrength,percent,statusTone,timeAgo} from '@/lib/
 import {AlertDialog,AlertDialogContent,AlertDialogDescription,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle} from '@/components/ui/alert-dialog';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
-import {Card,CardAction,CardDescription,CardFooter,CardHeader,CardTitle} from '@/components/ui/card';
+import {Card as UiCard,CardAction,CardContent,CardDescription as UiCardDescription,CardFooter as UiCardFooter,CardHeader,CardTitle as UiCardTitle} from '@/components/ui/card';
 import {Dialog,DialogContent,DialogDescription,DialogFooter,DialogHeader,DialogTitle} from '@/components/ui/dialog';
 import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuLabel,DropdownMenuSeparator,DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {Empty,EmptyContent,EmptyDescription,EmptyHeader,EmptyMedia,EmptyTitle} from '@/components/ui/empty';
@@ -47,9 +47,17 @@ export function SectionHeading({title,description,actions}){
   </div>;
 }
 
+// The shadcn card parts with the Panel look, so every card in the workspace is the same frame.
+const FRAME='rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_40px_-28px_rgba(0,0,0,0.25)]';
+export function Card({className,...props}){return <UiCard className={cn(FRAME,className)} {...props}/>;}
+export function CardTitle({className,...props}){return <UiCardTitle className={cn('text-[17px] font-semibold tracking-[-0.02em]',className)} {...props}/>;}
+export function CardDescription({className,...props}){return <UiCardDescription className={cn('text-[14.5px] leading-relaxed',className)} {...props}/>;}
+export function CardFooter({className,...props}){return <UiCardFooter className={cn('rounded-b-2xl',className)} {...props}/>;}
+export {CardHeader,CardContent,CardAction};
+
 // The one frame for grouped content: hairline border, soft shadow, optional header and footer.
 export function Panel({title,description,action,children,footer,className,contentClassName,tone}){
-  return <Card className={cn('gap-0 rounded-2xl py-0 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_40px_-28px_rgba(0,0,0,0.25)]',tone==='danger'&&'border-destructive/35',className)}>
+  return <Card className={cn('gap-0 py-0',tone==='danger'&&'border-destructive/35',className)}>
     {(title||description||action)&&<CardHeader className="gap-1 px-6 pt-6 pb-0">
       {title&&<CardTitle className={cn('text-[17px] font-semibold tracking-[-0.02em]',tone==='danger'&&'text-destructive')}>{title}</CardTitle>}
       {description&&<CardDescription className="text-[14.5px] leading-relaxed">{description}</CardDescription>}
@@ -348,14 +356,14 @@ export function UsageMeter({used,quota,label,showText=true}){
 }
 
 // Small bar chart for short series such as seven days of usage. Accessible as a table.
-export function MiniBars({data,valueLabel='value',height=96}){
+export function MiniBars({data,valueLabel='value',height=96,lastLabel}){
   const max=Math.max(1,...data.map(item=>item.value));
   return <figure className="grid gap-2">
     <div className="relative flex items-end gap-2 border-b" style={{height}} aria-hidden>
       {[25,50,75].map(line=><span key={line} className="pointer-events-none absolute inset-x-0 border-t border-dashed border-border/70" style={{bottom:`${line}%`}}/>)}
-      {data.map((item,index)=><Tooltip key={item.label}><TooltipTrigger asChild><div className="group relative flex h-full flex-1 items-end"><div className={cn('w-full rounded-t-md bg-gradient-to-t from-brand/35 to-brand/90 transition-opacity group-hover:opacity-100',item.value?(index===data.length-1?'opacity-100':'opacity-70'):'bg-none bg-muted')} style={{height:`${Math.max(3,(item.value/max)*100)}%`}}/></div></TooltipTrigger><TooltipContent>{item.label}: {item.value.toLocaleString()} {valueLabel}</TooltipContent></Tooltip>)}
+      {data.map((item,index)=><Tooltip key={item.label}><TooltipTrigger asChild><div className="group relative flex h-full flex-1 items-end"><div className={cn('w-full rounded-t-md bg-gradient-to-t from-brand/35 to-brand/90 transition-opacity group-hover:opacity-100',item.value?(lastLabel&&index===data.length-1?'opacity-100':lastLabel?'opacity-70':'opacity-85'):'bg-none bg-muted')} style={{height:`${Math.max(3,(item.value/max)*100)}%`}}/></div></TooltipTrigger><TooltipContent>{item.label}: {item.value.toLocaleString()} {valueLabel}</TooltipContent></Tooltip>)}
     </div>
-    <div className="flex gap-2 text-[10px] text-muted-foreground" aria-hidden>{data.map((item,index)=><span key={item.label} className={cn('flex-1 truncate text-center',index===data.length-1&&'font-medium text-foreground')}>{index===data.length-1?'Today':item.short||item.label}</span>)}</div>
+    <div className="flex gap-2 text-[10px] text-muted-foreground" aria-hidden>{data.map((item,index)=><span key={item.label} className={cn('flex-1 truncate text-center',lastLabel&&index===data.length-1&&'font-medium text-foreground')}>{lastLabel&&index===data.length-1?lastLabel:item.short||item.label}</span>)}</div>
     <table className="sr-only"><caption>{valueLabel} per day</caption><tbody>{data.map(item=><tr key={item.label}><th>{item.label}</th><td>{item.value}</td></tr>)}</tbody></table>
   </figure>;
 }

@@ -3,14 +3,13 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {AlertTriangle,FolderPlus,Plus,RotateCcw,SlidersHorizontal,Sparkles,X} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,ErrorState,IdPill,InlineError,Kbd,PageHeader,StatusBadge,SwitchField,EmptyState,toast,BrandProgress} from '@/components/workspace/ui';
+import {CardSkeleton,ErrorState,IdPill,InlineError,Kbd,PageHeader,StatusBadge,SwitchField,EmptyState,toast,BrandProgress,Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle} from '@/components/workspace/ui';
 import {JobHeaderActions} from '@/components/screens/job-detail';
 import {ResultsGallery,useJob} from '@/components/screens/job-results';
 import {estimatePages,parseDomains,parseQueries} from '@/lib/search-form';
 import {percent} from '@/lib/ui-helpers';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
-import {Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle} from '@/components/ui/card';
 import {Field,FieldDescription,FieldLabel} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
 
@@ -92,12 +91,13 @@ export function Playground(){
   return <>
     <PageHeader title="Playground" description="Run a search the same way your backend would, and watch results arrive live."/>
     <form onSubmit={submit} onKeyDown={event=>{if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();submit();}}} className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
-      <Card>
-        <CardHeader><CardTitle>What are you looking for?</CardTitle><CardDescription>One query per line. Each query gets its own count, up to the source’s limit.</CardDescription></CardHeader>
-        <CardContent className="grid gap-5">
+      <Card className="gap-0 overflow-hidden py-0">
+        <div className="flex items-center gap-3 border-b px-4 py-3" aria-hidden><span className="flex gap-1.5"><span className="size-2.5 rounded-full bg-[#ff5f57]"/><span className="size-2.5 rounded-full bg-[#febc2e]"/><span className="size-2.5 rounded-full bg-[#28c840]"/></span><span className="text-xs font-medium text-muted-foreground">New search</span></div>
+        <CardHeader className="px-6 pt-6"><CardTitle className="text-[1.375rem] tracking-[-0.03em]">What are you looking for?</CardTitle><CardDescription>One query per line. Each query gets its own count, up to the source’s limit.</CardDescription></CardHeader>
+        <CardContent className="grid gap-5 px-6 pt-5 pb-6">
           <Field>
             <FieldLabel htmlFor="play-queries" className="sr-only">Queries</FieldLabel>
-            <Textarea id="play-queries" rows={4} autoFocus placeholder={'mountain landscape\nwireless headphones'} className="min-h-28 font-medium" value={queries} onChange={event=>setQueries(event.target.value)}/>
+            <Textarea id="play-queries" rows={4} autoFocus placeholder={'mountain landscape\nwireless headphones'} className="min-h-32 rounded-2xl bg-background px-4 py-3 text-[17px] font-medium shadow-sm" value={queries} onChange={event=>setQueries(event.target.value)}/>
             {list.length>0?<div className="flex flex-wrap gap-1.5 pt-1">{list.map(query=><Badge key={query} variant="secondary" className="gap-1 pr-1">{query}<button type="button" aria-label={`Remove ${query}`} onClick={()=>removeQuery(query)} className="rounded-sm p-0.5 hover:bg-background/60"><X className="size-3"/></button></Badge>)}</div>
             :<div className="flex flex-wrap items-center gap-1.5 pt-1"><span className="text-xs text-muted-foreground">Try:</span>{SAMPLES.map(sample=><Button key={sample} type="button" variant="outline" size="xs" onClick={()=>addSample(sample)}><Plus/>{sample}</Button>)}</div>}
           </Field>
@@ -126,7 +126,7 @@ export function Playground(){
           <InlineError error={error}/>
         </CardContent>
         <CardFooter className="flex-col items-stretch gap-2">
-          <Button type="submit" size="lg" disabled={busy||!project}>{busy?<Spinner/>:<Sparkles/>}{busy?'Starting…':'Run search'}</Button>
+          <Button type="submit" size="lg" className="h-11 rounded-full text-[15px]" disabled={busy||!project}>{busy?<Spinner/>:<Sparkles/>}{busy?'Starting…':'Run search'}</Button>
           <p className="flex items-center justify-center gap-1 text-xs text-muted-foreground"><Kbd>Ctrl</Kbd><Kbd>Enter</Kbd>to run</p>
         </CardFooter>
       </Card>

@@ -2,10 +2,10 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Activity,Ban,CheckCircle2,Clock,Plus,ShieldBan,Trash2} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,ConfirmDialog,DataTable,Duration,EmptyState,ErrorState,FormDialog,IdPill,PageHeader,RowActions,SearchInput,StatCard,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast,StatGrid} from '@/components/workspace/ui';
+import {CardSkeleton,ConfirmDialog,DataTable,Duration,EmptyState,ErrorState,FormDialog,IdPill,PageHeader,RowActions,SearchInput,StatCard,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast,StatGrid,Card,CardContent,CardDescription,CardHeader,CardTitle,MiniBars} from '@/components/workspace/ui';
 import {formatDuration,matches,percent,settingsPayload} from '@/lib/ui-helpers';
+import {cn} from '@/lib/utils';
 import {Button} from '@/components/ui/button';
-import {Card,CardAction,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
 import {Field,FieldLabel} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
@@ -36,13 +36,16 @@ export function AdminProvider(){
     <PageHeader title="Provider & rules" description="Control the image source, block or downrank domains, and watch provider health." actions={<Button type="button" onClick={()=>{setDomain('');setReason('');setAction('block');setAdding(true);}}><Plus/>Add source rule</Button>}/>
 
     {settings.error?<ErrorState error={settings.error} onRetry={settings.reload}/>:!settings.data?<CardSkeleton lines={1}/>:
-    <Card className={enabled?undefined:'border-amber-500/40'}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">Image provider{enabled?<StatusBadge status="active" label="Running"/>:<ToneBadge tone="warning">Paused</ToneBadge>}</CardTitle>
-        <CardDescription>{enabled?'New searches are sent to the image source as they arrive.':'Queued searches wait until you resume. Jobs, users and rules are kept.'}</CardDescription>
-        <CardAction><Switch checked={enabled} aria-label="Image provider" onCheckedChange={on=>on?setProvider(true).catch(failure=>toast.error(failure.message)):setPausing(true)}/></CardAction>
-      </CardHeader>
-    </Card>}
+    <section aria-label="Image provider" className={cn('relative overflow-hidden rounded-2xl border bg-card p-6 sm:p-8',!enabled&&'border-amber-500/40')}>
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground"><span className="relative flex size-2.5">{enabled&&<span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-50"/>}<span className={cn('relative inline-flex size-2.5 rounded-full',enabled?'bg-emerald-500':'bg-amber-500')}/></span>Image provider</p>
+          <h2 className="mt-2 text-[clamp(1.75rem,3vw,2.25rem)] leading-tight font-semibold tracking-[-0.04em]">{enabled?'Searches are running.':'Searches are paused.'}</h2>
+          <p className="mt-2 max-w-xl text-[15px] text-muted-foreground">{enabled?'New searches are sent to the image source as they arrive.':'Queued searches wait until you resume. Jobs, users and rules are kept.'}</p>
+        </div>
+        <label className="flex items-center gap-3 self-start rounded-full border bg-background py-2 pr-2 pl-4 text-sm font-medium sm:self-center">{enabled?'Running':'Paused'}<Switch checked={enabled} aria-label="Image provider" onCheckedChange={on=>on?setProvider(true).catch(failure=>toast.error(failure.message)):setPausing(true)}/></label>
+      </div>
+    </section>}
 
     <StatGrid columns={3}>
       <StatCard label="Successful attempts" value={attempts.data?`${stats.success}%`:'—'} icon={CheckCircle2} hint={`Across the last ${list.length} provider pages`}/>
@@ -51,7 +54,7 @@ export function AdminProvider(){
     </StatGrid>
 
     <section className="grid gap-3">
-      <div><h2 className="text-base font-semibold tracking-tight">Source rules</h2><p className="text-sm text-muted-foreground">Blocked domains never appear in results. Downranked domains appear only when there’s nothing better.</p></div>
+      <div><h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Source rules</h2><p className="text-sm text-muted-foreground">Blocked domains never appear in results. Downranked domains appear only when there’s nothing better.</p></div>
       <DataTable rows={ruleRows} loading={rules.loading} error={rules.error} onRetry={rules.reload} rowKey="domain" caption="Source rules"
         toolbar={rules.data?.rules.length>0&&<TableToolbar><SearchInput value={query} onChange={setQuery} placeholder="Search domains…"/></TableToolbar>}
         columns={[
@@ -64,7 +67,8 @@ export function AdminProvider(){
     </section>
 
     <section className="grid gap-3">
-      <div><h2 className="text-base font-semibold tracking-tight">Recent provider attempts</h2><p className="text-sm text-muted-foreground">One row per page requested from the source. Refreshes every 20 seconds.</p></div>
+      <div><h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Recent provider attempts</h2><p className="text-sm text-muted-foreground">One row per page requested from the source. Refreshes every 20 seconds.</p></div>
+      {list.length>1&&<Card><CardHeader><CardTitle>Images accepted per page</CardTitle><CardDescription>The last {Math.min(24,list.length)} provider pages, oldest on the left. A low bar means filters or source rules removed most candidates.</CardDescription></CardHeader><CardContent><MiniBars height={110} valueLabel="images accepted" data={[...list].slice(0,24).reverse().map((item,index)=>({label:`#${index+1} · ${new Date(item.created).toLocaleTimeString()} · page ${item.page}`,short:new Date(item.created).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),value:item.accepted||0}))}/></CardContent></Card>}
       <DataTable rows={attempts.data?.attempts} loading={attempts.loading} error={attempts.error} onRetry={attempts.reload} skeletonRows={6} caption="Provider attempts"
         columns={[
           {key:'created',header:'When',className:'text-muted-foreground',cell:item=><TimeAgo value={item.created}/>},

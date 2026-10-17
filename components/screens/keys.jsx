@@ -33,7 +33,12 @@ function ExpiryCell({item}){
   const state=keyState(item),left=daysLeft(item.expires);
   if(state==='revoked')return <ToneBadge tone="neutral">Revoked</ToneBadge>;
   if(state==='expired')return <ToneBadge tone="danger">Expired</ToneBadge>;
-  return <div className="grid gap-0.5"><ToneBadge tone={state==='expiring'?'warning':'success'}>{state==='expiring'?`Expires in ${left}d`:'Active'}</ToneBadge>{state==='active'&&<span className="text-xs text-muted-foreground">Expires <TimeAgo value={item.expires}/></span>}</div>;
+  // How much of the key's lifetime is used up, like the retention bars on the limits page.
+  const lifetime=Math.max(1,item.expires-item.created),used=Math.min(100,Math.max(0,((Date.now()-item.created)/lifetime)*100));
+  return <div className="grid w-40 gap-1.5">
+    <div className="flex items-center justify-between gap-2"><ToneBadge tone={state==='expiring'?'warning':'success'}>{state==='expiring'?'Expiring':'Active'}</ToneBadge><span className="text-xs text-muted-foreground tabular-nums">{left}d left</span></div>
+    <div className="h-1 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${Math.round(used)}% of this key’s lifetime used`}><div className={state==='expiring'?'h-full rounded-full bg-amber-500':'h-full rounded-full bg-brand'} style={{width:`${used}%`}}/></div>
+  </div>;
 }
 
 function testSnippet(secret){

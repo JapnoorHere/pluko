@@ -2,10 +2,9 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Archive,Database,Eraser,HardDrive,Rows3,Sparkles} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,ConfirmDialog,DataTable,ErrorState,PageHeader,SaveBar,StatCard,StatGridSkeleton,toast,StatGrid} from '@/components/workspace/ui';
+import {CardSkeleton,ConfirmDialog,DataTable,ErrorState,PageHeader,SaveBar,StatCard,StatGridSkeleton,toast,StatGrid,Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/workspace/ui';
 import {compactNumber,settingsPayload} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
-import {Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
 import {Field,FieldDescription,FieldLabel} from '@/components/ui/field';
 import {InputGroup,InputGroupAddon,InputGroupInput,InputGroupText} from '@/components/ui/input-group';
 import {Spinner} from '@/components/ui/spinner';
@@ -70,16 +69,28 @@ export function AdminStorage(){
 
     {!draft?<CardSkeleton lines={2}/>:<Card>
       <CardHeader><CardTitle>Retention policy</CardTitle><CardDescription>How long each kind of record is kept, in days (1–3650).</CardDescription></CardHeader>
-      <CardContent className="grid gap-5 sm:grid-cols-2">
+      <CardContent className="grid gap-6">
+        {/* The current draft as timeline bars, like the limits page; they move as you type. */}
+        <ul className="grid gap-3 rounded-2xl border bg-muted/30 p-5" aria-label="Retention at a glance">
+          {RETENTION.map(([key,label])=>{
+            const days=Math.max(0,Number(draft[key])||0),longest=Math.max(365,...RETENTION.map(([name])=>Number(draft[name])||0));
+            return <li key={key} className="grid gap-1.5">
+              <div className="flex justify-between gap-3 text-sm"><span className="font-medium">{label}</span><span className="text-muted-foreground tabular-nums">{days.toLocaleString()} days</span></div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-brand transition-[width] duration-300" style={{width:`${Math.min(100,(days/longest)*100)}%`,opacity:0.45+Math.min(1,days/longest)*0.55}}/></div>
+            </li>;
+          })}
+        </ul>
+        <div className="grid gap-5 sm:grid-cols-2">
         {RETENTION.map(([key,label,hint])=><Field key={key}><FieldLabel htmlFor={`retention-${key}`}>{label}</FieldLabel>
           <InputGroup className="max-w-48"><InputGroupInput id={`retention-${key}`} type="number" min="1" max="3650" value={draft[key]} aria-invalid={key==='body_days'&&invalid} onChange={event=>setDraft(current=>({...current,[key]:event.target.value}))}/><InputGroupAddon align="inline-end"><InputGroupText>days</InputGroupText></InputGroupAddon></InputGroup>
           <FieldDescription className={key==='body_days'&&invalid?'text-destructive':undefined}>{key==='body_days'&&invalid?'Must not be longer than request summaries.':hint}</FieldDescription>
         </Field>)}
+        </div>
       </CardContent>
     </Card>}
 
     <section className="grid gap-3">
-      <div><h2 className="text-base font-semibold tracking-tight">Tables</h2><p className="text-sm text-muted-foreground">Clean one table now instead of waiting for the next automatic run.</p></div>
+      <div><h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Tables</h2><p className="text-sm text-muted-foreground">Clean one table now instead of waiting for the next automatic run.</p></div>
       <DataTable rows={data?.tables} loading={storage.loading} error={null} rowKey="name" skeletonRows={8} caption="Database tables" empty={null}
         columns={[
           {key:'name',header:'Table',cell:table=><span className="flex items-center gap-2"><Database className="size-3.5 text-muted-foreground"/><code className="text-sm">{table.name}</code></span>},

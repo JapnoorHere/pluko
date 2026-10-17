@@ -141,27 +141,32 @@ function Lightbox({images,index,onIndex,onClose,onReport}){
     return()=>window.removeEventListener('keydown',onKey);
   },[index,images.length,onIndex]);
   return <Dialog open={index!==null&&Boolean(image)} onOpenChange={open=>{if(!open)onClose();}}>
-    <DialogContent className="max-h-[96vh] gap-4 overflow-y-auto sm:max-w-5xl">
+    <DialogContent className="max-h-[96vh] gap-5 overflow-y-auto rounded-2xl sm:max-w-6xl">
       {image&&<>
-        <DialogHeader className="pr-8"><DialogTitle className="truncate">{image.title||image.source_domain}</DialogTitle><DialogDescription>{index+1} of {images.length}{image.query?` · “${image.query}”`:''}</DialogDescription></DialogHeader>
-        <div className="relative flex items-center justify-center overflow-hidden rounded-lg border bg-muted/40">
-          <ResultImage key={image.id} image={image} full className="lightbox-image w-full object-contain"/>
-          <Button type="button" size="icon" variant="secondary" aria-label="Previous image" disabled={index===0} onClick={()=>onIndex(index-1)} className="absolute top-1/2 left-2 -translate-y-1/2 rounded-full shadow"><ChevronLeft/></Button>
-          <Button type="button" size="icon" variant="secondary" aria-label="Next image" disabled={index>=images.length-1} onClick={()=>onIndex(index+1)} className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full shadow"><ChevronRight/></Button>
-        </div>
-        <div className="grid gap-5 md:grid-cols-[1fr_auto]">
-          <DescriptionList className="sm:grid-cols-[7rem_1fr]" items={[
-            ['Source',<a key="s" href={image.source_url||image.image_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">{image.source_domain}</a>],
-            ['Dimensions',image.width&&image.height?`${image.width} × ${image.height} px (reported by the source)`:'Unknown'],
-            ['Licence','Unknown. Check the source before reuse.'],
-            ['Watermark','Not checked. Ranking uses title and domain hints only.'],
-          ]}/>
-          <CodeBlock className="md:col-span-2" title="Result JSON" maxHeight="14rem" code={JSON.stringify({id:image.id,query:image.query,title:image.title,image_url:image.image_url,thumbnail_url:image.thumbnail_url,source_url:image.source_url,source_domain:image.source_domain,width:image.width,height:image.height,license_status:image.license_status,watermark_hint:image.watermark_hint},null,2)}/>
-          <div className="flex flex-wrap content-start gap-2 md:w-56 md:flex-col md:[&>*]:w-full md:[&>*]:justify-start">
-            <Button type="button" onClick={()=>copy(image.image_url,'Image URL')}><Copy/>Copy image URL</Button>
-            <Button type="button" variant="outline" asChild><a href={image.image_url} target="_blank" rel="noopener noreferrer"><Maximize2/>Open full image</a></Button>
-            {image.source_url&&<Button type="button" variant="outline" asChild><a href={image.source_url} target="_blank" rel="noopener noreferrer"><ExternalLink/>Visit source page</a></Button>}
-            <Button type="button" variant="ghost" onClick={()=>onReport(image)}><Flag/>Report a problem</Button>
+        <DialogHeader className="pr-8"><DialogTitle className="truncate text-xl font-semibold tracking-[-0.025em]">{image.title||image.source_domain}</DialogTitle><DialogDescription>{index+1} of {images.length}{image.query?` · “${image.query}”`:''}</DialogDescription></DialogHeader>
+        {/* Image on the left; details, actions and the raw result on the right. */}
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]">
+          <div className="relative flex min-h-64 items-center justify-center overflow-hidden rounded-2xl border bg-muted/40">
+            <ResultImage key={image.id} image={image} full className="lightbox-image w-full object-contain"/>
+            <Button type="button" size="icon" variant="secondary" aria-label="Previous image" disabled={index===0} onClick={()=>onIndex(index-1)} className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full shadow-lg"><ChevronLeft/></Button>
+            <Button type="button" size="icon" variant="secondary" aria-label="Next image" disabled={index>=images.length-1} onClick={()=>onIndex(index+1)} className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full shadow-lg"><ChevronRight/></Button>
+          </div>
+          <div className="grid min-w-0 content-start gap-4">
+            <div className="grid gap-2">
+              <Button type="button" className="h-10 rounded-full" onClick={()=>copy(image.image_url,'Image URL')}><Copy/>Copy image URL</Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" className="rounded-full" asChild><a href={image.image_url} target="_blank" rel="noopener noreferrer"><Maximize2/>Full image</a></Button>
+                {image.source_url?<Button type="button" variant="outline" className="rounded-full" asChild><a href={image.source_url} target="_blank" rel="noopener noreferrer"><ExternalLink/>Source</a></Button>:<span/>}
+              </div>
+            </div>
+            <DescriptionList className="sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:gap-3" items={[
+              ['Source',<a key="s" href={image.source_url||image.image_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">{image.source_domain}</a>],
+              ['Dimensions',image.width&&image.height?`${image.width} × ${image.height} px`:'Unknown'],
+              ['Licence','Unknown. Check the source.'],
+              ['Watermark','Not checked; ranking hint only.'],
+            ]}/>
+            <CodeBlock title="Result JSON" maxHeight="13rem" code={JSON.stringify({id:image.id,query:image.query,title:image.title,image_url:image.image_url,thumbnail_url:image.thumbnail_url,source_url:image.source_url,source_domain:image.source_domain,width:image.width,height:image.height,license_status:image.license_status,watermark_hint:image.watermark_hint},null,2)}/>
+            <Button type="button" variant="ghost" className="justify-self-start rounded-full text-muted-foreground" onClick={()=>onReport(image)}><Flag/>Report a problem</Button>
           </div>
         </div>
       </>}

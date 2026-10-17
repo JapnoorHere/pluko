@@ -3,9 +3,8 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {Activity,ArrowUpRight,FileCode2,FileText,Gauge,KeyRound,Webhook} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
-import {CodeBlock,CopyField,PageHeader,LanguageProvider} from '@/components/workspace/ui';
+import {CodeBlock,CopyField,PageHeader,LanguageProvider,Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/workspace/ui';
 import {Button} from '@/components/ui/button';
-import {Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
 
 const examples=origin=>({
   create:{

@@ -1,13 +1,11 @@
 'use client';
 import {useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,CloudCog,MailWarning,UserPlus} from 'lucide-react';
+import {ArrowRight,CloudCog,UserPlus} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,ConfirmDialog,ErrorState,PageHeader,StatusBadge,ToneBadge,toast,Callout} from '@/components/workspace/ui';
+import {CardSkeleton,ConfirmDialog,ErrorState,PageHeader,StatusBadge,ToneBadge,toast,Callout,Card,CardAction,CardDescription,CardFooter,CardHeader,CardTitle} from '@/components/workspace/ui';
 import {settingsPayload} from '@/lib/ui-helpers';
-import {Alert,AlertDescription,AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
-import {Card,CardAction,CardDescription,CardFooter,CardHeader,CardTitle} from '@/components/ui/card';
 import {Switch} from '@/components/ui/switch';
 
 export function AdminSettings(){

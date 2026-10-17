@@ -1,42 +1,42 @@
 'use client';
+import {useEffect,useState} from 'react';
 import Link from 'next/link';
-import {Activity,AlertTriangle,ArrowRight,ArrowUpRight,BookOpen,Check,Clock,FolderPlus,KeyRound,Search,ServerCrash,Sparkles,Zap} from 'lucide-react';
+import {ResultImage} from '@/components/screens/job-results';
+import {Activity,ArrowRight,ArrowUpRight,BookOpen,Check,Clock,FolderPlus,KeyRound,Search,Sparkles,Zap} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,CodeBlock,ErrorState,MiniBars,PageHeader,Shimmer,StatCard,StatGridSkeleton,StatusBadge,TimeAgo,UsageMeter,BrandProgress,StatGrid,Callout} from '@/components/workspace/ui';
+import {CardSkeleton,CodeBlock,ErrorState,MiniBars,PageHeader,Shimmer,StatCard,StatGridSkeleton,StatusBadge,TimeAgo,UsageMeter,BrandProgress,StatGrid,Callout,Card,CardAction,CardContent,CardDescription,CardHeader,CardTitle,EmptyState} from '@/components/workspace/ui';
 import {compactNumber,dailySeries,formatDuration,percent} from '@/lib/ui-helpers';
 import {cn} from '@/lib/utils';
-import {Alert,AlertDescription,AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
-import {Card,CardAction,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
 
 
 function Onboarding({projects,keys,jobs}){
   const {href,start}=useWorkspace();
   const steps=[
-    {done:projects>0,title:'Create a project',text:'One project per application keeps keys and usage separate.',icon:FolderPlus,run:()=>start('projects','create'),action:'Create project'},
-    {done:keys>0,title:'Generate an API key',text:'Scoped, expiring keys for your backend.',icon:KeyRound,run:()=>start('keys','create'),action:'Create key'},
-    {done:jobs>0,title:'Run your first search',text:'Try a query in the playground and inspect the results.',icon:Search,to:href('playground'),action:'Open playground'},
+    {done:projects>0,title:'Create a project',text:'One project per application keeps keys, limits and usage separate.',icon:FolderPlus,run:()=>start('projects','create'),action:'Create project'},
+    {done:keys>0,title:'Generate an API key',text:'A scoped, expiring key for your backend. It’s shown once.',icon:KeyRound,run:()=>start('keys','create'),action:'Create key'},
+    {done:jobs>0,title:'Run your first search',text:'Try a query in the playground and watch results arrive.',icon:Search,to:href('playground'),action:'Open playground'},
   ];
   const complete=steps.filter(step=>step.done).length;
   if(complete===steps.length)return null;
   const next=steps.findIndex(step=>!step.done);
-  return <Card className="overflow-hidden">
-    <CardHeader>
-      <CardTitle>Get started with Pluko</CardTitle>
-      <CardDescription>{complete} of {steps.length} steps done. Most teams finish in under five minutes.</CardDescription>
-      <CardAction className="hidden w-40 sm:block"><BrandProgress value={(complete/steps.length)*100} aria-label="Setup progress"/></CardAction>
-    </CardHeader>
-    <CardContent className="grid gap-3 md:grid-cols-3">
-      {steps.map((step,index)=><div key={step.title} className={cn('flex flex-col gap-3 rounded-lg border p-4 transition-colors',index===next&&'border-brand/40 bg-brand/5',step.done&&'opacity-70')}>
-        <div className="flex items-center gap-2">
-          <span className={cn('flex size-6 items-center justify-center rounded-full border text-xs font-medium',step.done&&'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400')}>{step.done?<Check className="size-3.5"/>:index+1}</span>
-          <span className={cn('text-sm font-medium',step.done&&'line-through decoration-muted-foreground/50')}>{step.title}</span>
+  // The landing page's numbered steps, with the next one highlighted.
+  return <section aria-label="Get started" className="overflow-hidden rounded-2xl border bg-card">
+    <div className="flex flex-wrap items-end justify-between gap-4 px-6 pt-6">
+      <div><p className="text-sm font-medium text-brand">Get started</p><h2 className="mt-1 text-[1.375rem] font-semibold tracking-[-0.03em]">Three steps to your first results.</h2></div>
+      <div className="flex items-center gap-3 text-sm text-muted-foreground"><span className="tabular-nums">{complete} of {steps.length}</span><BrandProgress value={(complete/steps.length)*100} aria-label="Setup progress" className="h-1.5 w-28"/></div>
+    </div>
+    <ol className="mt-6 grid border-t md:grid-cols-3 md:divide-x">
+      {steps.map((step,index)=><li key={step.title} className={cn('flex flex-col gap-3 p-6',index===next&&'bg-brand/[0.04]',index>0&&'border-t md:border-t-0')}>
+        <div className="flex items-center gap-3">
+          <span className={cn('font-mono text-sm',step.done?'text-emerald-600 dark:text-emerald-400':index===next?'text-brand':'text-muted-foreground')}>{step.done?<Check className="size-4"/>:`0${index+1}`}</span>
+          <span className={cn('font-semibold tracking-[-0.01em]',step.done&&'text-muted-foreground line-through decoration-muted-foreground/40')}>{step.title}</span>
         </div>
-        <p className="flex-1 text-sm text-muted-foreground">{step.text}</p>
-        {!step.done&&(step.run?<Button type="button" size="sm" variant={index===next?'default':'outline'} className="self-start" onClick={step.run}>{step.action}<ArrowRight/></Button>:<Button asChild size="sm" variant={index===next?'default':'outline'} className="self-start"><Link href={step.to}>{step.action}<ArrowRight/></Link></Button>)}
-      </div>)}
-    </CardContent>
-  </Card>;
+        <p className="flex-1 text-sm leading-relaxed text-muted-foreground">{step.text}</p>
+        {!step.done&&(step.run?<Button type="button" size="sm" variant={index===next?'default':'outline'} className="self-start rounded-full px-4" onClick={step.run}>{step.action}<ArrowRight/></Button>:<Button asChild size="sm" variant={index===next?'default':'outline'} className="self-start rounded-full px-4"><Link href={step.to}>{step.action}<ArrowRight/></Link></Button>)}
+      </li>)}
+    </ol>
+  </section>;
 }
 
 function UsageCard({usage}){
@@ -51,7 +51,7 @@ function UsageCard({usage}){
       <CardAction><Button asChild variant="ghost" size="sm"><Link href={href('projects')}>Projects<ArrowRight/></Link></Button></CardAction>
     </CardHeader>
     <CardContent className="grid gap-6">
-      <MiniBars data={series} valueLabel="pages" height={112}/>
+      <MiniBars data={series} valueLabel="pages" height={112} lastLabel="Today"/>
       {!usage.projects.length?<p className="text-sm text-muted-foreground">No projects yet, so there’s no usage to show.</p>
       :<div className="grid gap-4 border-t pt-5 sm:grid-cols-2">
         {usage.projects.slice(0,4).map(item=><Link key={item.project_id} href={href('projects',item.project_id)} className="grid gap-2 rounded-lg p-1 transition-colors hover:bg-muted/40">
@@ -63,6 +63,21 @@ function UsageCard({usage}){
   </Card>;
 }
 
+// The first image a job found, as a small thumbnail.
+function JobThumb({job}){
+  const {call}=useWorkspace();
+  const [image,setImage]=useState(undefined);
+  useEffect(()=>{
+    let live=true;
+    if(!job.returned){setImage(null);return;}
+    call(`/api/jobs/${job.id}/results?limit=1&after=0`).then(data=>{if(live)setImage(data.images[0]||null);}).catch(()=>{if(live)setImage(null);});
+    return()=>{live=false;};
+  },[call,job.id,job.returned]);
+  if(image===undefined)return <Shimmer className="size-11 shrink-0 rounded-xl"/>;
+  if(!image)return <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted"><Search className="size-4 text-muted-foreground"/></span>;
+  return <ResultImage image={image} compact className="size-11 shrink-0 rounded-xl object-cover"/>;
+}
+
 function RecentJobs({jobs}){
   const {href}=useWorkspace();
   return <Card className="lg:col-span-2">
@@ -72,16 +87,28 @@ function RecentJobs({jobs}){
       <CardAction><Button asChild variant="ghost" size="sm"><Link href={href('jobs')}>View all<ArrowRight/></Link></Button></CardAction>
     </CardHeader>
     <CardContent>
-      {!jobs?<div className="grid gap-3">{[1,2,3,4].map(index=><Shimmer key={index} className="h-12"/>)}</div>
-      :!jobs.length?<div className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-10 text-center"><Search className="size-5 text-muted-foreground"/><p className="text-sm text-muted-foreground">No searches yet.</p><Button asChild size="sm"><Link href={href('playground')}><Sparkles/>Run a search</Link></Button></div>
+      {!jobs?<div className="grid gap-3">{[1,2,3,4].map(index=><div key={index} className="flex items-center gap-3"><Shimmer className="size-11 rounded-xl"/><div className="grid flex-1 gap-2"><Shimmer className="h-4 w-2/3"/><Shimmer className="h-3 w-1/3"/></div></div>)}</div>
+      :!jobs.length?<EmptyState icon={Search} title="No searches yet" description="Your latest jobs will show up here." action={<Button asChild size="sm" className="rounded-full px-4"><Link href={href('playground')}><Sparkles/>Run a search</Link></Button>} className="py-10"/>
       :<ul className="-mx-2 grid">
-        {jobs.map(job=><li key={job.id}><Link href={href('jobs',job.id)} className="flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-muted/50">
+        {jobs.map(job=><li key={job.id}><Link href={href('jobs',job.id)} className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted/50">
+          <JobThumb job={job}/>
           <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{job.queries[0]?.query||'Search job'}{job.queries.length>1&&<span className="text-muted-foreground"> +{job.queries.length-1}</span>}</p><p className="text-xs text-muted-foreground">{job.returned.toLocaleString()} of {Number(job.requested).toLocaleString()} found · <TimeAgo value={job.created}/></p></div>
           <StatusBadge status={job.status}/>
         </Link></li>)}
       </ul>}
     </CardContent>
   </Card>;
+}
+
+// Live health for administrators, in the style of the public status page.
+function Health({data}){
+  const rows=[['API','Accepting requests',true],['Search worker',data.workers.length?'Processing searches':'Offline',data.workers.length>0],['Image source',data.provider_enabled?'Enabled':'Paused',data.provider_enabled]];
+  return <section aria-label="Service health" className="grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-3">
+    {rows.map(([name,text,ok])=><div key={name} className="flex items-center gap-3 bg-card px-5 py-4">
+      <span className="relative flex size-2.5">{ok&&<span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-50"/>}<span className={cn('relative inline-flex size-2.5 rounded-full',ok?'bg-emerald-500':'bg-amber-500')}/></span>
+      <div className="min-w-0"><p className="text-sm font-medium">{name}</p><p className={cn('truncate text-xs',ok?'text-muted-foreground':'text-amber-700 dark:text-amber-400')}>{text}</p></div>
+    </div>)}
+  </section>;
 }
 
 // "Good evening, Jane." from the account email and the viewer's local time.
@@ -112,6 +139,7 @@ export function Overview(){
     {data&&!data.provider_enabled&&<Callout type="warning" title="Searches are paused">{admin?<>The image provider is turned off, so queued jobs are waiting. <Link className="underline underline-offset-2" href={href('provider')}>Turn it back on</Link>.</>:'New searches will wait in the queue until the service resumes. Existing results are still available.'}</Callout>}
     {admin&&data&&!data.workers.length&&<Callout type="danger" title="No search worker is running">Queued jobs won’t be processed until a worker starts. Run <code>npm run worker</code> or check the worker service on the server.</Callout>}
 
+    {admin&&data&&<Health data={data}/>}
     {ready&&!admin&&<Onboarding projects={projects.data.projects.length} keys={keys.data.keys.filter(key=>!key.revoked).length} jobs={data.jobs.total||0}/>}
 
     {overview.error?<ErrorState error={overview.error} onRetry={overview.reload} title="Couldn’t load your workspace"/>

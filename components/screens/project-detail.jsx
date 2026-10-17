@@ -3,14 +3,13 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {FolderX,Gauge,KeyRound,Plus,Search,Sparkles,Trash2,Webhook} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CodeBlock,CopyField,DescriptionList,EmptyState,MiniBars,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,UsageMeter,toast,StatGrid} from '@/components/workspace/ui';
+import {CodeBlock,CopyField,DescriptionList,EmptyState,MiniBars,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,UsageMeter,toast,StatGrid,Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle} from '@/components/workspace/ui';
 import {CreateKeyDialog,KeyRevealDialog,KeysTable,keyState} from '@/components/screens/keys';
 import {DeleteProjectDialog,QuotaDialog} from '@/components/screens/projects';
 import {WebhookSettings} from '@/components/screens/webhook-settings';
 import {format} from '@/lib/display';
 import {dailySeries} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
-import {Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle} from '@/components/ui/card';
 import {Field,FieldLabel} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
 import {Spinner} from '@/components/ui/spinner';
@@ -30,7 +29,7 @@ function OverviewTab({project,usage,keys}){
       <StatCard label="Webhook" value={<span className="text-2xl">{project.webhook_url?'On':'Off'}</span>} icon={Webhook} hint={project.webhook_url?'Events are sent when jobs finish':'Polling only'}/>
     </StatGrid>
     <div className="grid gap-6 lg:grid-cols-5">
-      <Card className="lg:col-span-3"><CardHeader><CardTitle>Provider pages, last 7 days</CardTitle><CardDescription>Resets every day at 00:00 UTC{usage?`, next ${format(usage.resets_at)}`:''}.</CardDescription></CardHeader><CardContent>{usage?<MiniBars data={series} valueLabel="pages" height={120}/>:<Shimmer className="h-32"/>}</CardContent></Card>
+      <Card className="lg:col-span-3"><CardHeader><CardTitle>Provider pages, last 7 days</CardTitle><CardDescription>Resets every day at 00:00 UTC{usage?`, next ${format(usage.resets_at)}`:''}.</CardDescription></CardHeader><CardContent>{usage?<MiniBars data={series} valueLabel="pages" height={120} lastLabel="Today"/>:<Shimmer className="h-32"/>}</CardContent></Card>
       <Card className="lg:col-span-2"><CardHeader><CardTitle>Details</CardTitle></CardHeader><CardContent className="grid gap-4">
         <CopyField value={project.id} label="Project ID" description="Send it as project_id when you search from the dashboard API."/>
         <DescriptionList className="sm:grid-cols-[7rem_1fr]" items={[['Created',<TimeAgo key="c" value={project.created}/>],['Daily limit',`${project.daily_pages.toLocaleString()} pages`],['Owner',project.owner]]}/>

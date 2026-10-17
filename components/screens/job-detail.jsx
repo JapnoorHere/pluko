@@ -3,12 +3,11 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {ArrowUpRight,Ban,RefreshCw,Repeat2,SearchX} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
-import {ConfirmDialog,DescriptionList,EmptyState,IdPill,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,toast,BrandProgress,StatGrid} from '@/components/workspace/ui';
+import {ConfirmDialog,DescriptionList,EmptyState,IdPill,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,toast,BrandProgress,StatGrid,Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/workspace/ui';
 import {ExportMenu,QueryBreakdown,ResultsGallery,useJob,useJobActions} from '@/components/screens/job-results';
 import {format} from '@/lib/display';
 import {percent} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
-import {Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
 
 import {Spinner} from '@/components/ui/spinner';
 
@@ -70,7 +69,7 @@ export function JobPage(){
     </div>
 
     <section className="grid gap-4">
-      <h2 className="text-base font-semibold tracking-tight">Results</h2>
+      <h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Results</h2>
       <ResultsGallery jobId={job.id} images={images} active={active} more={more} loadMore={loadMore} loadingMore={loadingMore} expected={job.requested}/>
     </section>
   </>;
