@@ -2,11 +2,10 @@
 import {useEffect,useId,useState} from 'react';
 import Link from 'next/link';
 import {toast} from 'sonner';
-import {AlertCircle,ArrowLeft,Check,Copy,Eye,EyeOff,MoreHorizontal,RefreshCw} from 'lucide-react';
+import {ArrowLeft,Check,Copy,Eye,EyeOff,MoreHorizontal,RefreshCw,Search} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {copyText,format} from '@/lib/display';
 import {formatDuration,passwordStrength,percent,statusTone,timeAgo} from '@/lib/ui-helpers';
-import {Alert,AlertDescription,AlertTitle} from '@/components/ui/alert';
 import {AlertDialog,AlertDialogContent,AlertDialogDescription,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle} from '@/components/ui/alert-dialog';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -16,13 +15,14 @@ import {DropdownMenu,DropdownMenuContent,DropdownMenuItem,DropdownMenuLabel,Drop
 import {Empty,EmptyContent,EmptyDescription,EmptyHeader,EmptyMedia,EmptyTitle} from '@/components/ui/empty';
 import {Field,FieldContent,FieldDescription,FieldLabel} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
-import {InputGroup,InputGroupAddon,InputGroupButton,InputGroupInput} from '@/components/ui/input-group';
+import {InputGroup,InputGroupAddon,InputGroupButton,InputGroupInput,InputGroupText} from '@/components/ui/input-group';
 import {Progress} from '@/components/ui/progress';
 import {Skeleton} from '@/components/ui/skeleton';
 import {Spinner} from '@/components/ui/spinner';
 import {Switch} from '@/components/ui/switch';
 import {Table,TableBody,TableCell,TableHead,TableHeader,TableRow} from '@/components/ui/table';
 import {Tooltip,TooltipContent,TooltipTrigger} from '@/components/ui/tooltip';
+import {Callout,CodeBlock,LanguageProvider,Reveal} from '@/components/design/system';
 
 export {toast};
 
@@ -42,9 +42,22 @@ export function PageHeader({title,description,actions,back,eyebrow}){
 
 export function SectionHeading({title,description,actions}){
   return <div className="flex flex-wrap items-end justify-between gap-3">
-    <div className="space-y-0.5"><h2 className="text-xl font-semibold tracking-[-0.025em]">{title}</h2>{description&&<p className="text-sm text-muted-foreground">{description}</p>}</div>
+    <div className="space-y-1"><h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">{title}</h2>{description&&<p className="text-[15px] text-muted-foreground">{description}</p>}</div>
     {actions&&<div className="flex flex-wrap gap-2">{actions}</div>}
   </div>;
+}
+
+// The one frame for grouped content: hairline border, soft shadow, optional header and footer.
+export function Panel({title,description,action,children,footer,className,contentClassName,tone}){
+  return <Card className={cn('gap-0 rounded-2xl py-0 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_18px_40px_-28px_rgba(0,0,0,0.25)]',tone==='danger'&&'border-destructive/35',className)}>
+    {(title||description||action)&&<CardHeader className="gap-1 px-6 pt-6 pb-0">
+      {title&&<CardTitle className={cn('text-[17px] font-semibold tracking-[-0.02em]',tone==='danger'&&'text-destructive')}>{title}</CardTitle>}
+      {description&&<CardDescription className="text-[14.5px] leading-relaxed">{description}</CardDescription>}
+      {action&&<CardAction>{action}</CardAction>}
+    </CardHeader>}
+    {children!==undefined&&children!==null&&children!==false&&<div className={cn('px-6 py-6',contentClassName)}>{children}</div>}
+    {footer&&<CardFooter className={cn('flex flex-wrap gap-2 rounded-b-2xl border-t px-6 py-4',tone==='danger'?'border-destructive/20 bg-destructive/5':'bg-muted/40')}>{footer}</CardFooter>}
+  </Card>;
 }
 
 /* ---------- Status ---------- */
@@ -59,7 +72,7 @@ const TONE_CLASSES={
 const DOT_CLASSES={success:'bg-emerald-500',warning:'bg-amber-500',info:'bg-brand',danger:'bg-destructive',neutral:'bg-muted-foreground/60'};
 
 export function ToneBadge({tone='neutral',children,pulse=false,className}){
-  return <Badge variant="outline" className={cn('gap-1.5 font-medium capitalize',TONE_CLASSES[tone],className)}>
+  return <Badge variant="outline" className={cn('h-auto gap-1.5 rounded-full px-2 py-0.5 text-[11.5px] font-medium capitalize',TONE_CLASSES[tone],className)}>
     <span className={cn('size-1.5 rounded-full',DOT_CLASSES[tone],pulse&&'animate-pulse')} aria-hidden/>
     {children}
   </Badge>;
@@ -95,15 +108,15 @@ export function StatGridSkeleton({count=4}){
 }
 
 export function CardSkeleton({lines=3,className}){
-  return <Card className={className}><CardHeader className="space-y-3"><Shimmer className="h-5 w-40"/><Shimmer className="h-3.5 w-64 max-w-full"/></CardHeader><div className="space-y-3 px-(--card-spacing) pb-(--card-spacing)">{Array.from({length:lines},(_,index)=><Shimmer key={index} className="h-9 w-full"/>)}</div></Card>;
+  return <div className={cn('grid gap-4 rounded-2xl border bg-card p-6',className)} aria-busy="true" aria-label="Loading"><Shimmer className="h-5 w-40"/><Shimmer className="h-3.5 w-64 max-w-full"/>{Array.from({length:lines},(_,index)=><Shimmer key={index} className="h-10 w-full rounded-xl"/>)}</div>;
 }
 
 export function GallerySkeleton({count=6}){
-  return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{Array.from({length:count},(_,index)=><div key={index} className="overflow-hidden rounded-xl border"><Shimmer className="aspect-video w-full rounded-none"/><div className="space-y-2 p-3"><Shimmer className="h-4 w-3/4"/><Shimmer className="h-3 w-1/2"/></div></div>)}</div>;
+  return <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">{Array.from({length:count},(_,index)=><div key={index} className="overflow-hidden rounded-2xl border bg-card"><Shimmer className="aspect-[4/3] w-full rounded-none"/><div className="space-y-2 p-3"><Shimmer className="h-4 w-3/4"/><Shimmer className="h-3 w-1/2"/></div></div>)}</div>;
 }
 
 export function PageSkeleton(){
-  return <div className="grid gap-6"><div className="space-y-2"><Shimmer className="h-7 w-48"/><Shimmer className="h-4 w-80 max-w-full"/></div><StatGridSkeleton/><TableSkeleton/></div>;
+  return <div className="grid gap-8"><div className="space-y-3"><Shimmer className="h-4 w-20"/><Shimmer className="h-10 w-72 max-w-full"/><Shimmer className="h-4 w-80 max-w-full"/></div><StatGridSkeleton/><TableSkeleton/></div>;
 }
 
 /* ---------- Empty and error states ---------- */
@@ -120,19 +133,17 @@ export function EmptyState({icon:Icon,title,description,action,className}){
 }
 
 export function ErrorState({error,onRetry,title='Something went wrong'}){
-  return <Alert variant="destructive">
-    <AlertCircle/>
-    <AlertTitle>{title}</AlertTitle>
-    <AlertDescription className="flex flex-wrap items-center gap-3">
+  return <Callout type="danger" title={title}>
+    <span className="flex flex-wrap items-center gap-3">
       <span>{error?.message||String(error||'The request failed.')}</span>
-      {onRetry&&<Button type="button" size="sm" variant="outline" onClick={()=>onRetry()}><RefreshCw/>Try again</Button>}
-    </AlertDescription>
-  </Alert>;
+      {onRetry&&<Button type="button" size="sm" variant="outline" className="rounded-full" onClick={()=>onRetry()}><RefreshCw/>Try again</Button>}
+    </span>
+  </Callout>;
 }
 
 export function InlineError({error}){
   if(!error)return null;
-  return <Alert variant="destructive"><AlertCircle/><AlertDescription>{error.message||String(error)}</AlertDescription></Alert>;
+  return <Callout type="danger" title="That didn’t work">{error.message||String(error)}</Callout>;
 }
 
 /* ---------- Dialogs ---------- */
@@ -154,12 +165,12 @@ export function FormDialog({open,onOpenChange,title,description,submitLabel='Sav
   return <Dialog open={open} onOpenChange={next=>{if(!busy)onOpenChange(next);}}>
     <DialogContent className={cn('max-h-[92vh] overflow-y-auto rounded-2xl',size==='lg'?'sm:max-w-2xl':size==='sm'?'sm:max-w-sm':'sm:max-w-lg')}>
       <form onSubmit={submit} className="grid gap-5">
-        <DialogHeader><DialogTitle>{title}</DialogTitle>{description&&<DialogDescription>{description}</DialogDescription>}</DialogHeader>
+        <DialogHeader><DialogTitle className="text-xl font-semibold tracking-[-0.025em]">{title}</DialogTitle>{description&&<DialogDescription>{description}</DialogDescription>}</DialogHeader>
         <div className="grid gap-4">{children}</div>
         <InlineError error={error}/>
         {!hideFooter&&(footer||<DialogFooter>
-          <Button type="button" variant="outline" disabled={busy} onClick={()=>onOpenChange(false)}>Cancel</Button>
-          <Button type="submit" variant={destructive?'destructive':'default'} disabled={busy||submitDisabled}>{busy&&<Spinner/>}{busy?(busyLabel||'Saving…'):submitLabel}</Button>
+          <Button type="button" variant="ghost" className="rounded-full" disabled={busy} onClick={()=>onOpenChange(false)}>Cancel</Button>
+          <Button type="submit" variant={destructive?'destructive':'default'} className="rounded-full px-5" disabled={busy||submitDisabled}>{busy&&<Spinner/>}{busy?(busyLabel||'Saving…'):submitLabel}</Button>
         </DialogFooter>)}
       </form>
     </DialogContent>
@@ -170,7 +181,7 @@ export function FormDialog({open,onOpenChange,title,description,submitLabel='Sav
 export function InfoDialog({open,onOpenChange,title,description,children,size='md',footer,dismissible=true}){
   return <Dialog open={open} onOpenChange={next=>{if(dismissible||next)onOpenChange(next);}}>
     <DialogContent showCloseButton={dismissible} onInteractOutside={event=>{if(!dismissible)event.preventDefault();}} onEscapeKeyDown={event=>{if(!dismissible)event.preventDefault();}} className={cn('max-h-[92vh] overflow-y-auto rounded-2xl',size==='xl'?'sm:max-w-5xl':size==='lg'?'sm:max-w-2xl':'sm:max-w-lg')}>
-      <DialogHeader><DialogTitle>{title}</DialogTitle>{description&&<DialogDescription>{description}</DialogDescription>}</DialogHeader>
+      <DialogHeader><DialogTitle className="text-xl font-semibold tracking-[-0.025em]">{title}</DialogTitle>{description&&<DialogDescription>{description}</DialogDescription>}</DialogHeader>
       {children}
       {footer&&<DialogFooter>{footer}</DialogFooter>}
     </DialogContent>
@@ -193,13 +204,13 @@ export function ConfirmDialog({open,onOpenChange,title,description,confirmLabel=
   return <AlertDialog open={open} onOpenChange={next=>{if(!busy)onOpenChange(next);}}>
     <AlertDialogContent className="rounded-2xl">
       <form onSubmit={confirm} className="grid gap-4">
-        <AlertDialogHeader><AlertDialogTitle>{title}</AlertDialogTitle>{description&&<AlertDialogDescription>{description}</AlertDialogDescription>}</AlertDialogHeader>
+        <AlertDialogHeader><AlertDialogTitle className="text-xl font-semibold tracking-[-0.025em]">{title}</AlertDialogTitle>{description&&<AlertDialogDescription>{description}</AlertDialogDescription>}</AlertDialogHeader>
         {children}
         {confirmText!==undefined&&<Field><FieldLabel htmlFor={inputId}>Type <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{confirmText}</span> to confirm</FieldLabel><Input id={inputId} autoComplete="off" autoFocus value={typed} onChange={event=>setTyped(event.target.value)}/></Field>}
         <InlineError error={error}/>
         <AlertDialogFooter>
-          <Button type="button" variant="outline" disabled={busy} onClick={()=>onOpenChange(false)}>Cancel</Button>
-          <Button type="submit" variant={destructive?'destructive':'default'} disabled={busy||blocked}>{busy&&<Spinner/>}{busy?busyLabel:confirmLabel}</Button>
+          <Button type="button" variant="ghost" className="rounded-full" disabled={busy} onClick={()=>onOpenChange(false)}>Cancel</Button>
+          <Button type="submit" variant={destructive?'destructive':'default'} className="rounded-full px-5" disabled={busy||blocked}>{busy&&<Spinner/>}{busy?busyLabel:confirmLabel}</Button>
         </AlertDialogFooter>
       </form>
     </AlertDialogContent>
@@ -248,7 +259,22 @@ export function CopyField({value,label,description,masked=false,id}){
   </Field>;
 }
 
-export {CodeBlock,Callout,Reveal,LanguageProvider} from '@/components/design/system';
+export {CodeBlock,Callout,Reveal,LanguageProvider};
+
+// A secret in a dark window, like the docs code blocks, with reveal and copy.
+export function SecretWindow({value,label='Secret'}){
+  const [shown,setShown]=useState(true);
+  const [copy,copied]=useCopy();
+  return <div className="dark overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b0d] text-white/90">
+    <div className="flex h-10 items-center gap-2 border-b border-white/10 pr-2 pl-4"><span className="font-mono text-xs text-white/55">{label}</span>
+      <span className="ml-auto flex gap-1">
+        <button type="button" onClick={()=>setShown(value=>!value)} aria-label={shown?'Hide value':'Show value'} className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-white/60 hover:bg-white/10 hover:text-white">{shown?<EyeOff className="size-3.5"/>:<Eye className="size-3.5"/>}{shown?'Hide':'Show'}</button>
+        <button type="button" onClick={()=>copy(value,label)} className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-white/60 hover:bg-white/10 hover:text-white">{copied?<Check className="size-3.5"/>:<Copy className="size-3.5"/>}{copied?'Copied':'Copy'}</button>
+      </span>
+    </div>
+    <p className="px-4 py-4 font-mono text-[13px] leading-relaxed break-all select-all">{shown?value:'•'.repeat(Math.min(40,String(value).length))}</p>
+  </div>;
+}
 
 // Shows a one-time secret. The Done button stays disabled until the user confirms they saved it.
 export function SecretReveal({secret,label='Secret',warning,children,onDone,doneLabel='Done'}){
@@ -256,11 +282,11 @@ export function SecretReveal({secret,label='Secret',warning,children,onDone,done
   const id=useId();
   return <div className="grid gap-4">
     <Callout type="warning" title="Copy it now">{warning||'This is the only time the full value is shown. Store it somewhere safe.'}</Callout>
-    <CopyField value={secret} label={label}/>
+    <SecretWindow value={secret} label={label}/>
     {children}
     {onDone&&<div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
       <label htmlFor={id} className="flex cursor-pointer items-center gap-2 text-sm"><input id={id} type="checkbox" className="size-4 accent-[var(--brand)]" checked={saved} onChange={event=>setSaved(event.target.checked)}/>I’ve saved it somewhere safe</label>
-      <Button type="button" disabled={!saved} onClick={onDone}>{doneLabel}</Button>
+      <Button type="button" className="rounded-full px-5" disabled={!saved} onClick={onDone}>{doneLabel}</Button>
     </div>}
   </div>;
 }
@@ -303,8 +329,8 @@ export function IdPill({value,length=14}){
 }
 
 export function DescriptionList({items,className}){
-  return <dl className={cn('grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[10rem_1fr]',className)}>
-    {items.filter(Boolean).map(([term,value])=><div key={term} className="contents"><dt className="text-muted-foreground">{term}</dt><dd className="min-w-0 break-words">{value??'—'}</dd></div>)}
+  return <dl className="divide-y overflow-hidden rounded-2xl border text-sm">
+    {items.filter(Boolean).map(([term,value])=><div key={term} className={cn('grid gap-1 px-4 py-3 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-6',className)}><dt className="text-muted-foreground">{term}</dt><dd className="min-w-0 break-words">{value??'—'}</dd></div>)}
   </dl>;
 }
 
@@ -317,7 +343,7 @@ export function UsageMeter({used,quota,label,showText=true}){
   const share=percent(used,quota);
   return <div className="grid gap-1.5">
     {showText&&<div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground"><span className="tabular-nums">{Number(used||0).toLocaleString()} / {Number(quota||0).toLocaleString()} pages</span><span className={cn('tabular-nums',share>=90&&'text-destructive',share>=70&&share<90&&'text-amber-600 dark:text-amber-400')}>{share}%</span></div>}
-    <Progress value={share} aria-label={label} className={share>=90?'[&>*]:bg-destructive':share>=70?'[&>*]:bg-amber-500':'[&>*]:bg-brand'}/>
+    <Progress value={share} aria-label={label} className={cn('h-1.5',share>=90?'[&>*]:bg-destructive':share>=70?'[&>*]:bg-amber-500':'[&>*]:bg-brand')}/>
   </div>;
 }
 
@@ -327,9 +353,9 @@ export function MiniBars({data,valueLabel='value',height=96}){
   return <figure className="grid gap-2">
     <div className="relative flex items-end gap-2 border-b" style={{height}} aria-hidden>
       {[25,50,75].map(line=><span key={line} className="pointer-events-none absolute inset-x-0 border-t border-dashed border-border/70" style={{bottom:`${line}%`}}/>)}
-      {data.map(item=><Tooltip key={item.label}><TooltipTrigger asChild><div className="group relative flex h-full flex-1 items-end"><div className={cn('w-full rounded-t-md bg-gradient-to-t from-brand/35 to-brand/90 transition-opacity group-hover:opacity-100',item.value?'opacity-85':'bg-none bg-muted')} style={{height:`${Math.max(3,(item.value/max)*100)}%`}}/></div></TooltipTrigger><TooltipContent>{item.label}: {item.value.toLocaleString()} {valueLabel}</TooltipContent></Tooltip>)}
+      {data.map((item,index)=><Tooltip key={item.label}><TooltipTrigger asChild><div className="group relative flex h-full flex-1 items-end"><div className={cn('w-full rounded-t-md bg-gradient-to-t from-brand/35 to-brand/90 transition-opacity group-hover:opacity-100',item.value?(index===data.length-1?'opacity-100':'opacity-70'):'bg-none bg-muted')} style={{height:`${Math.max(3,(item.value/max)*100)}%`}}/></div></TooltipTrigger><TooltipContent>{item.label}: {item.value.toLocaleString()} {valueLabel}</TooltipContent></Tooltip>)}
     </div>
-    <div className="flex gap-1.5 text-[10px] text-muted-foreground" aria-hidden>{data.map(item=><span key={item.label} className="flex-1 truncate text-center">{item.short||item.label}</span>)}</div>
+    <div className="flex gap-2 text-[10px] text-muted-foreground" aria-hidden>{data.map((item,index)=><span key={item.label} className={cn('flex-1 truncate text-center',index===data.length-1&&'font-medium text-foreground')}>{index===data.length-1?'Today':item.short||item.label}</span>)}</div>
     <table className="sr-only"><caption>{valueLabel} per day</caption><tbody>{data.map(item=><tr key={item.label}><th>{item.label}</th><td>{item.value}</td></tr>)}</tbody></table>
   </figure>;
 }
@@ -342,38 +368,54 @@ export function RowActions({items,label='Actions'}){
   if(!visible.length)return null;
   return <DropdownMenu>
     <DropdownMenuTrigger asChild><Button type="button" variant="ghost" size="icon-sm" aria-label={label} onClick={event=>event.stopPropagation()}><MoreHorizontal/></Button></DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-52" onClick={event=>event.stopPropagation()}>
+    <DropdownMenuContent align="end" className="w-56 p-1.5" onClick={event=>event.stopPropagation()}>
       <DropdownMenuLabel className="text-xs text-muted-foreground">{label}</DropdownMenuLabel>
       {visible.map((item,index)=>item==='separator'
         ?<DropdownMenuSeparator key={`separator-${index}`}/>
-        :<DropdownMenuItem key={item.label} variant={item.destructive?'destructive':'default'} disabled={item.disabled} onSelect={item.onSelect}>{item.icon&&<item.icon/>}{item.label}</DropdownMenuItem>)}
+        :<DropdownMenuItem key={item.label} className="py-2" variant={item.destructive?'destructive':'default'} disabled={item.disabled} onSelect={item.onSelect}>{item.icon&&<item.icon/>}{item.label}</DropdownMenuItem>)}
     </DropdownMenuContent>
   </DropdownMenu>;
 }
 
 // A table with a shimmer while loading, an empty state, an error state, and optional row links.
-// columns: [{key, header, cell(row), className, headClassName}]
+// On phones each row becomes a card. columns: [{key, header, cell(row), className, headClassName, mobile:false}]
 export function DataTable({columns,rows,loading,error,onRetry,empty,rowKey='id',onRowClick,selectedKey,footer,toolbar,skeletonRows=5,caption}){
   const showSkeleton=loading&&!rows?.length;
+  const keyOf=row=>typeof rowKey==='function'?rowKey(row):row[rowKey];
+  const actions=columns.find(column=>column.key==='actions');
+  const [primary,...rest]=columns.filter(column=>column.key!=='actions'&&column.mobile!==false);
   return <div className="grid gap-3">
     {toolbar}
     {error&&!rows?.length?<ErrorState error={error} onRetry={onRetry} title="Couldn’t load this list"/>
     :showSkeleton?<TableSkeleton rows={skeletonRows} columns={Math.min(columns.length,6)}/>
     :!rows?.length?empty
-    :<div className="overflow-hidden rounded-2xl border bg-card">
-      <Table>
-        {caption&&<caption className="sr-only">{caption}</caption>}
-        <TableHeader className="bg-muted/50"><TableRow className="hover:bg-transparent">{columns.map(column=><TableHead key={column.key} className={cn('h-10 text-xs font-medium tracking-wide text-muted-foreground uppercase',column.headClassName)}>{column.header}</TableHead>)}</TableRow></TableHeader>
-        <TableBody className={cn(loading&&'opacity-60 transition-opacity')}>
-          {rows.map(row=>{
-            const key=typeof rowKey==='function'?rowKey(row):row[rowKey];
-            return <TableRow key={key} data-state={selectedKey===key?'selected':undefined} className={cn(onRowClick&&'cursor-pointer')} onClick={onRowClick?()=>onRowClick(row):undefined} onKeyDown={onRowClick?event=>{if(event.key==='Enter'&&event.target===event.currentTarget)onRowClick(row);}:undefined} tabIndex={onRowClick?0:undefined}>
-              {columns.map(column=><TableCell key={column.key} className={cn('py-3',column.className)}>{column.cell?column.cell(row):row[column.key]}</TableCell>)}
-            </TableRow>;
-          })}
-        </TableBody>
-      </Table>
-    </div>}
+    :<>
+      <div className="hidden overflow-hidden rounded-2xl border bg-card sm:block">
+        <Table>
+          {caption&&<caption className="sr-only">{caption}</caption>}
+          <TableHeader className="bg-muted/50"><TableRow className="hover:bg-transparent">{columns.map(column=><TableHead key={column.key} className={cn('h-10 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase',column.headClassName)}>{column.header}</TableHead>)}</TableRow></TableHeader>
+          <TableBody className={cn(loading&&'opacity-60 transition-opacity')}>
+            {rows.map(row=>{
+              const key=keyOf(row);
+              return <TableRow key={key} data-state={selectedKey===key?'selected':undefined} className={cn(onRowClick&&'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--ring)]')} onClick={onRowClick?()=>onRowClick(row):undefined} onKeyDown={onRowClick?event=>{if(event.key==='Enter'&&event.target===event.currentTarget)onRowClick(row);}:undefined} tabIndex={onRowClick?0:undefined}>
+                {columns.map(column=><TableCell key={column.key} className={cn('py-3.5',column.className)}>{column.cell?column.cell(row):row[column.key]}</TableCell>)}
+              </TableRow>;
+            })}
+          </TableBody>
+        </Table>
+      </div>
+      <ul className={cn('grid gap-2 sm:hidden',loading&&'opacity-60')} aria-label={caption}>
+        {rows.map(row=>{
+          const key=keyOf(row);
+          return <li key={key} className={cn('rounded-2xl border bg-card p-4',onRowClick&&'cursor-pointer active:bg-muted/50',selectedKey===key&&'border-[var(--ring)]')} onClick={onRowClick?()=>onRowClick(row):undefined}>
+            <div className="flex items-start gap-3"><div className="min-w-0 flex-1">{primary&&(primary.cell?primary.cell(row):row[primary.key])}</div>{actions&&<div onClick={event=>event.stopPropagation()}>{actions.cell(row)}</div>}</div>
+            {rest.length>0&&<dl className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 border-t pt-3 text-sm">
+              {rest.map(column=><div key={column.key} className="contents"><dt className="text-xs text-muted-foreground">{typeof column.header==='string'?column.header:''}</dt><dd className="min-w-0 justify-self-end text-right">{column.cell?column.cell(row):row[column.key]}</dd></div>)}
+            </dl>}
+          </li>;
+        })}
+      </ul>
+    </>}
     {footer}
   </div>;
 }
@@ -383,18 +425,22 @@ export function TableToolbar({children,end}){
 }
 
 export function SearchInput({value,onChange,placeholder='Search…',className}){
-  return <Input type="search" data-search-input value={value} onChange={event=>onChange(event.target.value)} placeholder={placeholder} aria-label={placeholder} className={cn('h-8 w-full sm:w-64',className)}/>;
+  return <InputGroup className={cn('h-9 w-full rounded-xl bg-card shadow-sm sm:w-72',className)}>
+    <InputGroupAddon><Search/></InputGroupAddon>
+    <InputGroupInput type="search" data-search-input value={value} onChange={event=>onChange(event.target.value)} placeholder={placeholder} aria-label={placeholder}/>
+    {!value&&<InputGroupAddon align="inline-end" className="hidden sm:flex"><InputGroupText><kbd className="rounded border bg-muted px-1.5 font-mono text-[10px]">/</kbd></InputGroupText></InputGroupAddon>}
+  </InputGroup>;
 }
 
 export function LoadMore({onClick,loading,children='Load more'}){
-  return <div className="flex justify-center"><Button type="button" variant="outline" disabled={loading} onClick={onClick}>{loading&&<Spinner/>}{loading?'Loading…':children}</Button></div>;
+  return <div className="flex justify-center"><Button type="button" variant="outline" className="rounded-full px-5" disabled={loading} onClick={onClick}>{loading&&<Spinner/>}{loading?'Loading…':children}</Button></div>;
 }
 
 /* ---------- Form controls ---------- */
 
 export function SwitchField({label,description,checked,onChange,disabled=false}){
   const id=useId();
-  return <Field orientation="horizontal" className="rounded-lg border p-4">
+  return <Field orientation="horizontal" className="rounded-2xl border bg-card p-4">
     <FieldContent><FieldLabel htmlFor={id}>{label}</FieldLabel>{description&&<FieldDescription>{description}</FieldDescription>}</FieldContent>
     <Switch id={id} checked={checked} onCheckedChange={onChange} disabled={disabled}/>
   </Field>;
@@ -419,9 +465,9 @@ export function PasswordInput({id,value,onChange,autoComplete='current-password'
 // Appears at the bottom of a settings form once something changed.
 export function SaveBar({dirty,busy,onSave,onReset,message='You have unsaved changes'}){
   if(!dirty)return null;
-  return <div role="status" className="fixed bottom-4 left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 animate-in slide-in-from-bottom-4 items-center justify-between gap-3 rounded-xl border bg-popover p-3 pl-4 text-popover-foreground shadow-xl md:left-[calc(50%+8rem)]">
+  return <div role="status" className="fixed bottom-5 left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 animate-in slide-in-from-bottom-4 items-center justify-between gap-3 rounded-full border bg-popover py-2 pr-2 pl-5 text-popover-foreground shadow-2xl md:left-[calc(50%+8rem)]">
     <span className="text-sm">{message}</span>
-    <div className="flex gap-2"><Button type="button" variant="ghost" size="sm" disabled={busy} onClick={onReset}>Discard</Button><Button type="button" size="sm" disabled={busy} onClick={onSave}>{busy&&<Spinner/>}{busy?'Saving…':'Save changes'}</Button></div>
+    <div className="flex gap-2"><Button type="button" variant="ghost" size="sm" className="rounded-full" disabled={busy} onClick={onReset}>Discard</Button><Button type="button" size="sm" className="rounded-full px-4" disabled={busy} onClick={onSave}>{busy&&<Spinner/>}{busy?'Saving…':'Save changes'}</Button></div>
   </div>;
 }
 
