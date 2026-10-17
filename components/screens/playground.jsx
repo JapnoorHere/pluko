@@ -3,7 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {AlertTriangle,FolderPlus,Plus,RotateCcw,SlidersHorizontal,Sparkles,X} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,ErrorState,IdPill,InlineError,Kbd,PageHeader,StatusBadge,SwitchField,EmptyState,toast} from '@/components/workspace/ui';
+import {CardSkeleton,ErrorState,IdPill,InlineError,Kbd,PageHeader,StatusBadge,SwitchField,EmptyState,toast,BrandProgress} from '@/components/workspace/ui';
 import {JobHeaderActions} from '@/components/screens/job-detail';
 import {ResultsGallery,useJob} from '@/components/screens/job-results';
 import {estimatePages,parseDomains,parseQueries} from '@/lib/search-form';
@@ -13,7 +13,7 @@ import {Button} from '@/components/ui/button';
 import {Card,CardContent,CardDescription,CardFooter,CardHeader,CardTitle} from '@/components/ui/card';
 import {Field,FieldDescription,FieldLabel} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
-import {Progress} from '@/components/ui/progress';
+
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {Separator} from '@/components/ui/separator';
 import {Sheet,SheetContent,SheetDescription,SheetFooter,SheetHeader,SheetTitle} from '@/components/ui/sheet';
@@ -43,7 +43,7 @@ function LiveJob({id,onReset}){
           <div className="flex flex-wrap items-center gap-2"><CardTitle>Results</CardTitle><StatusBadge status={job.status}/><IdPill value={job.id} length={18}/></div>
           <div className="flex flex-wrap gap-2"><JobHeaderActions job={job} active={active} reload={reload} compact/><Button type="button" variant="ghost" onClick={onReset}><RotateCcw/>New search</Button></div>
         </div>
-        <div className="grid gap-1.5"><div className="flex justify-between text-xs text-muted-foreground"><span className="tabular-nums">{job.returned.toLocaleString()} of {Number(job.requested).toLocaleString()} found</span><span className="tabular-nums">{share}%</span></div><Progress value={share} aria-label="Search progress"/></div>
+        <div className="grid gap-1.5"><div className="flex justify-between text-xs text-muted-foreground"><span className="tabular-nums">{job.returned.toLocaleString()} of {Number(job.requested).toLocaleString()} found</span><span className="tabular-nums">{share}%</span></div><BrandProgress value={share} aria-label="Search progress"/></div>
       </CardHeader>
     </Card>
     <ResultsGallery jobId={job.id} images={images} active={active} more={more} loadMore={loadMore} loadingMore={loadingMore} expected={job.requested}/>
@@ -121,7 +121,7 @@ export function Playground(){
           <div className="flex justify-between"><span className="text-muted-foreground">Images requested</span><span className="font-medium tabular-nums">{pages===null||!list.length?'—':(Number(count)*list.length).toLocaleString()}</span></div>
           <div className="flex justify-between"><span className="text-muted-foreground">Provider pages, at most</span><span className="font-medium tabular-nums">{pages===null||!list.length?'—':pages.toLocaleString()}</span></div>
           <Separator/>
-          {projectUsage?<div className="grid gap-1.5"><div className="flex justify-between text-xs"><span className="text-muted-foreground">Left today in this project</span><span className="tabular-nums">{projectUsage.pages_remaining.toLocaleString()} pages</span></div><Progress value={percent(projectUsage.pages_used,projectUsage.pages_quota)} aria-label="Daily usage"/></div>:<div className="h-8 animate-pulse rounded bg-muted"/>}
+          {projectUsage?<div className="grid gap-1.5"><div className="flex justify-between text-xs"><span className="text-muted-foreground">Left today in this project</span><span className="tabular-nums">{projectUsage.pages_remaining.toLocaleString()} pages</span></div><BrandProgress value={percent(projectUsage.pages_used,projectUsage.pages_quota)} aria-label="Daily usage"/></div>:<div className="h-8 animate-pulse rounded bg-muted"/>}
           {overQuota&&<p className="flex gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-xs text-amber-700 dark:text-amber-400"><AlertTriangle className="size-4 shrink-0"/>This may use more than today’s remaining pages, so the job can finish as partial.</p>}
           <InlineError error={error}/>
         </CardContent>

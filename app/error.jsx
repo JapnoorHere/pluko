@@ -4,7 +4,7 @@ import Link from "next/link";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicShell } from "@/components/site/ui";
-import site from "@/components/site/site.module.css";
+import site from "@/components/design/design.module.css";
 
 export default function Error({ error, reset }) {
   useEffect(() => {

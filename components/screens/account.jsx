@@ -28,7 +28,7 @@ function Profile(){
     <Card>
       <CardHeader><CardTitle>Your profile</CardTitle><CardDescription>How you appear in Pluko and in audit history.</CardDescription></CardHeader>
       <CardContent className="grid gap-6">
-        <div className="flex items-center gap-4"><Avatar className="size-14 rounded-xl"><AvatarFallback className="rounded-xl bg-primary/15 text-lg font-semibold text-primary">{initials(me.email)}</AvatarFallback></Avatar><div><p className="font-medium">{me.email}</p><p className="text-sm text-muted-foreground">{me.role==='admin'?'Administrator':'Customer'} account</p></div></div>
+        <div className="flex items-center gap-4"><Avatar className="size-14 rounded-xl"><AvatarFallback className="rounded-xl bg-brand/15 text-lg font-semibold text-brand">{initials(me.email)}</AvatarFallback></Avatar><div><p className="font-medium">{me.email}</p><p className="text-sm text-muted-foreground">{me.role==='admin'?'Administrator':'Customer'} account</p></div></div>
         <div className="grid gap-4 sm:grid-cols-2"><CopyField value={me.email} label="Email address" description="Email changes aren’t supported yet."/><CopyField value={me.id} label="Account ID" description="Share this with support if you need help."/></div>
       </CardContent>
     </Card>
@@ -113,7 +113,7 @@ function Appearance(){
   return <Card>
     <CardHeader><CardTitle>Theme</CardTitle><CardDescription>Applies to the workspace on this browser. The public site always uses dark.</CardDescription></CardHeader>
     <CardContent><div role="radiogroup" aria-label="Theme" className="grid gap-3 sm:grid-cols-3">
-      {options.map(([value,label,Icon,hint])=><button key={value} type="button" role="radio" aria-checked={theme===value} onClick={()=>{setTheme(value);toast.success(`${label} theme`);}} className={cn('grid gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-muted/40',theme===value&&'border-primary ring-2 ring-primary/30')}>
+      {options.map(([value,label,Icon,hint])=><button key={value} type="button" role="radio" aria-checked={theme===value} onClick={()=>{setTheme(value);toast.success(`${label} theme`);}} className={cn('grid gap-3 rounded-xl border p-3 text-left transition-colors hover:bg-muted/40',theme===value&&'border-brand ring-2 ring-brand/30')}>
         <span className={cn('flex h-20 items-end gap-1.5 rounded-lg border p-2',value==='light'?'bg-white':value==='dark'?'bg-neutral-900':'bg-gradient-to-r from-white from-50% to-neutral-900 to-50%')}>
           <span className={cn('h-full w-1/4 rounded',value==='light'?'bg-neutral-100':'bg-neutral-800')}/><span className="flex flex-1 flex-col gap-1.5"><span className={cn('h-2 w-2/3 rounded',value==='light'?'bg-neutral-200':'bg-neutral-700')}/><span className="h-2 w-1/3 rounded bg-indigo-400"/></span>
         </span>

@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Archive,Database,Eraser,HardDrive,Rows3,Sparkles} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,ConfirmDialog,DataTable,ErrorState,PageHeader,SaveBar,StatCard,StatGridSkeleton,toast} from '@/components/workspace/ui';
+import {CardSkeleton,ConfirmDialog,DataTable,ErrorState,PageHeader,SaveBar,StatCard,StatGridSkeleton,toast,StatGrid} from '@/components/workspace/ui';
 import {compactNumber,settingsPayload} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
@@ -62,11 +62,11 @@ export function AdminStorage(){
     <PageHeader title="Storage & retention" description="Pluko stores metadata and operational logs, never downloaded image files. Retention runs automatically from the worker."
       actions={<><Button type="button" variant="outline" disabled={backingUp||!data} onClick={backup}>{backingUp?<Spinner/>:<Archive/>}Create backup</Button><Button type="button" variant="outline" disabled={!stored} onClick={()=>setCleaning('all')}><Sparkles/>Apply all cleanup</Button></>}/>
     {storage.error?<ErrorState error={storage.error} onRetry={storage.reload}/>:!data?<StatGridSkeleton count={3}/>:
-    <div className="grid gap-4 sm:grid-cols-3">
+    <StatGrid columns={3}>
       <StatCard label="Records" value={compactNumber(totals.records)} icon={Rows3} hint={`Across ${data.tables.length} tables`}/>
       <StatCard label="On disk" value={bytes(totals.size)} icon={HardDrive} hint={`${data.files.length} data files`}/>
       <StatCard label="Local backups" value={data.backups.length} icon={Archive} hint={backups[0]?`Latest ${backups[0]}`:'None yet'}/>
-    </div>}
+    </StatGrid>}
 
     {!draft?<CardSkeleton lines={2}/>:<Card>
       <CardHeader><CardTitle>Retention policy</CardTitle><CardDescription>How long each kind of record is kept, in days (1–3650).</CardDescription></CardHeader>

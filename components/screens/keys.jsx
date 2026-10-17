@@ -76,7 +76,7 @@ export function CreateKeyDialog({open,onOpenChange,projects,defaultProject,onCre
           <Field><FieldLabel htmlFor="key-days">Expires after</FieldLabel><Select value={days} onValueChange={setDays}><SelectTrigger id="key-days" className="w-full"><SelectValue/></SelectTrigger><SelectContent>{EXPIRY.map(([value,label])=><SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></Field>
         </div>
         <fieldset className="grid gap-2"><legend className="mb-2 text-sm font-medium">Permissions</legend>
-          {SCOPES.map(([scope,label,hint])=><Label key={scope} htmlFor={`scope-${scope}`} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-primary/50 has-[[data-state=checked]]:bg-primary/5">
+          {SCOPES.map(([scope,label,hint])=><Label key={scope} htmlFor={`scope-${scope}`} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-brand/50 has-[[data-state=checked]]:bg-brand/5">
             <Checkbox id={`scope-${scope}`} checked={scopes.includes(scope)} onCheckedChange={value=>toggle(scope,value===true)} className="mt-0.5"/>
             <span className="grid gap-0.5"><span className="text-sm font-medium">{label}</span><span className="text-xs text-muted-foreground">{hint}</span></span>
           </Label>)}

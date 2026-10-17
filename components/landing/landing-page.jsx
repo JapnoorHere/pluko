@@ -12,7 +12,7 @@ import {Button} from '@/components/ui/button';
 import {Eyebrow,PublicShell,Reveal} from '@/components/site/ui';
 import {HeroDemo} from './hero-demo';
 import {useInView,useScrollProgress} from './hooks';
-import site from '@/components/site/site.module.css';
+import site from '@/components/design/design.module.css';
 import styles from './landing.module.css';
 
 const ALL_PHOTOS=collections.flatMap(group=>group.photos.map(photo=>({...photo,query:group.query})));

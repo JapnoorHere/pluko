@@ -118,7 +118,7 @@ export function ReportDialog({open,onOpenChange,jobId,image}){
     onSubmit={async()=>{await call('/api/feedback',{job_id:jobId,result_id:image.id,reason,note});toast.success('Thanks. Your report was sent.');}}>
     {image&&<div className="flex items-center gap-3 rounded-lg border p-2"><ResultImage image={image} compact className="size-14 shrink-0 rounded-md object-cover"/><div className="min-w-0 text-sm"><p className="truncate font-medium">{image.title||image.source_domain}</p><p className="truncate text-xs text-muted-foreground">{image.source_domain}</p></div></div>}
     <RadioGroup value={reason} onValueChange={setReason} className="grid gap-2">
-      {REASONS.map(([value,label,hint])=><Label key={value} htmlFor={`reason-${value}`} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-primary/50 has-[[data-state=checked]]:bg-primary/5">
+      {REASONS.map(([value,label,hint])=><Label key={value} htmlFor={`reason-${value}`} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-brand/50 has-[[data-state=checked]]:bg-brand/5">
         <RadioGroupItem id={`reason-${value}`} value={value} className="mt-0.5"/>
         <span className="grid gap-0.5"><span className="text-sm font-medium">{label}</span><span className="text-xs text-muted-foreground">{hint}</span></span>
       </Label>)}
@@ -151,7 +151,7 @@ function Lightbox({images,index,onIndex,onClose,onReport}){
         </div>
         <div className="grid gap-5 md:grid-cols-[1fr_auto]">
           <DescriptionList className="sm:grid-cols-[7rem_1fr]" items={[
-            ['Source',<a key="s" href={image.source_url||image.image_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{image.source_domain}</a>],
+            ['Source',<a key="s" href={image.source_url||image.image_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">{image.source_domain}</a>],
             ['Dimensions',image.width&&image.height?`${image.width} × ${image.height} px (reported by the source)`:'Unknown'],
             ['Licence','Unknown. Check the source before reuse.'],
             ['Watermark','Not checked. Ranking uses title and domain hints only.'],
@@ -199,7 +199,7 @@ export function ResultsGallery({jobId,images,active,more,loadMore,loadingMore,ex
     :<EmptyState icon={ImageOff} title="No images found" description="The source returned nothing new for these queries. Try broader wording or fewer filters."/>;
   return <div className="grid gap-4">
     <div className="flex items-center justify-between gap-3">
-      <p className="text-sm text-muted-foreground" aria-live="polite">{images.length.toLocaleString()} shown{active&&<span className="ml-2 inline-flex items-center gap-1.5 text-primary"><Spinner className="size-3"/>finding more…</span>}</p>
+      <p className="text-sm text-muted-foreground" aria-live="polite">{images.length.toLocaleString()} shown{active&&<span className="ml-2 inline-flex items-center gap-1.5 text-brand"><Spinner className="size-3"/>finding more…</span>}</p>
       <ToggleGroup type="single" variant="outline" size="sm" value={layout} onValueChange={value=>value&&setLayout(value)} aria-label="Result layout">
         <ToggleGroupItem value="grid" aria-label="Grid view"><LayoutGrid/></ToggleGroupItem>
         <ToggleGroupItem value="list" aria-label="List view"><List/></ToggleGroupItem>
@@ -221,7 +221,7 @@ export function QueryBreakdown({queries}){
       const share=Math.min(100,Math.round((query.found/Math.max(1,Number(query.requested)))*100));
       return <li key={query.id} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_12rem_auto] sm:items-center sm:gap-6">
         <div className="min-w-0"><p className="truncate text-sm font-medium">{query.query}</p><p className="text-xs text-muted-foreground">{reasonText(query.reason)}</p></div>
-        <div className="grid gap-1"><div className="flex justify-between text-xs text-muted-foreground"><span className="tabular-nums">{query.found.toLocaleString()} / {Number(query.requested).toLocaleString()}</span><span className="tabular-nums">{share}%</span></div><div className="h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{width:`${share}%`}}/></div></div>
+        <div className="grid gap-1"><div className="flex justify-between text-xs text-muted-foreground"><span className="tabular-nums">{query.found.toLocaleString()} / {Number(query.requested).toLocaleString()}</span><span className="tabular-nums">{share}%</span></div><div className="h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{width:`${share}%`}}/></div></div>
         <QueryStatus status={query.status}/>
       </li>;
     })}
@@ -229,5 +229,5 @@ export function QueryBreakdown({queries}){
 }
 
 function QueryStatus({status}){
-  return <span className={cn('justify-self-start text-xs font-medium capitalize sm:justify-self-end',status==='complete'&&'text-emerald-600 dark:text-emerald-400',status==='partial'&&'text-amber-600 dark:text-amber-400',['queued','running'].includes(status)&&'text-primary',status==='cancelled'&&'text-muted-foreground')}>{status}</span>;
+  return <span className={cn('justify-self-start text-xs font-medium capitalize sm:justify-self-end',status==='complete'&&'text-emerald-600 dark:text-emerald-400',status==='partial'&&'text-amber-600 dark:text-amber-400',['queued','running'].includes(status)&&'text-brand',status==='cancelled'&&'text-muted-foreground')}>{status}</span>;
 }

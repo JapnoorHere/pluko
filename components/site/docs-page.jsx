@@ -11,7 +11,7 @@ import {cn} from '@/lib/utils';
 import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@/components/ui/dialog';
 import {Sheet,SheetContent,SheetHeader,SheetTitle,SheetTrigger} from '@/components/ui/sheet';
 import {BackToTop,Callout,CodeBlock,Heading,LanguageProvider,Prose,PublicShell,SimpleTable,useActiveSection} from './ui';
-import site from './site.module.css';
+import site from '@/components/design/design.module.css';
 
 /* ---------- Navigation and search index ---------- */
 

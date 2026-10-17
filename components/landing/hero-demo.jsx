@@ -4,7 +4,7 @@ import {Check,ImageIcon,Search} from 'lucide-react';
 import {collections} from '@/lib/marketing/content';
 import {cn} from '@/lib/utils';
 import {useInView,usePrefersReducedMotion} from './hooks';
-import site from '@/components/site/site.module.css';
+import site from '@/components/design/design.module.css';
 import styles from './landing.module.css';
 
 const TYPE_MS=45,SEARCH_MS=700,TILE_MS=110,HOLD_MS=4200;

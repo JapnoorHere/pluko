@@ -20,7 +20,7 @@ export function Feedback(){
 
   const columns=[
     {key:'reason',header:'Report',className:'max-w-0 w-full',cell:item=>{const [label,tone]=REASONS[item.reason]||[item.reason,'neutral'];return <div className="grid min-w-0 gap-1"><ToneBadge tone={tone}>{label}</ToneBadge>{item.note&&<p className="truncate text-sm text-muted-foreground" title={item.note}>{item.note}</p>}</div>;}},
-    {key:'job',header:'Job',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:item=><Link href={href('jobs',item.job_id)} onClick={event=>event.stopPropagation()} className="font-mono text-xs text-primary hover:underline">{item.job_id.slice(0,14)}…</Link>},
+    {key:'job',header:'Job',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:item=><Link href={href('jobs',item.job_id)} onClick={event=>event.stopPropagation()} className="font-mono text-xs text-brand hover:underline">{item.job_id.slice(0,14)}…</Link>},
     {key:'result',header:'Result',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell',cell:item=><IdPill value={item.result_id}/>},
     {key:'status',header:'Status',cell:item=><StatusBadge status={item.status||'open'}/>},
     {key:'created',header:'Reported',headClassName:'hidden sm:table-cell',className:'hidden sm:table-cell text-muted-foreground',cell:item=><TimeAgo value={item.created}/>},

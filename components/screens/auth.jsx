@@ -72,7 +72,7 @@ export function AuthScreen({call,onAuthenticated,adminOnly=false}){
       <a href="/" className="relative flex items-center gap-2 text-lg font-semibold"><img src="/logo.svg" alt="" className="size-8"/>Pluko</a>
       <div className="relative mt-auto mb-auto max-w-md space-y-8">
         <div className="space-y-3"><h1 className="text-4xl font-semibold tracking-tight text-balance">Good images, on demand.</h1><p className="text-muted-foreground">Image search infrastructure for products that need the right picture, with its source attached.</p></div>
-        <ul className="grid gap-5">{FEATURES.map(([Icon,heading,text])=><li key={heading} className="flex gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background/60"><Icon className="size-4 text-primary"/></span><div><p className="text-sm font-medium">{heading}</p><p className="text-sm text-muted-foreground">{text}</p></div></li>)}</ul>
+        <ul className="grid gap-5">{FEATURES.map(([Icon,heading,text])=><li key={heading} className="flex gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background/60"><Icon className="size-4 text-brand"/></span><div><p className="text-sm font-medium">{heading}</p><p className="text-sm text-muted-foreground">{text}</p></div></li>)}</ul>
       </div>
       <p className="relative flex items-center gap-2 text-xs text-muted-foreground"><Lock className="size-3.5"/>Metadata only. Pluko never stores image files.</p>
     </section>
@@ -81,7 +81,7 @@ export function AuthScreen({call,onAuthenticated,adminOnly=false}){
       <a href="/" className="mb-10 flex items-center gap-2 font-semibold lg:hidden"><img src="/logo.svg" alt="" className="size-7"/>Pluko</a>
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6">
         <div className="space-y-2">
-          {(adminOnly||mode==='mfa')&&<span className="flex size-10 items-center justify-center rounded-xl border bg-muted/40"><ShieldCheck className="size-5 text-primary"/></span>}
+          {(adminOnly||mode==='mfa')&&<span className="flex size-10 items-center justify-center rounded-xl border bg-muted/40"><ShieldCheck className="size-5 text-brand"/></span>}
           <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
