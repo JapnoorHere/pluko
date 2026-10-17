@@ -53,11 +53,11 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
 
   let lastGroup=null;
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent showCloseButton={false} className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
+    <DialogContent showCloseButton={false} className="top-[16%] translate-y-0 gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:max-w-xl">
       <DialogHeader className="sr-only"><DialogTitle>Command menu</DialogTitle><DialogDescription>Search pages and actions</DialogDescription></DialogHeader>
       <div className="flex items-center gap-2 border-b px-4">
         <Search className="size-4 shrink-0 text-muted-foreground"/>
-        <input autoFocus value={query} onChange={event=>setQuery(event.target.value)} onKeyDown={onKeyDown} placeholder="Type a command, page, or paste a job ID…" aria-label="Search commands" role="combobox" aria-expanded="true" aria-controls="command-results" aria-activedescendant={results[active]?`command-${results[active].id}`:undefined} className="h-12 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"/>
+        <input autoFocus value={query} onChange={event=>setQuery(event.target.value)} onKeyDown={onKeyDown} placeholder="Type a command, page, or paste a job ID…" aria-label="Search commands" role="combobox" aria-expanded="true" aria-controls="command-results" aria-activedescendant={results[active]?`command-${results[active].id}`:undefined} className="h-14 w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"/>
         <Kbd>Esc</Kbd>
       </div>
       <div ref={list} id="command-results" role="listbox" className="max-h-[min(60vh,26rem)] overflow-y-auto p-2">
@@ -67,7 +67,7 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
           const Icon=command.icon;
           return <div key={command.id}>
             {heading&&<div className="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground">{heading}</div>}
-            <button type="button" id={`command-${command.id}`} role="option" aria-selected={index===active} data-index={index} onMouseMove={()=>setActive(index)} onClick={()=>run(command)} className={cn('flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm',index===active&&'bg-accent text-accent-foreground')}>
+            <button type="button" id={`command-${command.id}`} role="option" aria-selected={index===active} data-index={index} onMouseMove={()=>setActive(index)} onClick={()=>run(command)} className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',index===active&&'bg-accent text-accent-foreground')}>
               <Icon className="size-4 text-muted-foreground"/>
               <span className="flex-1">{command.label}</span>
               {command.hint?<Kbd>{command.hint}</Kbd>:index===active&&<ArrowRight className="size-3.5 text-muted-foreground"/>}
@@ -91,7 +91,7 @@ const SHORTCUTS=[
 
 export function ShortcutsDialog({open,onOpenChange}){
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="sm:max-w-lg">
+    <DialogContent className="rounded-2xl sm:max-w-lg">
       <DialogHeader><DialogTitle>Keyboard shortcuts</DialogTitle><DialogDescription>Move around Pluko without the mouse. On a Mac, use ⌘ instead of Ctrl.</DialogDescription></DialogHeader>
       <div className="grid gap-5">
         {SHORTCUTS.map(([group,items])=><div key={group} className="grid gap-2">
