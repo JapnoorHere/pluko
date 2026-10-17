@@ -46,8 +46,8 @@ function UsageCard(){
   const {data}=useResource('/api/usage',{poll:60000,enabled:!mfaRequired&&me.role!=='admin'});
   if(!data?.projects?.length)return null;
   const used=data.projects.reduce((sum,item)=>sum+item.pages_used,0),quota=data.projects.reduce((sum,item)=>sum+item.pages_quota,0);
-  return <Link href={href('overview')} className="mx-2 mb-1 grid gap-2 rounded-lg border bg-background/40 p-3 text-xs transition-colors hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden">
-    <span className="flex items-center justify-between font-medium"><span>Today’s usage</span><span className="text-muted-foreground">resets 00:00 UTC</span></span>
+  return <Link href={href('overview')} className="mx-2 mb-1 grid gap-2 rounded-2xl border bg-card p-3.5 text-xs shadow-sm transition-colors hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden">
+    <span className="flex items-center justify-between gap-2 font-medium"><span>Today’s usage</span><span className="font-normal whitespace-nowrap text-muted-foreground">UTC day</span></span>
     <UsageMeter used={used} quota={quota} label="Pages used today across all projects"/>
   </Link>;
 }
@@ -132,7 +132,7 @@ export function WorkspaceShell({titles,children}){
           <img src="/logo.svg" alt="" className="size-8 shrink-0"/>
           <div className="grid flex-1 text-left text-sm leading-tight"><span className="flex items-center gap-1.5 font-semibold">Pluko<Badge variant="outline" className="h-4 px-1 text-[10px]">Beta</Badge></span><span className="truncate text-xs text-muted-foreground">{audience==='admin'?'Administration':'Image search workspace'}</span></div>
         </Link></SidebarMenuButton></SidebarMenuItem></SidebarMenu>
-        <Button type="button" variant="outline" className="h-8 w-full justify-start gap-2 bg-background/50 text-muted-foreground group-data-[collapsible=icon]:hidden" onClick={openPalette}><Search/>Search or jump to…<Kbd className="ml-auto">Ctrl K</Kbd></Button>
+        <Button type="button" variant="outline" className="h-9 w-full justify-start gap-2 rounded-xl bg-card text-muted-foreground shadow-sm group-data-[collapsible=icon]:hidden" onClick={openPalette}><Search/>Search or jump to…<Kbd className="ml-auto">Ctrl K</Kbd></Button>
       </SidebarHeader>
       <SidebarContent>
         {groups.map(group=><SidebarGroup key={group.label||'main'}>
@@ -149,7 +149,7 @@ export function WorkspaceShell({titles,children}){
       </SidebarFooter>
     </Sidebar>
     <SidebarInset className="min-w-0">
-      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 rounded-t-xl border-b bg-background/85 px-3 backdrop-blur md:px-5">
+      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 rounded-t-xl border-b bg-background/75 px-3 backdrop-blur-xl backdrop-saturate-150 md:px-5">
         <SidebarTrigger className="-ml-1"/>
         <Separator orientation="vertical" className="mx-1 data-[orientation=vertical]:h-4"/>
         <Crumbs titles={titles}/>
@@ -158,7 +158,7 @@ export function WorkspaceShell({titles,children}){
           <Button type="button" variant="ghost" size="sm" className="hidden text-muted-foreground md:inline-flex" onClick={openShortcuts}><Keyboard/>Shortcuts</Button>
         </div>
       </header>
-      <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">{children}</main>
+      <main className="mx-auto flex w-full max-w-7xl min-w-0 flex-1 flex-col gap-8 p-4 md:p-8 lg:px-10 lg:py-10">{children}</main>
     </SidebarInset>
     <CommandPalette open={palette} onOpenChange={setPalette} groups={groups} onShortcuts={openShortcuts}/>
     <ShortcutsDialog open={shortcuts} onOpenChange={setShortcuts}/>
