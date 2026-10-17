@@ -84,7 +84,7 @@ function Endpoint({method,path,scope}){
 
 const c=text=><code className="font-mono">{text}</code>;
 function Params({rows}){
-  return <SimpleTable columns={['Field','Type','Description']} rows={rows.map(([name,type,required,text])=>[<span key="n" className="font-mono text-sm">{name}{required&&<span className="ml-1.5 font-sans text-[11px] font-medium text-rose-600">required</span>}</span>,<span key="t" className="font-mono text-sm text-muted-foreground">{type}</span>,text])}/>;
+  return <SimpleTable columns={['Field','Type','Description']} rows={rows.map(([name,type,required,text])=>[<span key="n" className="font-mono text-sm">{name}{required&&<span className="ml-1.5 font-sans text-[11px] font-medium text-rose-700">required</span>}</span>,<span key="t" className="font-mono text-sm text-muted-foreground">{type}</span>,text])}/>;
 }
 
 function curl(method,route,body){

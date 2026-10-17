@@ -16,8 +16,8 @@
 
 /* Statement words brighten as the section scrolls past. JavaScript sets --on from 0 to 1 per word. */
 .word {
-  opacity: calc(0.16 + var(--on, 1) * 0.84);
-  transition: opacity 0.25s linear;
+  color: color-mix(in oklab, var(--foreground) calc(var(--on, 1) * 100%), var(--muted-foreground));
+  transition: color 0.25s linear;
 }
 
 .marquee {
@@ -54,7 +54,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .marquee { animation: none; }
-  .word { opacity: 1; }
+  .word { color: var(--foreground); }
   .caret { animation: none; }
   .scaleIn { transform: none; }
 }

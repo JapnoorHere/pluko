@@ -17,9 +17,9 @@ export default function NotFound() {
     <PublicShell>
       <section className="relative isolate overflow-hidden px-5 pt-40 pb-28 text-center sm:px-8 sm:pt-48">
         <div className={site.glow} style={{ inset: "10% 15% 30%", opacity: 0.45 }} aria-hidden />
-        <Reveal><p className="font-mono text-sm text-muted-foreground">Error 404</p></Reveal>
-        <Reveal delay={60}><h1 className={`${site.title} mx-auto mt-4 max-w-3xl`}>This page went missing.</h1></Reveal>
-        <Reveal delay={120}><p className={`${site.lede} mx-auto mt-6 max-w-xl`}>The link may be old, or the page may have moved. These are good places to pick things back up.</p></Reveal>
+        <p className={site.rise+" font-mono text-sm text-muted-foreground"}>Error 404</p>
+        <h1 className={`${site.title} ${site.rise} mx-auto mt-4 max-w-3xl`} style={{ "--delay": "60ms" }}>This page went missing.</h1>
+        <p className={`${site.lede} ${site.rise} mx-auto mt-6 max-w-xl`} style={{ "--delay": "120ms" }}>The link may be old, or the page may have moved. These are good places to pick things back up.</p>
         <div className="mx-auto mt-14 grid max-w-4xl gap-3 text-left sm:grid-cols-2 lg:grid-cols-4">
           {links.map(([href, Icon, title, text], index) => (
             <Reveal key={href} delay={180 + index * 50}>

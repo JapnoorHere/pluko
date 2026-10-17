@@ -1,17 +1,14 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {
-  Activity,ArrowRight,ArrowUpRight,Check,ClipboardList,Copy,EyeOff,FileCode2,FolderKanban,KeyRound,Layers,
-  LayoutDashboard,Link2,Search,ShieldCheck,Sparkles,Webhook,Zap,DatabaseZap,BadgeInfo,
-} from 'lucide-react';
+import {Activity,ArrowRight,ArrowUpRight,Check,ClipboardList,Copy,EyeOff,FileCode2,FolderKanban,KeyRound,Layers,LayoutDashboard,Link2,Search,Sparkles,Webhook,Zap,DatabaseZap,BadgeInfo} from 'lucide-react';
 import {collections,faqs,requestExample,responses} from '@/lib/marketing/content';
 import {cn} from '@/lib/utils';
 import {Accordion,AccordionContent,AccordionItem,AccordionTrigger} from '@/components/ui/accordion';
 import {Button} from '@/components/ui/button';
 import {Eyebrow,PublicShell,Reveal} from '@/components/site/ui';
 import {HeroDemo} from './hero-demo';
-import {useInView,useScrollProgress} from './hooks';
+import {useScrollProgress} from './hooks';
 import site from '@/components/design/design.module.css';
 import styles from './landing.module.css';
 
@@ -28,20 +25,20 @@ function Photo({photo,className,eager=false}){
 function Hero(){
   return <section className="relative px-5 pt-32 pb-24 sm:px-8 sm:pt-44 sm:pb-32">
     <div className="mx-auto max-w-[1200px] text-center">
-      <Reveal><Link href="#developers" className="group mb-8 inline-flex items-center gap-2 rounded-full border bg-background/70 py-1 pr-3 pl-1 text-sm text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground">
+      <div className={site.rise}><Link href="#developers" className="group mb-8 inline-flex items-center gap-2 rounded-full border bg-background/70 py-1 pr-3 pl-1 text-sm text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground">
         <span className="rounded-full bg-foreground px-2 py-0.5 text-xs font-medium text-background">Beta</span>Batch search, webhooks<span className="hidden sm:inline"> and a full workspace</span><ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5"/>
-      </Link></Reveal>
-      <Reveal delay={60}><h1 className={site.display}>Every image.<br/>One API.</h1></Reveal>
-      <Reveal delay={120}><p className={cn(site.lede,'mx-auto mt-7 max-w-2xl')}>Search the web for images and get back URLs, sources and metadata your product can use. One query or thousands, in a single job.</p></Reveal>
-      <Reveal delay={180} className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+      </Link></div>
+      <h1 className={cn(site.display,site.rise)} style={{'--delay':'60ms'}}>Every image.<br/>One API.</h1>
+      <p className={cn(site.lede,site.rise,'mx-auto mt-7 max-w-2xl')} style={{'--delay':'120ms'}}>Search the web for images and get back URLs, sources and metadata your product can use. One query or thousands, in a single job.</p>
+      <div className={cn(site.rise,'mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row')} style={{'--delay':'180ms'}}>
         <Button asChild size="lg" className="h-12 rounded-full px-7 text-base"><Link href="/app?mode=register">Get started<ArrowRight/></Link></Button>
         <Button asChild size="lg" variant="ghost" className="h-12 rounded-full px-6 text-base"><Link href="/docs">Read the docs<ArrowUpRight/></Link></Button>
-      </Reveal>
+      </div>
     </div>
-    <Reveal delay={260} className="relative mx-auto mt-20 max-w-[1100px] sm:mt-24">
+    <div className={cn(site.rise,'relative mx-auto mt-20 max-w-[1100px] sm:mt-24')} style={{'--delay':'260ms'}}>
       <div className={site.glow} aria-hidden/>
       <HeroDemo/>
-    </Reveal>
+    </div>
   </section>;
 }
 

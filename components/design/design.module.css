@@ -101,6 +101,10 @@
   transform: none;
 }
 
+/* Above-the-fold entrance. Pure CSS, so it starts at first paint instead of waiting for JavaScript. */
+.rise { animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--delay, 0ms); }
+@keyframes rise { from { opacity: 0.01; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
 /* Long-form reading: docs, legal and info pages. */
 .prose {
   font-size: 1.0625rem;
@@ -132,4 +136,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .reveal[data-animate="true"] { opacity: 1; transform: none; }
+  .rise { animation: none; }
 }

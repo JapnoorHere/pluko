@@ -28,10 +28,10 @@ export function PageHero({eyebrow,title,children,actions,align='center',classNam
   const centered=align==='center';
   return <section className={cn('relative px-5 pt-36 pb-16 sm:px-8 sm:pt-44 sm:pb-20',className)}>
     <div className={cn('mx-auto max-w-[1200px]',centered&&'text-center')}>
-      {eyebrow&&<Reveal><Eyebrow>{eyebrow}</Eyebrow></Reveal>}
-      <Reveal delay={60}><h1 className={cn(site.title,centered&&'mx-auto max-w-4xl')}>{title}</h1></Reveal>
-      {children&&<Reveal delay={120}><div className={cn(site.lede,'mt-6 max-w-2xl',centered&&'mx-auto')}>{children}</div></Reveal>}
-      {actions&&<Reveal delay={180} className={cn('mt-9 flex flex-col gap-3 sm:flex-row',centered&&'items-center justify-center')}>{actions}</Reveal>}
+      {eyebrow&&<div className={site.rise}><Eyebrow>{eyebrow}</Eyebrow></div>}
+      <h1 className={cn(site.title,site.rise,centered&&'mx-auto max-w-4xl')} style={{'--delay':'60ms'}}>{title}</h1>
+      {children&&<div className={cn(site.lede,site.rise,'mt-6 max-w-2xl',centered&&'mx-auto')} style={{'--delay':'120ms'}}>{children}</div>}
+      {actions&&<div className={cn(site.rise,'mt-9 flex flex-col gap-3 sm:flex-row',centered&&'items-center justify-center')} style={{'--delay':'180ms'}}>{actions}</div>}
     </div>
   </section>;
 }

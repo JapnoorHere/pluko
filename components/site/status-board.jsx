@@ -46,15 +46,15 @@ export function StatusBoard(){
   return <>
     <section className="px-5 pt-36 pb-16 sm:px-8 sm:pt-44">
       <div className="mx-auto max-w-[1000px] text-center" aria-live="polite">
-        <Reveal><p className="mb-6 inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-sm text-muted-foreground shadow-sm">
+        <div className={site.rise}><p className="mb-6 inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-sm text-muted-foreground shadow-sm">
           <span className="relative flex size-2.5"><span className={cn('absolute inline-flex size-full animate-ping rounded-full opacity-60',dot)}/><span className={cn('relative inline-flex size-2.5 rounded-full',dot)}/></span>System status
-        </p></Reveal>
-        <Reveal delay={60}><h1 className={site.title}>{title}</h1></Reveal>
-        <Reveal delay={120}><p className={cn(site.lede,'mx-auto mt-6 max-w-xl')}>{text}</p></Reveal>
-        <Reveal delay={180} className="mt-8 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground sm:flex-row">
+        </p></div>
+        <div className={site.rise} style={{'--delay':'60ms'}}><h1 className={site.title}>{title}</h1></div>
+        <div className={site.rise} style={{'--delay':'120ms'}}><p className={cn(site.lede,'mx-auto mt-6 max-w-xl')}>{text}</p></div>
+        <div className={cn(site.rise,'mt-8 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground sm:flex-row')} style={{'--delay':'180ms'}}>
           <span>{data?`Checked ${secondsAgo(data.checked_at,now)} · refreshes every 30 seconds`:failed?'The last check failed.':'Running the first check…'}</span>
           <Button type="button" variant="outline" className="rounded-full" disabled={loading} onClick={check}><RefreshCw className={loading?'animate-spin':undefined}/>Check now</Button>
-        </Reveal>
+        </div>
       </div>
     </section>
 

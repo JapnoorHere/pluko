@@ -132,7 +132,7 @@ const sections = [
           seven days.
         </p>
         <p>
-          The workspace and the documentation can also remember your theme and
+          The workspace and the documentation can also remember your theme, layout and
           code-language choices in your browser’s local storage. These stay on
           your device and are not sent to Pluko.
         </p>
