@@ -19,7 +19,7 @@ function apply(choice){
 }
 
 
-// Workspace theme preference. The public site is always dark, so leaving the workspace restores it.
+// Workspace theme preference. Public pages are always light, so leaving the workspace restores it.
 export function useWorkspaceTheme(){
   const [theme,setThemeState]=useState('system');
   useEffect(()=>{
@@ -29,7 +29,7 @@ export function useWorkspaceTheme(){
     media?.addEventListener?.('change',onChange);
     return()=>{
       media?.removeEventListener?.('change',onChange);
-      const root=document.documentElement;root.classList.remove('light');root.classList.add('dark');
+      const root=document.documentElement;root.classList.remove('dark');root.classList.add('light');
     };
   },[]);
   const setTheme=useCallback(choice=>{

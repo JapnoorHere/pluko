@@ -1,77 +1,4 @@
-/* Page composition for the public landing page. Component appearance still comes from components/ui. */
-
-/* The page is light (html.light supplies the base tokens). The primary button becomes a black pill,
-   and the indigo accent is kept for focus rings and small details. */
-.page {
-  --primary: oklch(0.17 0 0);
-  --primary-foreground: oklch(0.99 0 0);
-  --ring: #6366f1;
-  --accent-ink: #4f46e5;
-  --hairline: oklch(0 0 0 / 8%);
-  min-height: 100svh;
-  background: var(--background);
-  color: var(--foreground);
-  overflow-x: clip;
-}
-
-/* Dark "product" bands. The global .dark class supplies the dark tokens; these tune the pill and accent. */
-.dark {
-  --primary: oklch(0.99 0 0);
-  --primary-foreground: oklch(0.15 0 0);
-  --ring: #818cf8;
-  --accent-ink: #a5b4fc;
-  --hairline: oklch(1 0 0 / 9%);
-  background: #050506;
-  color: var(--foreground);
-}
-
-.display {
-  font-size: clamp(3.25rem, 9vw, 7rem);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-  font-weight: 600;
-  text-wrap: balance;
-}
-.headline {
-  font-size: clamp(2.4rem, 5.6vw, 4.25rem);
-  line-height: 1.02;
-  letter-spacing: -0.045em;
-  font-weight: 600;
-  text-wrap: balance;
-}
-.lede {
-  font-size: clamp(1.0625rem, 1.6vw, 1.3125rem);
-  line-height: 1.55;
-  letter-spacing: -0.011em;
-  color: var(--muted-foreground);
-  text-wrap: pretty;
-}
-
-/* Soft colour behind the hero product shot, in the spirit of OpenAI's gradients. */
-.heroGlow {
-  position: absolute;
-  inset: 8% -10% -10%;
-  z-index: -1;
-  background:
-    radial-gradient(40% 50% at 25% 40%, color-mix(in oklab, #818cf8 38%, transparent), transparent 70%),
-    radial-gradient(35% 45% at 75% 35%, color-mix(in oklab, #f0abfc 30%, transparent), transparent 70%),
-    radial-gradient(45% 55% at 55% 75%, color-mix(in oklab, #7dd3fc 30%, transparent), transparent 70%);
-  filter: blur(40px);
-  opacity: 0.75;
-}
-
-.frame {
-  border-radius: 28px;
-  border: 1px solid var(--hairline);
-  background: var(--card);
-  box-shadow:
-    0 1px 0 oklch(1 0 0 / 60%) inset,
-    0 40px 80px -30px oklch(0.2 0.02 270 / 28%),
-    0 18px 36px -18px oklch(0.2 0 0 / 18%);
-}
-.dark .frame {
-  box-shadow: 0 0 0 1px oklch(1 0 0 / 4%), 0 40px 120px -40px color-mix(in oklab, #818cf8 35%, transparent);
-}
+/* Landing-page-only motion. Shared tokens, type and frames live in components/site/site.module.css. */
 
 .caret {
   display: inline-block;
@@ -85,18 +12,6 @@
 
 .tileIn {
   animation: tileIn 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
-/* Elements fade up once when they enter the viewport. Without JavaScript they are simply visible. */
-.reveal[data-animate="true"] {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
-  transition-delay: var(--delay, 0ms);
-}
-.reveal[data-visible="true"] {
-  opacity: 1;
-  transform: none;
 }
 
 /* Statement words brighten as the section scrolls past. JavaScript sets --on from 0 to 1 per word. */
@@ -133,20 +48,11 @@
   transform-origin: 50% 0;
 }
 
-.grain {
-  background-image: radial-gradient(oklch(0 0 0 / 7%) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-.dark .grain {
-  background-image: radial-gradient(oklch(1 0 0 / 7%) 1px, transparent 1px);
-}
-
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes tileIn { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
 @keyframes marquee { to { transform: translateX(-50%); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal[data-animate="true"] { opacity: 1; transform: none; }
   .marquee { animation: none; }
   .word { opacity: 1; }
   .caret { animation: none; }
