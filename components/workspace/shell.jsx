@@ -63,7 +63,7 @@ function UserMenu({onShortcuts}){
         <ChevronsUpDown className="ml-auto size-4"/>
       </SidebarMenuButton>
     </DropdownMenuTrigger>
-    <DropdownMenuContent side="top" align="end" className="w-64">
+    <DropdownMenuContent side="top" align="start" sideOffset={6} className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-xl">
       <DropdownMenuLabel className="grid font-normal"><span className="truncate text-sm font-medium">{me.email}</span><span className="text-xs text-muted-foreground">{me.mfa?'Authenticator on':'Authenticator off'}</span></DropdownMenuLabel>
       <DropdownMenuSeparator/>
       <DropdownMenuItem asChild><Link href={href('account','','profile')}><Settings2/>Account settings</Link></DropdownMenuItem>
