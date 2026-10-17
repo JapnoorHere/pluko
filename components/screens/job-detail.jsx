@@ -3,13 +3,13 @@ import {useState} from 'react';
 import Link from 'next/link';
 import {ArrowUpRight,Ban,RefreshCw,Repeat2,SearchX} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
-import {ConfirmDialog,DescriptionList,EmptyState,IdPill,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,toast} from '@/components/workspace/ui';
+import {ConfirmDialog,DescriptionList,EmptyState,IdPill,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,toast,BrandProgress,StatGrid} from '@/components/workspace/ui';
 import {ExportMenu,QueryBreakdown,ResultsGallery,useJob,useJobActions} from '@/components/screens/job-results';
 import {format} from '@/lib/display';
 import {percent} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
-import {Progress} from '@/components/ui/progress';
+
 import {Spinner} from '@/components/ui/spinner';
 
 const FILTER_LABELS={min_width:'Minimum width',safe_search:'Safe search',image_type:'Image type',layout:'Shape',size:'Size',color:'Colour',watermark_policy:'Watermarks',exclude_domains:'Excluded sites'};
@@ -54,12 +54,12 @@ export function JobPage(){
       eyebrow={<><StatusBadge status={job.status}/><IdPill value={job.id} length={20}/></>}
       actions={<JobHeaderActions job={job} active={active} reload={reload}/>}/>
 
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard label="Found" value={job.returned.toLocaleString()} hint={`of ${Number(job.requested).toLocaleString()} requested`} footer={<Progress value={progress} className="w-full" aria-label="Job progress"/>}/>
+    <StatGrid>
+      <StatCard label="Found" value={job.returned.toLocaleString()} hint={`of ${Number(job.requested).toLocaleString()} requested`} footer={<BrandProgress value={progress} className="w-full" aria-label="Job progress"/>}/>
       <StatCard label="Queries" value={job.queries.length} hint={job.queries.filter(query=>query.status==='complete').length+' complete'}/>
       <StatCard label="Started" value={<TimeAgo value={job.created} className="text-2xl"/>} hint={format(job.created)}/>
       <StatCard label={job.expires?'Results kept until':'Status'} value={job.expires?<TimeAgo value={job.expires} className="text-2xl"/>:<span className="text-2xl capitalize">{job.status}</span>} hint={job.expires?'Export anything you need before then.':'Results appear below as they are found.'}/>
-    </div>
+    </StatGrid>
 
     <div className="grid gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-2"><CardHeader><CardTitle>Queries</CardTitle><CardDescription>Progress and outcome for each query in this job.</CardDescription></CardHeader><CardContent><QueryBreakdown queries={job.queries}/></CardContent></Card>

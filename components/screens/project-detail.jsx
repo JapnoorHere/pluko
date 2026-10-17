@@ -3,7 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {FolderX,Gauge,KeyRound,Plus,Search,Sparkles,Trash2,Webhook} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CodeBlock,CopyField,DescriptionList,EmptyState,MiniBars,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,UsageMeter,toast} from '@/components/workspace/ui';
+import {CodeBlock,CopyField,DescriptionList,EmptyState,MiniBars,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,UsageMeter,toast,StatGrid} from '@/components/workspace/ui';
 import {CreateKeyDialog,KeyRevealDialog,KeysTable,keyState} from '@/components/screens/keys';
 import {DeleteProjectDialog,QuotaDialog} from '@/components/screens/projects';
 import {WebhookSettings} from '@/components/screens/webhook-settings';
@@ -23,12 +23,12 @@ function OverviewTab({project,usage,keys}){
   const active=keys?.filter(item=>!item.revoked)||[];
   const series=dailySeries(usage?.history||[]);
   return <div className="grid gap-6">
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <StatGrid>
       <StatCard label="Pages used today" value={usage?usage.pages_used.toLocaleString():'—'} icon={Gauge} footer={usage&&<div className="w-full"><UsageMeter used={usage.pages_used} quota={usage.pages_quota} label="Usage today" showText={false}/></div>}/>
       <StatCard label="Left today" value={usage?usage.pages_remaining.toLocaleString():'—'} hint={usage?`About ${(usage.pages_remaining*usage.images_per_page).toLocaleString()} more images`:''}/>
       <StatCard label="Active API keys" value={keys?active.length:'—'} icon={KeyRound} hint={keys?`${active.filter(item=>keyState(item)==='expiring').length} expiring soon`:''}/>
       <StatCard label="Webhook" value={<span className="text-2xl">{project.webhook_url?'On':'Off'}</span>} icon={Webhook} hint={project.webhook_url?'Events are sent when jobs finish':'Polling only'}/>
-    </div>
+    </StatGrid>
     <div className="grid gap-6 lg:grid-cols-5">
       <Card className="lg:col-span-3"><CardHeader><CardTitle>Provider pages, last 7 days</CardTitle><CardDescription>Resets every day at 00:00 UTC{usage?`, next ${format(usage.resets_at)}`:''}.</CardDescription></CardHeader><CardContent>{usage?<MiniBars data={series} valueLabel="pages" height={120}/>:<Shimmer className="h-32"/>}</CardContent></Card>
       <Card className="lg:col-span-2"><CardHeader><CardTitle>Details</CardTitle></CardHeader><CardContent className="grid gap-4">

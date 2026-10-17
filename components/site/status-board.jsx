@@ -5,7 +5,7 @@ import {Cpu,Globe,Image as ImageIcon,RefreshCw} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {Button} from '@/components/ui/button';
 import {CodeBlock,Reveal} from './ui';
-import site from './site.module.css';
+import site from '@/components/design/design.module.css';
 
 const REFRESH_MS=30000;
 

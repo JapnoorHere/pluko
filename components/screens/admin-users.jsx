@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {KeyRound,Search,ShieldCheck,UserCheck,UserPlus,UserX,UsersRound} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {ConfirmDialog,DataTable,EmptyState,FormDialog,InfoDialog,PageHeader,RowActions,SearchInput,SecretReveal,StatCard,StatGridSkeleton,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
+import {ConfirmDialog,DataTable,EmptyState,FormDialog,InfoDialog,PageHeader,RowActions,SearchInput,SecretReveal,StatCard,StatGridSkeleton,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast,StatGrid} from '@/components/workspace/ui';
 import {initials,matches} from '@/lib/ui-helpers';
 import {Avatar,AvatarFallback} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
@@ -33,12 +33,12 @@ export function AdminUsers(){
   ];
   return <>
     <PageHeader title="Users & invites" description="Invite people, issue password reset links, and suspend access." actions={<Button type="button" onClick={()=>{setEmail('');setInviting(true);}}><UserPlus/>Invite user</Button>}/>
-    {!list?<StatGridSkeleton count={4}/>:<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    {!list?<StatGridSkeleton count={4}/>:<StatGrid>
       <StatCard label="Users" value={list.length} icon={UsersRound}/>
       <StatCard label="Active" value={list.filter(user=>user.active).length} icon={UserCheck}/>
       <StatCard label="Suspended" value={list.filter(user=>!user.active).length} icon={UserX}/>
       <StatCard label="Two-step on" value={`${list.length?Math.round(list.filter(user=>user.mfa).length/list.length*100):0}%`} icon={ShieldCheck} hint={`${list.filter(user=>!user.mfa).length} without an authenticator`}/>
-    </div>}
+    </StatGrid>}
     <DataTable columns={columns} rows={rows} loading={users.loading} error={users.error} onRetry={users.reload} caption="Users"
       toolbar={<TableToolbar><SearchInput value={query} onChange={setQuery} placeholder="Search by email…"/><Select value={filter} onValueChange={setFilter}><SelectTrigger size="sm" className="w-44" aria-label="Filter users"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">All users</SelectItem><SelectItem value="admin">Administrators</SelectItem><SelectItem value="suspended">Suspended</SelectItem><SelectItem value="no-mfa">Two-step off</SelectItem></SelectContent></Select></TableToolbar>}
       empty={<EmptyState icon={Search} title="No matching users" description="Try another search or filter." action={<Button variant="outline" onClick={()=>{setQuery('');setFilter('all');}}>Clear filters</Button>}/>}/>

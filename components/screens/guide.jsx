@@ -112,7 +112,7 @@ export function Guide(){
       <aside className="grid content-start gap-3 lg:sticky lg:top-20">
         <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Reference</p>
         {links.map(([url,title,text,Icon,external])=>{
-          const body=<><span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40"><Icon className="size-4 text-primary"/></span><span className="grid min-w-0 gap-0.5"><span className="flex items-center gap-1 text-sm font-medium">{title}{external&&<ArrowUpRight className="size-3 text-muted-foreground"/>}</span><span className="text-xs text-muted-foreground">{text}</span></span></>;
+          const body=<><span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-muted/40"><Icon className="size-4 text-brand"/></span><span className="grid min-w-0 gap-0.5"><span className="flex items-center gap-1 text-sm font-medium">{title}{external&&<ArrowUpRight className="size-3 text-muted-foreground"/>}</span><span className="text-xs text-muted-foreground">{text}</span></span></>;
           const className='flex items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/40';
           return external?<a key={url} href={url} target="_blank" rel="noopener noreferrer" className={className}>{body}</a>:<Link key={url} href={url} className={className}>{body}</Link>;
         })}

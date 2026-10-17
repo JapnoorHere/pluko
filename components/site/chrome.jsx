@@ -6,7 +6,7 @@ import {legal} from '@/lib/legal';
 import {cn} from '@/lib/utils';
 import {Button} from '@/components/ui/button';
 import {Sheet,SheetContent,SheetHeader,SheetTitle,SheetTrigger} from '@/components/ui/sheet';
-import site from './site.module.css';
+import site from '@/components/design/design.module.css';
 
 const NAV=[['/#how-it-works','How it works'],['/#developers','Developers'],['/#workspace','Workspace'],['/docs','Docs']];
 

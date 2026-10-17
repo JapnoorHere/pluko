@@ -29,12 +29,12 @@ export {toast};
 /* ---------- Page structure ---------- */
 
 export function PageHeader({title,description,actions,back,eyebrow}){
-  return <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-    <div className="min-w-0 space-y-1">
+  return <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div className="min-w-0 space-y-2">
       {back&&<Link href={back.href} className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"><ArrowLeft className="size-3.5"/>{back.label}</Link>}
       {eyebrow&&<div className="flex flex-wrap items-center gap-2">{eyebrow}</div>}
-      <h1 className="truncate text-2xl font-semibold tracking-tight">{title}</h1>
-      {description&&<p className="max-w-2xl text-sm text-muted-foreground">{description}</p>}
+      <h1 className="text-[clamp(1.875rem,3.4vw,2.625rem)] leading-[1.05] font-semibold tracking-[-0.04em] text-balance">{title}</h1>
+      {description&&<p className="max-w-2xl text-[15px] leading-relaxed text-muted-foreground sm:text-base">{description}</p>}
     </div>
     {actions&&<div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
   </div>;
@@ -42,7 +42,7 @@ export function PageHeader({title,description,actions,back,eyebrow}){
 
 export function SectionHeading({title,description,actions}){
   return <div className="flex flex-wrap items-end justify-between gap-3">
-    <div className="space-y-0.5"><h2 className="text-base font-semibold tracking-tight">{title}</h2>{description&&<p className="text-sm text-muted-foreground">{description}</p>}</div>
+    <div className="space-y-0.5"><h2 className="text-xl font-semibold tracking-[-0.025em]">{title}</h2>{description&&<p className="text-sm text-muted-foreground">{description}</p>}</div>
     {actions&&<div className="flex flex-wrap gap-2">{actions}</div>}
   </div>;
 }
@@ -52,11 +52,11 @@ export function SectionHeading({title,description,actions}){
 const TONE_CLASSES={
   success:'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
   warning:'border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-400',
-  info:'border-primary/25 bg-primary/10 text-primary',
+  info:'border-brand/25 bg-brand/10 text-brand',
   danger:'border-destructive/25 bg-destructive/10 text-destructive',
   neutral:'border-border bg-muted/60 text-muted-foreground',
 };
-const DOT_CLASSES={success:'bg-emerald-500',warning:'bg-amber-500',info:'bg-primary',danger:'bg-destructive',neutral:'bg-muted-foreground/60'};
+const DOT_CLASSES={success:'bg-emerald-500',warning:'bg-amber-500',info:'bg-brand',danger:'bg-destructive',neutral:'bg-muted-foreground/60'};
 
 export function ToneBadge({tone='neutral',children,pulse=false,className}){
   return <Badge variant="outline" className={cn('gap-1.5 font-medium capitalize',TONE_CLASSES[tone],className)}>
@@ -77,7 +77,7 @@ export function Shimmer({className,...props}){
 }
 
 export function TableSkeleton({rows=5,columns=4}){
-  return <div className="overflow-hidden rounded-lg border" aria-busy="true" aria-label="Loading">
+  return <div className="overflow-hidden rounded-2xl border" aria-busy="true" aria-label="Loading">
     <div className="flex gap-4 border-b bg-muted/40 px-4 py-3">{Array.from({length:columns},(_,index)=><Shimmer key={index} className="h-3.5 flex-1"/>)}</div>
     {Array.from({length:rows},(_,row)=><div key={row} className="flex items-center gap-4 border-b px-4 py-3.5 last:border-0">
       {Array.from({length:columns},(_,column)=><Shimmer key={column} className={cn('h-4 flex-1',column===0&&'max-w-56',column===columns-1&&'max-w-20')}/>)}
@@ -85,8 +85,13 @@ export function TableSkeleton({rows=5,columns=4}){
   </div>;
 }
 
+const GRID_COLUMNS={2:'sm:grid-cols-2',3:'sm:grid-cols-3',4:'sm:grid-cols-2 xl:grid-cols-4'};
+export function StatGrid({columns=4,children,className}){
+  return <div className={cn('grid gap-px overflow-hidden rounded-2xl border bg-border',GRID_COLUMNS[columns],className)}>{children}</div>;
+}
+
 export function StatGridSkeleton({count=4}){
-  return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({length:count},(_,index)=><Card key={index}><CardHeader className="space-y-3"><Shimmer className="h-3.5 w-24"/><Shimmer className="h-8 w-20"/><Shimmer className="h-3 w-32"/></CardHeader></Card>)}</div>;
+  return <StatGrid columns={count}>{Array.from({length:count},(_,index)=><div key={index} className="grid gap-3 bg-card p-6"><Shimmer className="h-3.5 w-24"/><Shimmer className="h-9 w-20"/><Shimmer className="h-3 w-32"/></div>)}</StatGrid>;
 }
 
 export function CardSkeleton({lines=3,className}){
@@ -104,10 +109,10 @@ export function PageSkeleton(){
 /* ---------- Empty and error states ---------- */
 
 export function EmptyState({icon:Icon,title,description,action,className}){
-  return <Empty className={cn('border bg-muted/20 py-12',className)}>
+  return <Empty className={cn('rounded-2xl border border-dashed bg-muted/20 py-16',className)}>
     <EmptyHeader>
-      {Icon&&<EmptyMedia variant="icon"><Icon/></EmptyMedia>}
-      <EmptyTitle>{title}</EmptyTitle>
+      {Icon&&<EmptyMedia variant="icon" className="size-11 rounded-2xl bg-background shadow-sm ring-1 ring-border"><Icon className="size-5"/></EmptyMedia>}
+      <EmptyTitle className="text-lg font-semibold tracking-[-0.02em]">{title}</EmptyTitle>
       {description&&<EmptyDescription>{description}</EmptyDescription>}
     </EmptyHeader>
     {action&&<EmptyContent>{action}</EmptyContent>}
@@ -147,7 +152,7 @@ export function FormDialog({open,onOpenChange,title,description,submitLabel='Sav
     finally{setBusy(false);}
   };
   return <Dialog open={open} onOpenChange={next=>{if(!busy)onOpenChange(next);}}>
-    <DialogContent className={cn('max-h-[92vh] overflow-y-auto',size==='lg'?'sm:max-w-2xl':size==='sm'?'sm:max-w-sm':'sm:max-w-lg')}>
+    <DialogContent className={cn('max-h-[92vh] overflow-y-auto rounded-2xl',size==='lg'?'sm:max-w-2xl':size==='sm'?'sm:max-w-sm':'sm:max-w-lg')}>
       <form onSubmit={submit} className="grid gap-5">
         <DialogHeader><DialogTitle>{title}</DialogTitle>{description&&<DialogDescription>{description}</DialogDescription>}</DialogHeader>
         <div className="grid gap-4">{children}</div>
@@ -164,7 +169,7 @@ export function FormDialog({open,onOpenChange,title,description,submitLabel='Sav
 // A plain dialog with no form, for content such as a secret reveal or a preview.
 export function InfoDialog({open,onOpenChange,title,description,children,size='md',footer,dismissible=true}){
   return <Dialog open={open} onOpenChange={next=>{if(dismissible||next)onOpenChange(next);}}>
-    <DialogContent showCloseButton={dismissible} onInteractOutside={event=>{if(!dismissible)event.preventDefault();}} onEscapeKeyDown={event=>{if(!dismissible)event.preventDefault();}} className={cn('max-h-[92vh] overflow-y-auto',size==='xl'?'sm:max-w-5xl':size==='lg'?'sm:max-w-2xl':'sm:max-w-lg')}>
+    <DialogContent showCloseButton={dismissible} onInteractOutside={event=>{if(!dismissible)event.preventDefault();}} onEscapeKeyDown={event=>{if(!dismissible)event.preventDefault();}} className={cn('max-h-[92vh] overflow-y-auto rounded-2xl',size==='xl'?'sm:max-w-5xl':size==='lg'?'sm:max-w-2xl':'sm:max-w-lg')}>
       <DialogHeader><DialogTitle>{title}</DialogTitle>{description&&<DialogDescription>{description}</DialogDescription>}</DialogHeader>
       {children}
       {footer&&<DialogFooter>{footer}</DialogFooter>}
@@ -186,7 +191,7 @@ export function ConfirmDialog({open,onOpenChange,title,description,confirmLabel=
   };
   const blocked=confirmText!==undefined&&typed!==confirmText;
   return <AlertDialog open={open} onOpenChange={next=>{if(!busy)onOpenChange(next);}}>
-    <AlertDialogContent>
+    <AlertDialogContent className="rounded-2xl">
       <form onSubmit={confirm} className="grid gap-4">
         <AlertDialogHeader><AlertDialogTitle>{title}</AlertDialogTitle>{description&&<AlertDialogDescription>{description}</AlertDialogDescription>}</AlertDialogHeader>
         {children}
@@ -243,25 +248,18 @@ export function CopyField({value,label,description,masked=false,id}){
   </Field>;
 }
 
-export function CodeBlock({code,language,title,className,maxHeight='24rem'}){
-  return <div className={cn('group relative overflow-hidden rounded-lg border bg-muted/40',className)}>
-    {(title||language)
-      ?<div className="flex items-center justify-between gap-2 border-b bg-muted/40 py-1 pr-1 pl-3 text-xs text-muted-foreground"><span className="font-medium">{title||language}</span><span className="flex items-center gap-2">{title&&language&&<span className="font-mono">{language}</span>}<CopyButton value={code} label="Code" iconOnly variant="ghost"/></span></div>
-      :<div className="absolute top-1.5 right-1.5"><CopyButton value={code} label="Code" iconOnly variant="ghost"/></div>}
-    <pre className="code-block font-mono text-xs leading-relaxed" style={{maxHeight}}>{code}</pre>
-  </div>;
-}
+export {CodeBlock,Callout,Reveal,LanguageProvider} from '@/components/design/system';
 
 // Shows a one-time secret. The Done button stays disabled until the user confirms they saved it.
 export function SecretReveal({secret,label='Secret',warning,children,onDone,doneLabel='Done'}){
   const [saved,setSaved]=useState(false);
   const id=useId();
   return <div className="grid gap-4">
-    <Alert className="border-amber-500/30 bg-amber-500/5"><AlertCircle className="text-amber-500"/><AlertTitle>Copy it now</AlertTitle><AlertDescription>{warning||'This is the only time the full value is shown. Store it somewhere safe.'}</AlertDescription></Alert>
+    <Callout type="warning" title="Copy it now">{warning||'This is the only time the full value is shown. Store it somewhere safe.'}</Callout>
     <CopyField value={secret} label={label}/>
     {children}
     {onDone&&<div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <label htmlFor={id} className="flex cursor-pointer items-center gap-2 text-sm"><input id={id} type="checkbox" className="size-4 accent-[var(--primary)]" checked={saved} onChange={event=>setSaved(event.target.checked)}/>I’ve saved it somewhere safe</label>
+      <label htmlFor={id} className="flex cursor-pointer items-center gap-2 text-sm"><input id={id} type="checkbox" className="size-4 accent-[var(--brand)]" checked={saved} onChange={event=>setSaved(event.target.checked)}/>I’ve saved it somewhere safe</label>
       <Button type="button" disabled={!saved} onClick={onDone}>{doneLabel}</Button>
     </div>}
   </div>;
@@ -269,15 +267,13 @@ export function SecretReveal({secret,label='Secret',warning,children,onDone,done
 
 /* ---------- Data display ---------- */
 
+// One tile inside a StatGrid: label, big number, a hint or footer.
 export function StatCard({label,value,icon:Icon,hint,tone,footer}){
-  return <Card className="gap-3">
-    <CardHeader>
-      <CardDescription className="font-medium">{label}</CardDescription>
-      {Icon&&<CardAction><span className="flex size-8 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Icon className="size-4"/></span></CardAction>}
-      <CardTitle className={cn('text-3xl font-semibold tabular-nums tracking-tight',tone==='danger'&&'text-destructive')}>{value}</CardTitle>
-    </CardHeader>
-    {(hint||footer)&&<CardFooter className="border-t-0 bg-transparent pt-0 text-xs text-muted-foreground">{footer||hint}</CardFooter>}
-  </Card>;
+  return <div className="flex min-w-0 flex-col gap-2 bg-card p-6">
+    <div className="flex items-center justify-between gap-3"><span className="text-sm text-muted-foreground">{label}</span>{Icon&&<Icon className="size-4 text-muted-foreground/70"/>}</div>
+    <div className={cn('text-[2.25rem] leading-none font-semibold tracking-[-0.04em] tabular-nums',tone==='danger'&&'text-destructive')}>{value}</div>
+    {(hint||footer)&&<div className="mt-auto pt-1 text-xs text-muted-foreground">{footer||hint}</div>}
+  </div>;
 }
 
 export function TimeAgo({value,className}){
@@ -306,11 +302,16 @@ export function DescriptionList({items,className}){
   </dl>;
 }
 
+// Progress in the brand colour. The shadcn indicator uses --primary, which is the black button colour.
+export function BrandProgress({className,...props}){
+  return <Progress className={cn('[&>*]:bg-brand',className)} {...props}/>;
+}
+
 export function UsageMeter({used,quota,label,showText=true}){
   const share=percent(used,quota);
   return <div className="grid gap-1.5">
     {showText&&<div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground"><span className="tabular-nums">{Number(used||0).toLocaleString()} / {Number(quota||0).toLocaleString()} pages</span><span className={cn('tabular-nums',share>=90&&'text-destructive',share>=70&&share<90&&'text-amber-600 dark:text-amber-400')}>{share}%</span></div>}
-    <Progress value={share} aria-label={label} className={cn(share>=90&&'[&>*]:bg-destructive',share>=70&&share<90&&'[&>*]:bg-amber-500')}/>
+    <Progress value={share} aria-label={label} className={share>=90?'[&>*]:bg-destructive':share>=70?'[&>*]:bg-amber-500':'[&>*]:bg-brand'}/>
   </div>;
 }
 
@@ -319,7 +320,7 @@ export function MiniBars({data,valueLabel='value',height=96}){
   const max=Math.max(1,...data.map(item=>item.value));
   return <figure className="grid gap-2">
     <div className="flex items-end gap-1.5" style={{height}} aria-hidden>
-      {data.map(item=><Tooltip key={item.label}><TooltipTrigger asChild><div className="group flex h-full flex-1 items-end"><div className={cn('w-full rounded-t-sm bg-primary/70 transition-colors group-hover:bg-primary',!item.value&&'bg-muted')} style={{height:`${Math.max(4,(item.value/max)*100)}%`}}/></div></TooltipTrigger><TooltipContent>{item.label}: {item.value.toLocaleString()} {valueLabel}</TooltipContent></Tooltip>)}
+      {data.map(item=><Tooltip key={item.label}><TooltipTrigger asChild><div className="group flex h-full flex-1 items-end"><div className={cn('w-full rounded-t-sm bg-brand/70 transition-colors group-hover:bg-brand',!item.value&&'bg-muted')} style={{height:`${Math.max(4,(item.value/max)*100)}%`}}/></div></TooltipTrigger><TooltipContent>{item.label}: {item.value.toLocaleString()} {valueLabel}</TooltipContent></Tooltip>)}
     </div>
     <div className="flex gap-1.5 text-[10px] text-muted-foreground" aria-hidden>{data.map(item=><span key={item.label} className="flex-1 truncate text-center">{item.short||item.label}</span>)}</div>
     <table className="sr-only"><caption>{valueLabel} per day</caption><tbody>{data.map(item=><tr key={item.label}><th>{item.label}</th><td>{item.value}</td></tr>)}</tbody></table>
@@ -352,10 +353,10 @@ export function DataTable({columns,rows,loading,error,onRetry,empty,rowKey='id',
     {error&&!rows?.length?<ErrorState error={error} onRetry={onRetry} title="Couldn’t load this list"/>
     :showSkeleton?<TableSkeleton rows={skeletonRows} columns={Math.min(columns.length,6)}/>
     :!rows?.length?empty
-    :<div className="overflow-hidden rounded-lg border">
+    :<div className="overflow-hidden rounded-2xl border bg-card">
       <Table>
         {caption&&<caption className="sr-only">{caption}</caption>}
-        <TableHeader className="bg-muted/40"><TableRow className="hover:bg-transparent">{columns.map(column=><TableHead key={column.key} className={cn('h-10 text-xs font-medium tracking-wide text-muted-foreground uppercase',column.headClassName)}>{column.header}</TableHead>)}</TableRow></TableHeader>
+        <TableHeader className="bg-muted/50"><TableRow className="hover:bg-transparent">{columns.map(column=><TableHead key={column.key} className={cn('h-10 text-xs font-medium tracking-wide text-muted-foreground uppercase',column.headClassName)}>{column.header}</TableHead>)}</TableRow></TableHeader>
         <TableBody className={cn(loading&&'opacity-60 transition-opacity')}>
           {rows.map(row=>{
             const key=typeof rowKey==='function'?rowKey(row):row[rowKey];

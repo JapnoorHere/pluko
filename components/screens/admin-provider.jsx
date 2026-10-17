@@ -2,7 +2,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Activity,Ban,CheckCircle2,Clock,Plus,ShieldBan,Trash2} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,ConfirmDialog,DataTable,Duration,EmptyState,ErrorState,FormDialog,IdPill,PageHeader,RowActions,SearchInput,StatCard,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
+import {CardSkeleton,ConfirmDialog,DataTable,Duration,EmptyState,ErrorState,FormDialog,IdPill,PageHeader,RowActions,SearchInput,StatCard,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast,StatGrid} from '@/components/workspace/ui';
 import {formatDuration,matches,percent,settingsPayload} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
 import {Card,CardAction,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
@@ -44,11 +44,11 @@ export function AdminProvider(){
       </CardHeader>
     </Card>}
 
-    <div className="grid gap-4 sm:grid-cols-3">
+    <StatGrid columns={3}>
       <StatCard label="Successful attempts" value={attempts.data?`${stats.success}%`:'—'} icon={CheckCircle2} hint={`Across the last ${list.length} provider pages`}/>
       <StatCard label="Candidates accepted" value={attempts.data?`${stats.acceptance}%`:'—'} icon={Activity} hint="After filters and source rules"/>
       <StatCard label="Avg. page time" value={attempts.data?formatDuration(stats.avg):'—'} icon={Clock} hint="Time per request to the source"/>
-    </div>
+    </StatGrid>
 
     <section className="grid gap-3">
       <div><h2 className="text-base font-semibold tracking-tight">Source rules</h2><p className="text-sm text-muted-foreground">Blocked domains never appear in results. Downranked domains appear only when there’s nothing better.</p></div>
@@ -82,7 +82,7 @@ export function AdminProvider(){
       onSubmit={async()=>{await call('/api/admin/rules',{domain:domain.trim(),action,reason});toast.success(`Rule added for ${domain.trim()}`);await rules.reload({quiet:true});}}>
       <Field><FieldLabel htmlFor="rule-domain">Domain</FieldLabel><Input id="rule-domain" required autoFocus placeholder="example.com" className="font-mono" value={domain} onChange={event=>setDomain(event.target.value)}/></Field>
       <RadioGroup value={action} onValueChange={setAction} className="grid gap-2 sm:grid-cols-2">
-        {[['block','Block','Never show results from this domain.',Ban],['downrank','Downrank','Show only when nothing better is found.',Activity]].map(([value,label,hint,Icon])=><Label key={value} htmlFor={`rule-${value}`} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-primary/50 has-[[data-state=checked]]:bg-primary/5">
+        {[['block','Block','Never show results from this domain.',Ban],['downrank','Downrank','Show only when nothing better is found.',Activity]].map(([value,label,hint,Icon])=><Label key={value} htmlFor={`rule-${value}`} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 font-normal has-[[data-state=checked]]:border-brand/50 has-[[data-state=checked]]:bg-brand/5">
           <RadioGroupItem id={`rule-${value}`} value={value} className="mt-0.5"/><span className="grid gap-0.5"><span className="flex items-center gap-1.5 text-sm font-medium"><Icon className="size-3.5"/>{label}</span><span className="text-xs text-muted-foreground">{hint}</span></span>
         </Label>)}
       </RadioGroup>

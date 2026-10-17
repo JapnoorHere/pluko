@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Activity, ArrowRight, BookOpen, Home, LogIn } from "lucide-react";
 import { PublicShell, Reveal } from "@/components/site/ui";
-import site from "@/components/site/site.module.css";
+import site from "@/components/design/design.module.css";
 
 export const metadata = { title: "Page not found — Pluko", robots: { index: false } };
 

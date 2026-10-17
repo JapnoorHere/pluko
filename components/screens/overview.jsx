@@ -2,13 +2,13 @@
 import Link from 'next/link';
 import {Activity,AlertTriangle,ArrowRight,ArrowUpRight,BookOpen,Check,Clock,FolderPlus,KeyRound,Search,ServerCrash,Sparkles,Zap} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,CodeBlock,ErrorState,MiniBars,PageHeader,Shimmer,StatCard,StatGridSkeleton,StatusBadge,TimeAgo,UsageMeter} from '@/components/workspace/ui';
+import {CardSkeleton,CodeBlock,ErrorState,MiniBars,PageHeader,Shimmer,StatCard,StatGridSkeleton,StatusBadge,TimeAgo,UsageMeter,BrandProgress,StatGrid} from '@/components/workspace/ui';
 import {compactNumber,dailySeries,formatDuration,percent} from '@/lib/ui-helpers';
 import {cn} from '@/lib/utils';
 import {Alert,AlertDescription,AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
 import {Card,CardAction,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
-import {Progress} from '@/components/ui/progress';
+
 
 function Onboarding({projects,keys,jobs}){
   const {href,start}=useWorkspace();
@@ -24,10 +24,10 @@ function Onboarding({projects,keys,jobs}){
     <CardHeader>
       <CardTitle>Get started with Pluko</CardTitle>
       <CardDescription>{complete} of {steps.length} steps done. Most teams finish in under five minutes.</CardDescription>
-      <CardAction className="hidden w-40 sm:block"><Progress value={(complete/steps.length)*100} aria-label="Setup progress"/></CardAction>
+      <CardAction className="hidden w-40 sm:block"><BrandProgress value={(complete/steps.length)*100} aria-label="Setup progress"/></CardAction>
     </CardHeader>
     <CardContent className="grid gap-3 md:grid-cols-3">
-      {steps.map((step,index)=><div key={step.title} className={cn('flex flex-col gap-3 rounded-lg border p-4 transition-colors',index===next&&'border-primary/40 bg-primary/5',step.done&&'opacity-70')}>
+      {steps.map((step,index)=><div key={step.title} className={cn('flex flex-col gap-3 rounded-lg border p-4 transition-colors',index===next&&'border-brand/40 bg-brand/5',step.done&&'opacity-70')}>
         <div className="flex items-center gap-2">
           <span className={cn('flex size-6 items-center justify-center rounded-full border text-xs font-medium',step.done&&'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400')}>{step.done?<Check className="size-3.5"/>:index+1}</span>
           <span className={cn('text-sm font-medium',step.done&&'line-through decoration-muted-foreground/50')}>{step.title}</span>
@@ -107,12 +107,12 @@ export function Overview(){
 
     {overview.error?<ErrorState error={overview.error} onRetry={overview.reload} title="Couldn’t load your workspace"/>
     :!data?<StatGridSkeleton/>
-    :<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    :<StatGrid>
       <StatCard label="Search jobs" value={compactNumber(data.jobs.total)} icon={Search} hint={data.jobs.active?`${data.jobs.active} running or queued now`:'None running right now'}/>
       <StatCard label="API requests" value={compactNumber(data.requests.total)} icon={Zap} hint="Dashboard and API calls, all time"/>
       <StatCard label="Error rate" value={`${errorRate}%`} icon={Activity} tone={errorRate>=10?'danger':undefined} hint={`${(data.requests.errors||0).toLocaleString()} responses with status 400 or above`}/>
       <StatCard label="Avg. response" value={formatDuration(data.requests.average_ms||0)} icon={Clock} hint="Time to handle a request"/>
-    </div>}
+    </StatGrid>}
 
     <div className="grid gap-6 lg:grid-cols-5">
       <UsageCard usage={usage.data}/>

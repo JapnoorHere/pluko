@@ -34,7 +34,7 @@ function NavLink({id,name,Icon}){
   const {route,href}=useWorkspace();
   const {isMobile,setOpenMobile}=useSidebar();
   return <SidebarMenuItem>
-    <SidebarMenuButton asChild isActive={route.view===id} tooltip={name} className="data-active:[&_svg]:text-primary">
+    <SidebarMenuButton asChild isActive={route.view===id} tooltip={name} className="data-active:[&_svg]:text-brand">
       <Link href={href(id)} onClick={()=>{if(isMobile)setOpenMobile(false);}}><Icon/><span>{name}</span></Link>
     </SidebarMenuButton>
   </SidebarMenuItem>;
@@ -58,7 +58,7 @@ function UserMenu({onShortcuts}){
   return <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
-        <Avatar className="size-8 rounded-lg"><AvatarFallback className="rounded-lg bg-primary/15 text-xs font-semibold text-primary">{initials(me.email)}</AvatarFallback></Avatar>
+        <Avatar className="size-8 rounded-lg"><AvatarFallback className="rounded-lg bg-brand/15 text-xs font-semibold text-brand">{initials(me.email)}</AvatarFallback></Avatar>
         <div className="grid flex-1 text-left text-sm leading-tight"><span className="truncate font-medium">{me.email}</span><span className="truncate text-xs text-muted-foreground">{me.role==='admin'?'Administrator':'Customer'} account</span></div>
         <ChevronsUpDown className="ml-auto size-4"/>
       </SidebarMenuButton>
