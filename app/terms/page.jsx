@@ -1,5 +1,5 @@
 import Link from "next/link";
-import LegalPage, { LegalContact } from "@/components/marketing/legal-page";
+import LegalPage, { LegalContact } from "@/components/site/legal-page";
 
 export const metadata = {
   title: "Terms of Service — Pluko",
@@ -186,7 +186,16 @@ const sections = [
 export default function Terms() {
   return (
     <LegalPage
+      path="/terms"
       title="Terms of Service"
+      summary={[
+        "Pluko is an image-search service in beta, operated by pStack. Using it means you agree to these terms.",
+        "Keep passwords and API keys secure, use keys from your backend, and respect scopes, quotas and rate limits.",
+        "Finding an image doesn’t give you the right to use it. Check the source and its licence before reuse.",
+        "There’s no promise of uptime, response time or a particular result count during the beta.",
+        "Use the service lawfully: no attacks, no bypassing limits, no access to other people’s accounts.",
+        "You can stop using Pluko, download your data or delete your account at any time.",
+      ]}
       introduction="The rules for using Pluko, keeping your account secure, and working responsibly with image results."
       sections={sections}
     />

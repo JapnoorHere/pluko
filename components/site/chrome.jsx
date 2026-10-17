@@ -6,9 +6,9 @@ import {legal} from '@/lib/legal';
 import {cn} from '@/lib/utils';
 import {Button} from '@/components/ui/button';
 import {Sheet,SheetContent,SheetHeader,SheetTitle,SheetTrigger} from '@/components/ui/sheet';
-import styles from './landing.module.css';
+import site from './site.module.css';
 
-const NAV=[['#how-it-works','How it works'],['#developers','Developers'],['#workspace','Workspace'],['/docs','Docs']];
+const NAV=[['/#how-it-works','How it works'],['/#developers','Developers'],['/#workspace','Workspace'],['/docs','Docs']];
 
 export function Logo({className}){
   return <Link href="/" aria-label="Pluko home" className={cn('flex items-center gap-2 text-[17px] font-semibold tracking-tight',className)}>
@@ -28,7 +28,7 @@ export function LandingHeader(){
     onScroll();window.addEventListener('scroll',onScroll,{passive:true});
     return()=>window.removeEventListener('scroll',onScroll);
   },[]);
-  return <header className={cn('fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-300',onDark&&`dark ${styles.dark} !bg-black/70 text-foreground`,scrolled?'border-b border-black/[0.06] bg-background/75 backdrop-blur-xl backdrop-saturate-150 dark:border-white/10':'border-b border-transparent')}>
+  return <header className={cn('fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,backdrop-filter] duration-300',onDark&&`dark ${site.dark} !bg-black/70 text-foreground`,scrolled?'border-b border-black/[0.06] bg-background/75 backdrop-blur-xl backdrop-saturate-150 dark:border-white/10':'border-b border-transparent')}>
     <div className="mx-auto flex h-16 max-w-[1200px] items-center gap-8 px-5 sm:px-8">
       <Logo/>
       <nav aria-label="Main" className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
@@ -52,7 +52,7 @@ export function LandingHeader(){
 }
 
 const FOOTER=[
-  ['Product',[['#how-it-works','How it works'],['#workspace','Workspace'],['/app','Sign in'],['/app?mode=register','Create an account']]],
+  ['Product',[['/#how-it-works','How it works'],['/#workspace','Workspace'],['/app','Sign in'],['/app?mode=register','Create an account']]],
   ['Developers',[['/docs','Documentation'],['/v1/openapi.json','OpenAPI schema'],['/limits','Limits'],['/status','System status']]],
   ['Company',[['/contact','Contact'],[legal.website,legal.operator]]],
   ['Legal',[['/privacy','Privacy Policy'],['/terms','Terms of Service']]],

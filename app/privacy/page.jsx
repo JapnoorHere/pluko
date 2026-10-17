@@ -1,4 +1,4 @@
-import LegalPage, { LegalContact } from "@/components/marketing/legal-page";
+import LegalPage, { LegalContact } from "@/components/site/legal-page";
 
 export const metadata = {
   title: "Privacy Policy — Pluko",
@@ -132,6 +132,11 @@ const sections = [
           seven days.
         </p>
         <p>
+          The workspace and the documentation can also remember your theme and
+          code-language choices in your browser’s local storage. These stay on
+          your device and are not sent to Pluko.
+        </p>
+        <p>
           These cookies support login and interface preferences. You can remove
           them in your browser, which may sign you out or reset preferences.
           Blocking the session cookie prevents authenticated workspace use.
@@ -219,7 +224,16 @@ const sections = [
 export default function Privacy() {
   return (
     <LegalPage
+      path="/privacy"
       title="Privacy Policy"
+      summary={[
+        "We store your account details, your searches and their result metadata, and operational logs to run the service. We never store image files.",
+        "Search queries are sent to the image source (currently Bing) to find results. Your password and API keys are never sent to it.",
+        "A session cookie keeps you signed in. There are no advertising trackers or third-party analytics scripts.",
+        "Most logs and finished jobs are removed after 30 to 90 days; audit history and usage summaries after about a year.",
+        "You can download your data or delete your account yourself from the Account page.",
+        "Questions or requests go to pStack by email. We may need to verify that the account is yours.",
+      ]}
       introduction="What Pluko stores, how it is used, and how to contact us about your information."
       sections={sections}
     />

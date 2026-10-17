@@ -4,6 +4,7 @@ import {Check,ImageIcon,Search} from 'lucide-react';
 import {collections} from '@/lib/marketing/content';
 import {cn} from '@/lib/utils';
 import {useInView,usePrefersReducedMotion} from './hooks';
+import site from '@/components/site/site.module.css';
 import styles from './landing.module.css';
 
 const TYPE_MS=45,SEARCH_MS=700,TILE_MS=110,HOLD_MS=4200;
@@ -39,7 +40,7 @@ export function HeroDemo(){
 
   const active=photos[selected];
   const progress=phase==='typing'||phase==='searching'?0:Math.round((shown/photos.length)*100);
-  return <div ref={ref} className={cn(styles.frame,'overflow-hidden text-left')}>
+  return <div ref={ref} className={cn(site.frame,'overflow-hidden text-left')}>
     <div className="flex items-center gap-3 border-b px-4 py-3">
       <span className="flex gap-1.5" aria-hidden><span className="size-2.5 rounded-full bg-[#ff5f57]"/><span className="size-2.5 rounded-full bg-[#febc2e]"/><span className="size-2.5 rounded-full bg-[#28c840]"/></span>
       <span className="text-xs font-medium text-muted-foreground">Playground</span>
