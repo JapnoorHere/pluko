@@ -227,6 +227,7 @@ export function DocsPage(){
             <Endpoint method="POST" path="/v1/feedback" scope="search"/>
             <Params rows={[['job_id','string',true,'The job the result belongs to.'],['result_id','string',true,<>The image’s {c('id')}.</>],['reason','string',true,<>{c('not_relevant')}, {c('watermark')}, {c('broken')} or {c('other')}.</>],['note','string',false,'Up to 1000 characters.']]}/>
             <CodeBlock title="Request" code={curl('POST','/v1/feedback',{job_id:'JOB_ID',result_id:'IMAGE_ID',reason:'not_relevant',note:'The result does not match the query.'})}/>
+            <Prose><p>List your reports, newest first, with {c('GET /v1/feedback')} (read scope). Each one includes an {c('image')} with its title, URLs and source domain, or {c('null')} once retention has removed the result.</p></Prose>
           </Section>
 
           <Section id="usage" title="Usage">
