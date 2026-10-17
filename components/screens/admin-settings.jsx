@@ -3,7 +3,7 @@ import {useState} from 'react';
 import Link from 'next/link';
 import {ArrowRight,CloudCog,MailWarning,UserPlus} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,ConfirmDialog,ErrorState,PageHeader,StatusBadge,ToneBadge,toast} from '@/components/workspace/ui';
+import {CardSkeleton,ConfirmDialog,ErrorState,PageHeader,StatusBadge,ToneBadge,toast,Callout} from '@/components/workspace/ui';
 import {settingsPayload} from '@/lib/ui-helpers';
 import {Alert,AlertDescription,AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
@@ -27,7 +27,7 @@ export function AdminSettings(){
           <CardAction><Switch checked={signup} aria-label="Self-service signup" onCheckedChange={on=>on?setEnabling(true):setSignup(false).catch(failure=>toast.error(failure.message))}/></CardAction></CardHeader>
         <CardFooter className="justify-between gap-3">{signup?<StatusBadge status="enabled" label="Open to everyone"/>:<ToneBadge tone="neutral">Invite only</ToneBadge>}<Button asChild variant="ghost" size="sm"><Link href={href('users')}>Manage users<ArrowRight/></Link></Button></CardFooter>
       </Card>
-      <Alert><MailWarning/><AlertTitle>Email isn’t configured yet</AlertTitle><AlertDescription>Pluko can’t verify email addresses or send reset links on its own yet. Keep signup off for a public launch, and share invitation and reset links yourself.</AlertDescription></Alert>
+      <Callout type="note" title="Email isn’t configured yet">Pluko can’t verify email addresses or send reset links on its own yet. Keep signup off for a public launch, and share invitation and reset links yourself.</Callout>
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><CloudCog className="size-4"/>Image provider</CardTitle><CardDescription>Pause or resume the image source and manage source rules.</CardDescription><CardAction>{provider?<StatusBadge status="active" label="Running"/>:<ToneBadge tone="warning">Paused</ToneBadge>}</CardAction></CardHeader>
         <CardFooter className="justify-end"><Button asChild variant="outline" size="sm"><Link href={href('provider')}>Provider & rules<ArrowRight/></Link></Button></CardFooter>

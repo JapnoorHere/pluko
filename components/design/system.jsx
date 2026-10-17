@@ -61,7 +61,7 @@ export function Heading({id,level=2,children,className}){
   </Tag>;
 }
 
-const CALLOUTS={note:[Info,'Note','border-sky-500/25 bg-sky-500/[0.06] [&_svg]:text-sky-600'],tip:[Lightbulb,'Tip','border-emerald-500/25 bg-emerald-500/[0.06] [&_svg]:text-emerald-600'],warning:[AlertTriangle,'Important','border-amber-500/30 bg-amber-500/[0.07] [&_svg]:text-amber-600']};
+const CALLOUTS={note:[Info,'Note','border-sky-500/25 bg-sky-500/[0.06] [&_svg]:text-sky-600'],tip:[Lightbulb,'Tip','border-emerald-500/25 bg-emerald-500/[0.06] [&_svg]:text-emerald-600'],warning:[AlertTriangle,'Important','border-amber-500/30 bg-amber-500/[0.07] [&_svg]:text-amber-600'],danger:[AlertTriangle,'Problem','border-rose-500/30 bg-rose-500/[0.07] [&_svg]:text-rose-600']};
 export function Callout({type='note',title,children}){
   const [Icon,label,tone]=CALLOUTS[type];
   return <div role="note" className={cn('flex gap-3 rounded-2xl border p-4 text-[15px] leading-relaxed',tone)}>

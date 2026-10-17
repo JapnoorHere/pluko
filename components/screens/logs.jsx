@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import {ClipboardList,RefreshCw,Search} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
-import {CodeBlock,DataTable,DescriptionList,Duration,EmptyState,ErrorState,IdPill,LoadMore,PageHeader,SearchInput,Shimmer,TableToolbar,TimeAgo,ToneBadge} from '@/components/workspace/ui';
+import {CodeBlock,DataTable,DescriptionList,Duration,EmptyState,ErrorState,IdPill,LoadMore,PageHeader,SearchInput,Shimmer,TableToolbar,TimeAgo,ToneBadge,MethodBadge} from '@/components/workspace/ui';
 import {format} from '@/lib/display';
 import {httpTone} from '@/lib/ui-helpers';
 import {Badge} from '@/components/ui/badge';
@@ -28,7 +28,7 @@ function LogSheet({id,onClose}){
   return <Sheet open={Boolean(id)} onOpenChange={open=>{if(!open)onClose();}}>
     <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
       <SheetHeader className="border-b">
-        <SheetTitle className="flex flex-wrap items-center gap-2 font-mono text-sm">{log?<><Badge variant="outline">{log.method}</Badge><span className="break-all">{log.path}</span></>:'Request'}</SheetTitle>
+        <SheetTitle className="flex flex-wrap items-center gap-2 font-mono text-sm">{log?<><MethodBadge method={log.method}/><span className="break-all">{log.path}</span></>:'Request'}</SheetTitle>
         <SheetDescription>{log?<span className="flex flex-wrap items-center gap-3"><StatusCode status={log.status}/><Duration ms={log.duration}/><span>{format(log.created)}</span></span>:'Loading request details…'}</SheetDescription>
       </SheetHeader>
       <div className="grid gap-4 p-4">
@@ -64,7 +64,7 @@ export function Logs(){
 
   const columns=[
     {key:'status',header:'Status',cell:row=><StatusCode status={row.status}/>},
-    {key:'route',header:'Request',className:'max-w-0 w-full',cell:row=><div className="flex min-w-0 items-center gap-2"><Badge variant="outline" className="shrink-0 font-mono text-[11px]">{row.method}</Badge><span className="truncate font-mono text-xs">{row.path}</span></div>},
+    {key:'route',header:'Request',className:'max-w-0 w-full',cell:row=><div className="flex min-w-0 items-center gap-2"><MethodBadge method={row.method}/><span className="truncate font-mono text-xs">{row.path}</span></div>},
     {key:'duration',header:'Duration',headClassName:'hidden sm:table-cell text-right',className:'hidden sm:table-cell text-right',cell:row=><Duration ms={row.duration}/>},
     {key:'created',header:'Time',headClassName:'text-right',className:'text-right text-muted-foreground',cell:row=><TimeAgo value={row.created}/>},
   ];

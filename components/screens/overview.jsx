@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import {Activity,AlertTriangle,ArrowRight,ArrowUpRight,BookOpen,Check,Clock,FolderPlus,KeyRound,Search,ServerCrash,Sparkles,Zap} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {CardSkeleton,CodeBlock,ErrorState,MiniBars,PageHeader,Shimmer,StatCard,StatGridSkeleton,StatusBadge,TimeAgo,UsageMeter,BrandProgress,StatGrid} from '@/components/workspace/ui';
+import {CardSkeleton,CodeBlock,ErrorState,MiniBars,PageHeader,Shimmer,StatCard,StatGridSkeleton,StatusBadge,TimeAgo,UsageMeter,BrandProgress,StatGrid,Callout} from '@/components/workspace/ui';
 import {compactNumber,dailySeries,formatDuration,percent} from '@/lib/ui-helpers';
 import {cn} from '@/lib/utils';
 import {Alert,AlertDescription,AlertTitle} from '@/components/ui/alert';
@@ -84,6 +84,15 @@ function RecentJobs({jobs}){
   </Card>;
 }
 
+// "Good evening, Jane." from the account email and the viewer's local time.
+function greeting(email){
+  const hour=new Date().getHours();
+  const part=hour<5?'Good evening':hour<12?'Good morning':hour<18?'Good afternoon':'Good evening';
+  const word=String(email||'').split('@')[0].split(/[._-]+/)[0]||'';
+  const name=/^[a-z]{2,}$/i.test(word)?word[0].toUpperCase()+word.slice(1).toLowerCase():'';
+  return name?`${part}, ${name}.`:`${part}.`;
+}
+
 export function Overview(){
   const {me,href}=useWorkspace();
   const admin=me.role==='admin';
@@ -97,11 +106,11 @@ export function Overview(){
   const ready=projects.data&&keys.data&&data;
 
   return <>
-    <PageHeader title="Overview" description={admin?'Activity across every account on this Pluko instance.':'Your image search activity at a glance.'}
+    <PageHeader eyebrow={<span className="text-sm font-medium text-brand">Overview</span>} title={greeting(me.email)} description={admin?'Activity across every account on this Pluko instance.':'Your image search activity at a glance.'}
       actions={<><Button asChild variant="outline"><Link href={href('guide')}><BookOpen/>API guide</Link></Button><Button asChild><Link href={href('playground')}><Sparkles/>New search</Link></Button></>}/>
 
-    {data&&!data.provider_enabled&&<Alert className="border-amber-500/30 bg-amber-500/5"><AlertTriangle className="text-amber-500"/><AlertTitle>Searches are paused</AlertTitle><AlertDescription>{admin?<>The image provider is turned off, so queued jobs are waiting. <Link className="underline underline-offset-2" href={href('provider')}>Turn it back on</Link>.</>:'New searches will wait in the queue until the service resumes. Existing results are still available.'}</AlertDescription></Alert>}
-    {admin&&data&&!data.workers.length&&<Alert variant="destructive"><ServerCrash/><AlertTitle>No search worker is running</AlertTitle><AlertDescription>Queued jobs won’t be processed until a worker starts. Run <code>npm run worker</code> or check the worker service on the server.</AlertDescription></Alert>}
+    {data&&!data.provider_enabled&&<Callout type="warning" title="Searches are paused">{admin?<>The image provider is turned off, so queued jobs are waiting. <Link className="underline underline-offset-2" href={href('provider')}>Turn it back on</Link>.</>:'New searches will wait in the queue until the service resumes. Existing results are still available.'}</Callout>}
+    {admin&&data&&!data.workers.length&&<Callout type="danger" title="No search worker is running">Queued jobs won’t be processed until a worker starts. Run <code>npm run worker</code> or check the worker service on the server.</Callout>}
 
     {ready&&!admin&&<Onboarding projects={projects.data.projects.length} keys={keys.data.keys.filter(key=>!key.revoked).length} jobs={data.jobs.total||0}/>}
 

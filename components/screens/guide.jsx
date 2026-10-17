@@ -3,19 +3,18 @@ import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {Activity,ArrowUpRight,FileCode2,FileText,Gauge,KeyRound,Webhook} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
-import {CodeBlock,CopyField,PageHeader} from '@/components/workspace/ui';
+import {CodeBlock,CopyField,PageHeader,LanguageProvider} from '@/components/workspace/ui';
 import {Button} from '@/components/ui/button';
 import {Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/ui/card';
-import {Tabs,TabsContent,TabsList,TabsTrigger} from '@/components/ui/tabs';
 
 const examples=origin=>({
   create:{
-    curl:`curl -X POST ${origin}/v1/images/search \\
+    cURL:`curl -X POST ${origin}/v1/images/search \\
   -H "Authorization: Bearer $PLUKO_API_KEY" \\
   -H "Content-Type: application/json" \\
   -H "Idempotency-Key: $(uuidgen)" \\
   -d '{ "query": "mountain landscape", "count": "15", "min_width": 1000 }'`,
-    node:`const response = await fetch("${origin}/v1/images/search", {
+    JavaScript:`const response = await fetch("${origin}/v1/images/search", {
   method: "POST",
   headers: {
     Authorization: \`Bearer \${process.env.PLUKO_API_KEY}\`,
@@ -25,7 +24,7 @@ const examples=origin=>({
   body: JSON.stringify({ query: "mountain landscape", count: "15", min_width: 1000 }),
 });
 const { job_id } = await response.json();`,
-    python:`import os, uuid, requests
+    Python:`import os, uuid, requests
 
 response = requests.post(
     "${origin}/v1/images/search",
@@ -38,10 +37,10 @@ response = requests.post(
 job_id = response.json()["job_id"]`,
   },
   read:{
-    curl:`# Check progress, then read results 100 at a time
+    cURL:`# Check progress, then read results 100 at a time
 curl ${origin}/v1/jobs/$JOB_ID -H "Authorization: Bearer $PLUKO_API_KEY"
 curl "${origin}/v1/jobs/$JOB_ID/results?limit=100&after=0" -H "Authorization: Bearer $PLUKO_API_KEY"`,
-    node:`async function results(jobId) {
+    JavaScript:`async function results(jobId) {
   const headers = { Authorization: \`Bearer \${process.env.PLUKO_API_KEY}\` };
   const images = [];
   let after = 0;
@@ -52,7 +51,7 @@ curl "${origin}/v1/jobs/$JOB_ID/results?limit=100&after=0" -H "Authorization: Be
     after = page.next_cursor;
   }
 }`,
-    python:`def results(job_id):
+    Python:`def results(job_id):
     headers = {"Authorization": f"Bearer {os.environ['PLUKO_API_KEY']}"}
     images, after = [], 0
     while True:
@@ -77,13 +76,6 @@ const BATCH=`{
   "exclude_domains": ["example.com"]
 }`;
 
-function LanguageTabs({code,title}){
-  return <Tabs defaultValue="curl" className="gap-0">
-    <TabsList variant="line" className="mb-2"><TabsTrigger value="curl">cURL</TabsTrigger><TabsTrigger value="node">Node.js</TabsTrigger><TabsTrigger value="python">Python</TabsTrigger></TabsList>
-    {Object.entries(code).map(([language,text])=><TabsContent key={language} value={language}><CodeBlock title={title} language={language==='curl'?'bash':language==='node'?'javascript':'python'} code={text}/></TabsContent>)}
-  </Tabs>;
-}
-
 export function Guide(){
   const {href}=useWorkspace();
   const [origin,setOrigin]=useState('https://your-pluko-host');
@@ -96,17 +88,17 @@ export function Guide(){
     ['/limits','Limits','Rate limits, page sizes and quotas.',Gauge,true],
     ['/status','System status','Live health of the API and workers.',Activity,true],
   ];
-  return <>
+  return <LanguageProvider>
     <PageHeader title="API guide" description="Three calls cover most integrations: create a job, wait for it, then read results in pages."
       actions={<Button asChild variant="outline"><a href="/docs" target="_blank" rel="noopener noreferrer">Full documentation<ArrowUpRight/></a></Button>}/>
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
       <div className="grid min-w-0 gap-6">
         <Card><CardHeader><CardTitle>Base URL and authentication</CardTitle><CardDescription>Send your key as a bearer token. Use keys only from your backend, never in browser or mobile code.</CardDescription></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2"><CopyField value={origin} label="Base URL"/><CopyField value="Authorization: Bearer $PLUKO_API_KEY" label="Header"/></CardContent></Card>
-        <Card><CardHeader><CardTitle><span className="mr-2 text-muted-foreground">1.</span>Create a search job</CardTitle><CardDescription>The call returns a job ID immediately; the search runs in the background. Add an <code>Idempotency-Key</code> so a retried request doesn’t start a second job.</CardDescription></CardHeader><CardContent><LanguageTabs code={code.create} title="POST /v1/images/search"/></CardContent></Card>
+        <Card><CardHeader><CardTitle><span className="mr-2 text-muted-foreground">1.</span>Create a search job</CardTitle><CardDescription>The call returns a job ID immediately; the search runs in the background. Add an <code>Idempotency-Key</code> so a retried request doesn’t start a second job.</CardDescription></CardHeader><CardContent><CodeBlock title="POST /v1/images/search" samples={code.create}/></CardContent></Card>
         <Card><CardHeader><CardTitle><span className="mr-2 text-muted-foreground">2.</span>Wait for it to finish</CardTitle><CardDescription>Poll <code>GET /v1/jobs/JOB_ID</code> with backoff, or add a webhook to the project and Pluko will call you when the job is complete, partial or cancelled.</CardDescription></CardHeader>
           <CardContent><Button asChild variant="outline" size="sm"><Link href={href('projects')}><Webhook/>Set up a webhook</Link></Button></CardContent></Card>
-        <Card><CardHeader><CardTitle><span className="mr-2 text-muted-foreground">3.</span>Read results in pages</CardTitle><CardDescription>Pages hold up to 100 images. Keep reading until <code>next_cursor</code> is <code>null</code>.</CardDescription></CardHeader><CardContent><LanguageTabs code={code.read} title="GET /v1/jobs/JOB_ID/results"/></CardContent></Card>
+        <Card><CardHeader><CardTitle><span className="mr-2 text-muted-foreground">3.</span>Read results in pages</CardTitle><CardDescription>Pages hold up to 100 images. Keep reading until <code>next_cursor</code> is <code>null</code>.</CardDescription></CardHeader><CardContent><CodeBlock title="GET /v1/jobs/JOB_ID/results" samples={code.read}/></CardContent></Card>
         <Card><CardHeader><CardTitle>Batch queries and filters</CardTitle><CardDescription>Send several queries in one job and narrow results with optional filters. Filters are best effort.</CardDescription></CardHeader><CardContent><CodeBlock title="Request body" language="json" code={BATCH}/></CardContent></Card>
       </div>
       <aside className="grid content-start gap-3 lg:sticky lg:top-20">
@@ -118,5 +110,5 @@ export function Guide(){
         })}
       </aside>
     </div>
-  </>;
+  </LanguageProvider>;
 }

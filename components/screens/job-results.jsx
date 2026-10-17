@@ -2,7 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ChevronLeft,ChevronRight,Copy,Download,ExternalLink,Flag,ImageOff,LayoutGrid,List,Maximize2} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
-import {CopyButton,DescriptionList,EmptyState,FormDialog,GallerySkeleton,toast,useCopy} from '@/components/workspace/ui';
+import {CopyButton,DescriptionList,EmptyState,FormDialog,GallerySkeleton,toast,useCopy,CodeBlock} from '@/components/workspace/ui';
 import {downloadText,reasonText,resultsToCsv} from '@/lib/display';
 import {cn} from '@/lib/utils';
 import {Button} from '@/components/ui/button';
@@ -156,6 +156,7 @@ function Lightbox({images,index,onIndex,onClose,onReport}){
             ['Licence','Unknown. Check the source before reuse.'],
             ['Watermark','Not checked. Ranking uses title and domain hints only.'],
           ]}/>
+          <CodeBlock className="md:col-span-2" title="Result JSON" maxHeight="14rem" code={JSON.stringify({id:image.id,query:image.query,title:image.title,image_url:image.image_url,thumbnail_url:image.thumbnail_url,source_url:image.source_url,source_domain:image.source_domain,width:image.width,height:image.height,license_status:image.license_status,watermark_hint:image.watermark_hint},null,2)}/>
           <div className="flex flex-wrap content-start gap-2 md:w-56 md:flex-col md:[&>*]:w-full md:[&>*]:justify-start">
             <Button type="button" onClick={()=>copy(image.image_url,'Image URL')}><Copy/>Copy image URL</Button>
             <Button type="button" variant="outline" asChild><a href={image.image_url} target="_blank" rel="noopener noreferrer"><Maximize2/>Open full image</a></Button>
@@ -169,9 +170,10 @@ function Lightbox({images,index,onIndex,onClose,onReport}){
 }
 
 function GridCard({image,onOpen,onReport}){
-  return <article className="group overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md">
+  return <article className="group overflow-hidden rounded-2xl border bg-card transition-all hover:-translate-y-0.5 hover:shadow-[0_24px_48px_-24px_rgba(0,0,0,0.35)]">
     <button type="button" className="relative block w-full overflow-hidden bg-muted" onClick={onOpen} aria-label={`Preview ${image.title||image.source_domain}`}>
-      <ResultImage image={image} className="aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"/>
+      <ResultImage image={image} className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"/>
+      {image.query&&<span className="absolute bottom-2 left-2 inline-flex max-w-[calc(100%-6rem)] items-center truncate rounded-full bg-black/55 px-2.5 py-1 text-[11px] text-white backdrop-blur">{image.query}</span>}
       {image.width&&image.height&&<span className="absolute right-2 bottom-2 rounded-md bg-black/60 px-1.5 py-0.5 font-mono text-[10px] text-white backdrop-blur">{image.width}×{image.height}</span>}
     </button>
     <div className="flex items-start gap-2 p-3">

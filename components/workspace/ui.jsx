@@ -276,6 +276,12 @@ export function StatCard({label,value,icon:Icon,hint,tone,footer}){
   </div>;
 }
 
+// HTTP method label in the same colours as the API documentation.
+const METHOD_TONES={GET:'bg-emerald-500/12 text-emerald-700 ring-emerald-600/20 dark:text-emerald-300',POST:'bg-indigo-500/12 text-indigo-700 ring-indigo-600/20 dark:text-indigo-300',DELETE:'bg-rose-500/12 text-rose-700 ring-rose-600/20 dark:text-rose-300'};
+export function MethodBadge({method}){
+  return <span className={cn('inline-flex shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold ring-1',METHOD_TONES[method]||'bg-muted text-muted-foreground ring-border')}>{method}</span>;
+}
+
 export function TimeAgo({value,className}){
   const [now,setNow]=useState(()=>Date.now());
   useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(timer);},[]);
@@ -319,8 +325,9 @@ export function UsageMeter({used,quota,label,showText=true}){
 export function MiniBars({data,valueLabel='value',height=96}){
   const max=Math.max(1,...data.map(item=>item.value));
   return <figure className="grid gap-2">
-    <div className="flex items-end gap-1.5" style={{height}} aria-hidden>
-      {data.map(item=><Tooltip key={item.label}><TooltipTrigger asChild><div className="group flex h-full flex-1 items-end"><div className={cn('w-full rounded-t-sm bg-brand/70 transition-colors group-hover:bg-brand',!item.value&&'bg-muted')} style={{height:`${Math.max(4,(item.value/max)*100)}%`}}/></div></TooltipTrigger><TooltipContent>{item.label}: {item.value.toLocaleString()} {valueLabel}</TooltipContent></Tooltip>)}
+    <div className="relative flex items-end gap-2 border-b" style={{height}} aria-hidden>
+      {[25,50,75].map(line=><span key={line} className="pointer-events-none absolute inset-x-0 border-t border-dashed border-border/70" style={{bottom:`${line}%`}}/>)}
+      {data.map(item=><Tooltip key={item.label}><TooltipTrigger asChild><div className="group relative flex h-full flex-1 items-end"><div className={cn('w-full rounded-t-md bg-gradient-to-t from-brand/35 to-brand/90 transition-opacity group-hover:opacity-100',item.value?'opacity-85':'bg-none bg-muted')} style={{height:`${Math.max(3,(item.value/max)*100)}%`}}/></div></TooltipTrigger><TooltipContent>{item.label}: {item.value.toLocaleString()} {valueLabel}</TooltipContent></Tooltip>)}
     </div>
     <div className="flex gap-1.5 text-[10px] text-muted-foreground" aria-hidden>{data.map(item=><span key={item.label} className="flex-1 truncate text-center">{item.short||item.label}</span>)}</div>
     <table className="sr-only"><caption>{valueLabel} per day</caption><tbody>{data.map(item=><tr key={item.label}><th>{item.label}</th><td>{item.value}</td></tr>)}</tbody></table>

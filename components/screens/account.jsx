@@ -3,7 +3,7 @@ import {useState} from 'react';
 import Link from 'next/link';
 import {Download,KeyRound,Laptop,LogOut,Monitor,Moon,Palette,ShieldAlert,ShieldCheck,Sun,Trash2,UserRound,Database,MonitorSmartphone} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {ConfirmDialog,CopyField,DataTable,DescriptionList,FormDialog,PageHeader,PasswordInput,SecretReveal,StatusBadge,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
+import {ConfirmDialog,CopyField,DataTable,DescriptionList,FormDialog,PageHeader,PasswordInput,SecretReveal,StatusBadge,TimeAgo,ToneBadge,toast,Callout} from '@/components/workspace/ui';
 import {downloadText} from '@/lib/display';
 import {initials} from '@/lib/ui-helpers';
 import {cn} from '@/lib/utils';
@@ -61,7 +61,7 @@ function Security({required}){
   const [password,setPassword]=useState(''),[code,setCode]=useState(''),[current,setCurrent]=useState(''),[next,setNext]=useState(''),[confirm,setConfirm]=useState('');
   const start=async()=>{setStarting(true);try{setSetup(await call('/api/mfa/setup',{}));}catch(failure){toast.error(failure.message);}finally{setStarting(false);}};
   return <div className="grid gap-6">
-    {required&&<Alert className="border-amber-500/30 bg-amber-500/5"><ShieldAlert className="text-amber-500"/><AlertTitle>Turn on your authenticator to continue</AlertTitle><AlertDescription>Administrator accounts need two-step verification before they can use any operational controls.</AlertDescription></Alert>}
+    {required&&<Callout type="warning" title="Turn on your authenticator to continue">Administrator accounts need two-step verification before they can use any operational controls.</Callout>}
     <Card>
       <CardHeader><CardTitle>Two-step verification</CardTitle><CardDescription>Ask for a code from your authenticator app every time you sign in.</CardDescription><CardAction>{me.mfa?<StatusBadge status="enabled" label="On"/>:<ToneBadge tone="warning">Off</ToneBadge>}</CardAction></CardHeader>
       <CardContent><div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-4"><ShieldCheck className={cn('mt-0.5 size-5 shrink-0',me.mfa?'text-emerald-500':'text-muted-foreground')}/><p className="text-sm text-muted-foreground">{me.mfa?'Your account is protected. Signing in needs your password and a code from your authenticator app.':'Anyone with your password can sign in. We recommend turning this on for every account.'}</p></div></CardContent>
