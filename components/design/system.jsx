@@ -97,7 +97,7 @@ export function CodeBlock({code,samples,title,language,className,maxHeight='28re
   const options=samples?Object.keys(samples):null;
   const active=options?(options.includes(context?.language)?context.language:options[0]):null;
   const text=samples?samples[active]:code;
-  return <div className={cn('dark overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b0d] text-[13px] text-white/85 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.45)]',className)}>
+  return <div className={cn('dark min-w-0 max-w-full overflow-hidden rounded-2xl border border-white/10 bg-[#0b0b0d] text-[13px] text-white/85 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.45)]',className)}>
     <div className="flex min-h-10 items-center gap-2 border-b border-white/10 px-2 pl-4">
       {title&&<span className="truncate font-mono text-xs text-white/55">{title}</span>}
       {options&&options.length>1&&<div role="tablist" aria-label="Language" className={cn('flex gap-0.5',title&&'ml-2')}>

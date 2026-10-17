@@ -42,10 +42,10 @@ export function AdminAudit(){
       empty={query||kind!=='all'?<EmptyState icon={Search} title="No matching events" description="Only loaded events are filtered. Load older activity to search further back."/>:<EmptyState icon={History} title="No activity yet" description="Administrator and account actions will be recorded here."/>}
       footer={cursor&&<LoadMore loading={loadingMore} onClick={()=>load(cursor)}>Load earlier activity</LoadMore>}/>
     <Sheet open={Boolean(selected)} onOpenChange={open=>{if(!open)setSelected(null);}}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-lg" onOpenAutoFocus={event=>event.preventDefault()}>
+      <SheetContent className="!w-full overflow-y-auto sm:!max-w-lg" onOpenAutoFocus={event=>event.preventDefault()}>
         <SheetHeader className="border-b"><SheetTitle className="font-mono text-sm">{selected?.action}</SheetTitle><SheetDescription>{selected&&format(selected.created)}</SheetDescription></SheetHeader>
-        {selected&&<div className="grid gap-5 p-4">
-          <DescriptionList className="sm:grid-cols-[7rem_1fr]" items={[['Event ID',<span key="i" className="font-mono text-xs">#{selected.id}</span>],['Actor',selected.actor?<IdPill key="a" value={selected.actor} length={24}/>:'System'],['Subject',selected.target?<IdPill key="t" value={selected.target} length={24}/>:'—'],['Time',format(selected.created)]]}/>
+        {selected&&<div className="grid min-w-0 gap-5 p-4">
+          <DescriptionList className="sm:grid-cols-[7rem_minmax(0,1fr)]" items={[['Event ID',<span key="i" className="font-mono text-xs">#{selected.id}</span>],['Actor',selected.actor?<IdPill key="a" value={selected.actor} length={22}/>:'System'],['Subject',selected.target?<IdPill key="t" value={selected.target} length={22}/>:'—'],['Time',format(selected.created)]]}/>
           {details?<CodeBlock title="Details" language="json" code={typeof details==='string'?details:JSON.stringify(details,null,2)}/>:<p className="text-sm text-muted-foreground">No extra details were recorded.</p>}
         </div>}
       </SheetContent>

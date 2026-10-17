@@ -120,7 +120,7 @@ export function DocsPage(){
       <div className="sticky top-16 z-30 flex gap-2 border-b bg-background/90 px-5 py-2.5 backdrop-blur lg:hidden">
         <Sheet open={menu} onOpenChange={setMenu}>
           <SheetTrigger asChild><button type="button" className="flex h-10 items-center gap-2 rounded-xl border bg-background px-3 text-sm"><Menu className="size-4"/>Menu</button></SheetTrigger>
-          <SheetContent side="left" className="w-80 overflow-y-auto"><SheetHeader><SheetTitle>Documentation</SheetTitle></SheetHeader><div className="px-4 pb-8"><NavList active={active} onNavigate={()=>setMenu(false)}/></div></SheetContent>
+          <SheetContent side="left" className="!w-80 !max-w-[85vw] overflow-y-auto"><SheetHeader><SheetTitle>Documentation</SheetTitle></SheetHeader><div className="px-4 pb-8"><NavList active={active} onNavigate={()=>setMenu(false)}/></div></SheetContent>
         </Sheet>
         <div className="flex-1">{searchButton}</div>
       </div>

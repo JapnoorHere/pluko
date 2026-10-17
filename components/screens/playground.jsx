@@ -133,7 +133,7 @@ export function Playground(){
     </form>
 
     <Sheet open={sheet} onOpenChange={setSheet}>
-      <SheetContent className="flex w-full flex-col sm:max-w-md">
+      <SheetContent className="flex !w-full flex-col sm:!max-w-md">
         <SheetHeader><SheetTitle>Filters</SheetTitle><SheetDescription>Passed to the image source on a best-effort basis, so some results may not match exactly.</SheetDescription></SheetHeader>
         <div className="grid flex-1 content-start gap-5 overflow-y-auto px-4">
           {FILTERS.map(([name,label,options])=><Field key={name}><FieldLabel htmlFor={`play-${name}`}>{label}</FieldLabel><Select value={filters[name]} onValueChange={value=>setFilters(current=>({...current,[name]:value}))}><SelectTrigger id={`play-${name}`} className="w-full"><SelectValue/></SelectTrigger><SelectContent>{options.map(([value,text])=><SelectItem key={value} value={value}>{text}</SelectItem>)}</SelectContent></Select></Field>)}

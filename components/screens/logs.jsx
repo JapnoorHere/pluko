@@ -26,19 +26,19 @@ function LogSheet({id,onClose}){
     call(`/api/logs/${id}`).then(data=>setLog(data.log)).catch(setError);
   },[id,call]);
   return <Sheet open={Boolean(id)} onOpenChange={open=>{if(!open)onClose();}}>
-    <SheetContent className="w-full overflow-y-auto sm:max-w-2xl">
+    <SheetContent className="!w-full overflow-y-auto sm:!max-w-2xl">
       <SheetHeader className="border-b">
         <SheetTitle className="flex flex-wrap items-center gap-2 font-mono text-sm">{log?<><MethodBadge method={log.method}/><span className="break-all">{log.path}</span></>:'Request'}</SheetTitle>
         <SheetDescription>{log?<span className="flex flex-wrap items-center gap-3"><StatusCode status={log.status}/><Duration ms={log.duration}/><span>{format(log.created)}</span></span>:'Loading request details…'}</SheetDescription>
       </SheetHeader>
-      <div className="grid gap-4 p-4">
+      <div className="grid min-w-0 gap-4 p-4">
         {error?<ErrorState error={error}/>
         :!log?<div className="grid gap-3"><Shimmer className="h-8 w-48"/><Shimmer className="h-48"/></div>
-        :<Tabs defaultValue="request">
+        :<Tabs defaultValue="request" className="min-w-0">
           <TabsList><TabsTrigger value="request">Request</TabsTrigger><TabsTrigger value="response">Response</TabsTrigger><TabsTrigger value="details">Details</TabsTrigger></TabsList>
-          <TabsContent value="request" className="pt-3">{log.payload?<CodeBlock title="Request body" language="json" maxHeight="60vh" code={JSON.stringify(log.payload,null,2)}/>:<p className="text-sm text-muted-foreground">{log.method==="GET"?"GET requests don’t have a body.":"No request body is stored. Bodies are redacted after the retention period."}</p>}</TabsContent>
-          <TabsContent value="response" className="pt-3">{log.response?<CodeBlock title="Response body" language="json" maxHeight="60vh" code={JSON.stringify(log.response,null,2)}/>:<p className="text-sm text-muted-foreground">No response body was stored.</p>}</TabsContent>
-          <TabsContent value="details" className="pt-3"><DescriptionList items={[['Request ID',<IdPill key="id" value={log.id} length={28}/>],['Project',log.project_id?<IdPill key="p" value={log.project_id} length={28}/>:'—'],['API key',log.key_id?<IdPill key="k" value={log.key_id} length={28}/>:'Dashboard session'],['Status',<StatusCode key="s" status={log.status}/>],['Duration',<Duration key="d" ms={log.duration}/>],['Time',format(log.created)]]}/></TabsContent>
+          <TabsContent value="request" className="min-w-0 pt-3">{log.payload?<CodeBlock title="Request body" language="json" maxHeight="60vh" code={JSON.stringify(log.payload,null,2)}/>:<p className="text-sm text-muted-foreground">{log.method==="GET"?"GET requests don’t have a body.":"No request body is stored. Bodies are redacted after the retention period."}</p>}</TabsContent>
+          <TabsContent value="response" className="min-w-0 pt-3">{log.response?<CodeBlock title="Response body" language="json" maxHeight="60vh" code={JSON.stringify(log.response,null,2)}/>:<p className="text-sm text-muted-foreground">No response body was stored.</p>}</TabsContent>
+          <TabsContent value="details" className="min-w-0 pt-3"><DescriptionList className="sm:grid-cols-[7rem_minmax(0,1fr)]" items={[['Request ID',<IdPill key="id" value={log.id} length={22}/>],['Project',log.project_id?<IdPill key="p" value={log.project_id} length={22}/>:'—'],['API key',log.key_id?<IdPill key="k" value={log.key_id} length={22}/>:'Dashboard session'],['Status',<StatusCode key="s" status={log.status}/>],['Duration',<Duration key="d" ms={log.duration}/>],['Time',format(log.created)]]}/></TabsContent>
         </Tabs>}
       </div>
     </SheetContent>
