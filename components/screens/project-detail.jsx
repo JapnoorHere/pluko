@@ -91,6 +91,8 @@ export function ProjectPage(){
   const usage=useResource('/api/usage');
   const keys=useResource('/api/keys');
   const project=useMemo(()=>projects.data?.projects.find(item=>item.id===route.id),[projects.data,route.id]);
+  const {setCrumb}=useWorkspace();
+  useEffect(()=>{if(project?.name)setCrumb(project.name);},[project?.name,setCrumb]);
   const projectUsage=usage.data?.projects.find(item=>item.project_id===route.id);
   const refresh=async()=>{await Promise.all([projects.reload({quiet:true}),usage.reload({quiet:true})]);};
   const back={href:href('projects'),label:'Projects'};

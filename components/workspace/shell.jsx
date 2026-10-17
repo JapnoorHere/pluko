@@ -34,7 +34,7 @@ function NavLink({id,name,Icon}){
   const {route,href}=useWorkspace();
   const {isMobile,setOpenMobile}=useSidebar();
   return <SidebarMenuItem>
-    <SidebarMenuButton asChild isActive={route.view===id} tooltip={name} className="data-active:[&_svg]:text-brand">
+    <SidebarMenuButton asChild isActive={route.view===id} tooltip={name} className="relative data-[active=true]:font-medium data-[active=true]:[&_svg]:text-brand data-[active=true]:before:absolute data-[active=true]:before:inset-y-1.5 data-[active=true]:before:left-0 data-[active=true]:before:w-[3px] data-[active=true]:before:rounded-full data-[active=true]:before:bg-brand">
       <Link href={href(id)} onClick={()=>{if(isMobile)setOpenMobile(false);}}><Icon/><span>{name}</span></Link>
     </SidebarMenuButton>
   </SidebarMenuItem>;
@@ -108,9 +108,9 @@ function useShortcuts({openPalette,openShortcuts}){
 }
 
 function Crumbs({titles}){
-  const {route,href}=useWorkspace();
+  const {route,href,crumb}=useWorkspace();
   const title=titles[route.view]||'Overview';
-  const sub=route.id?(route.view==='jobs'?`Job ${route.id.slice(0,12)}…`:'Project'):route.view==='account'?route.tab[0].toUpperCase()+route.tab.slice(1):null;
+  const sub=route.id?(crumb||(route.view==='jobs'?`Job ${route.id.slice(0,12)}…`:'Project')):route.view==='account'?route.tab[0].toUpperCase()+route.tab.slice(1):null;
   return <Breadcrumb className="min-w-0"><BreadcrumbList className="flex-nowrap">
     <BreadcrumbItem className="hidden md:inline-flex"><BreadcrumbLink asChild><Link href={href('overview')}>Workspace</Link></BreadcrumbLink></BreadcrumbItem>
     <BreadcrumbSeparator className="hidden md:block"/>

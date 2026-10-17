@@ -1,5 +1,5 @@
 'use client';
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {ArrowUpRight,Ban,RefreshCw,Repeat2,SearchX} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
@@ -41,6 +41,9 @@ export function JobHeaderActions({job,active,reload,compact=false}){
 export function JobPage(){
   const {route,href}=useWorkspace();
   const {job,images,more,error,active,reload,loadMore,loadingMore}=useJob(route.id);
+  const {setCrumb}=useWorkspace();
+  const crumbText=job?(job.queries[0]?.query||'Search job')+(job.queries.length>1?` +${job.queries.length-1}`:''):null;
+  useEffect(()=>{if(crumbText)setCrumb(crumbText);},[crumbText,setCrumb]);
   const back={href:href('jobs'),label:'Search jobs'};
 
   if(error&&!job)return <><PageHeader title="Job not found" back={back}/><EmptyState icon={SearchX} title="We couldn’t open this job" description={error.status===404?'It may have been removed by the retention policy, or it belongs to another account.':error.message} action={<Button asChild><Link href={href('jobs')}>Back to search jobs</Link></Button>}/></>;

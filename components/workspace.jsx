@@ -66,7 +66,8 @@ export default function Workspace({ audience = "customer" }) {
   const [me, setMe] = useState(null),
     [csrf, setCsrf] = useState(""),
     [sessionReady, setSessionReady] = useState(false),
-    [intent, setIntent] = useState(null);
+    [intent, setIntent] = useState(null),
+    [crumb, setCrumb] = useState(null);
   const [theme, setTheme] = useWorkspaceTheme();
 
   const call = useCallback(
@@ -160,21 +161,25 @@ export default function Workspace({ audience = "customer" }) {
     return () => clearTimeout(timer);
   }, [me, route.view, route.id, route.tab]);
 
+  // Detail pages report a readable name (a job's query, a project's name) for the breadcrumb.
+  useEffect(() => { setCrumb(null); }, [route.view, route.id]);
+
   const value = useMemo(() => ({
-    me, call, audience, route, href, navigate, start, takeIntent, intent, refreshMe: refresh, signOut, theme, setTheme, mfaRequired,
-  }), [me, call, audience, route, href, navigate, start, takeIntent, intent, refresh, signOut, theme, setTheme, mfaRequired]);
+    me, call, audience, route, href, navigate, start, takeIntent, intent, refreshMe: refresh, signOut, theme, setTheme, mfaRequired, crumb, setCrumb,
+  }), [me, call, audience, route, href, navigate, start, takeIntent, intent, refresh, signOut, theme, setTheme, mfaRequired, crumb]);
 
   if (!sessionReady || wrongPortal)
     return (
-      <div className="flex min-h-svh">
-        <div className="hidden w-64 shrink-0 flex-col gap-3 border-r p-4 md:flex">
-          <Shimmer className="h-10 w-full" />
+      <div className="flex min-h-svh bg-sidebar" aria-busy="true" aria-label="Loading your workspace">
+        <div className="hidden w-64 shrink-0 flex-col gap-2 p-4 md:flex">
+          <div className="mb-3 flex items-center gap-2 px-1"><img src="/logo.svg" alt="" className="size-8" /><span className="font-semibold">Pluko</span></div>
+          <Shimmer className="mb-3 h-9 w-full rounded-xl" />
           {Array.from({ length: 8 }, (_, index) => <Shimmer key={index} className="h-7 w-full" />)}
         </div>
-        <div className="flex flex-1 flex-col gap-6 p-6 lg:p-10">
-          <Shimmer className="h-7 w-48" />
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((index) => <Shimmer key={index} className="h-32" />)}</div>
-          <Shimmer className="h-72 w-full" />
+        <div className="m-2 flex flex-1 flex-col gap-8 rounded-xl bg-background p-6 shadow-sm lg:p-10">
+          <div className="space-y-3"><Shimmer className="h-4 w-20" /><Shimmer className="h-10 w-72 max-w-full" /></div>
+          <div className="grid gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((index) => <div key={index} className="grid gap-3 bg-card p-6"><Shimmer className="h-3.5 w-24" /><Shimmer className="h-9 w-20" /></div>)}</div>
+          <Shimmer className="h-72 w-full rounded-2xl" />
         </div>
       </div>
     );

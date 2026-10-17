@@ -1,6 +1,6 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {ArrowRight,FolderPlus,Keyboard,KeyRound,LogOut,Monitor,Moon,Search,ShieldPlus,Sparkles,Sun,UserPlus} from 'lucide-react';
+import {ArrowRight,FolderPlus,Keyboard,KeyRound,LogOut,Monitor,Moon,Search,ShieldPlus,Sparkles,Sun,UserPlus,FolderOpen,History} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
 import {Kbd} from '@/components/workspace/ui';
 import {cn} from '@/lib/utils';
@@ -8,10 +8,17 @@ import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@
 
 // Ctrl/⌘+K: jump to any page or run a common action, filtered as you type.
 export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
-  const {me,navigate,start,setTheme,signOut}=useWorkspace();
+  const {me,call,navigate,start,setTheme,signOut}=useWorkspace();
+  const [recent,setRecent]=useState({projects:[],jobs:[]});
   const [query,setQuery]=useState(''),[active,setActive]=useState(0);
   const list=useRef(null);
   useEffect(()=>{if(open){setQuery('');setActive(0);}},[open]);
+  useEffect(()=>{
+    if(!open||me.role==='admin'&&!me.mfa)return;
+    let live=true;
+    Promise.all([call('/api/projects').catch(()=>({projects:[]})),call('/api/jobs?limit=5').catch(()=>({jobs:[]}))]).then(([projects,jobs])=>{if(live)setRecent({projects:projects.projects.slice(0,5),jobs:jobs.jobs});});
+    return()=>{live=false;};
+  },[open,call,me.role,me.mfa]);
 
   const commands=useMemo(()=>{
     const pages=groups.flatMap(group=>group.items.map(([id,name,Icon])=>({id:`go-${id}`,group:'Go to',label:name,icon:Icon,run:()=>navigate(id)})));
@@ -31,8 +38,10 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
       {id:'shortcuts',group:'Preferences',label:'Keyboard shortcuts',icon:Keyboard,hint:'?',run:onShortcuts},
       {id:'sign-out',group:'Preferences',label:'Sign out',icon:LogOut,run:signOut},
     ];
-    return [...actions,...pages,...preferences];
-  },[groups,me.role,navigate,start,setTheme,signOut,onShortcuts]);
+    const projects=recent.projects.map(project=>({id:`project-${project.id}`,group:'Projects',label:project.name,icon:FolderOpen,run:()=>navigate('projects',project.id)}));
+    const jobs=recent.jobs.map(job=>({id:`job-${job.id}`,group:'Recent jobs',label:`${job.queries[0]?.query||'Search job'}${job.queries.length>1?` +${job.queries.length-1}`:''}`,meta:job.status,icon:History,run:()=>navigate('jobs',job.id)}));
+    return [...actions,...pages,...projects,...jobs,...preferences];
+  },[groups,me.role,navigate,start,setTheme,signOut,onShortcuts,recent]);
 
   const results=useMemo(()=>{
     const needle=query.trim().toLowerCase();
@@ -70,7 +79,7 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
             <button type="button" id={`command-${command.id}`} role="option" aria-selected={index===active} data-index={index} onMouseMove={()=>setActive(index)} onClick={()=>run(command)} className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',index===active&&'bg-accent text-accent-foreground')}>
               <Icon className="size-4 text-muted-foreground"/>
               <span className="flex-1">{command.label}</span>
-              {command.hint?<Kbd>{command.hint}</Kbd>:index===active&&<ArrowRight className="size-3.5 text-muted-foreground"/>}
+              {command.hint?<Kbd>{command.hint}</Kbd>:command.meta?<span className="text-xs text-muted-foreground capitalize">{command.meta}</span>:index===active&&<ArrowRight className="size-3.5 text-muted-foreground"/>}
             </button>
           </div>;
         })}
