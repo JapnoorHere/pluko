@@ -151,7 +151,7 @@ export function ErrorState({error,onRetry,title='Something went wrong'}){
 
 export function InlineError({error}){
   if(!error)return null;
-  return <Callout type="danger" title="That didn’t work">{error.message||String(error)}</Callout>;
+  return <div role="alert"><Callout type="danger" title="That didn’t work">{error.message||String(error)}</Callout></div>;
 }
 
 /* ---------- Dialogs ---------- */
