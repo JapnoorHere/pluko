@@ -146,7 +146,7 @@ export function Overview(){
     :!data?<StatGridSkeleton/>
     :<StatGrid>
       <StatCard label="Search jobs" value={compactNumber(data.jobs.total)} icon={Search} hint={data.jobs.active?`${data.jobs.active} running or queued now`:'None running right now'}/>
-      <StatCard label="API requests" value={compactNumber(data.requests.total)} icon={Zap} hint="Dashboard and API calls, all time"/>
+      <StatCard label="API requests" value={compactNumber(data.requests.total)} icon={Zap} hint="Calls made with your API keys, all time"/>
       <StatCard label="Error rate" value={errorRate===0&&data?.requests.errors?'<1%':`${errorRate}%`} icon={Activity} tone={errorRate>=10?'danger':undefined} hint={`${(data.requests.errors||0).toLocaleString()} ${data.requests.errors===1?'response':'responses'} with status 400 or above`}/>
       <StatCard label="Avg. response" value={formatDuration(data.requests.average_ms||0)} icon={Clock} hint="Time to handle a request"/>
     </StatGrid>}

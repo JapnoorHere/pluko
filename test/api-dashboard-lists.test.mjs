@@ -22,16 +22,16 @@ test('request logs filter by an exact status or a status class',async()=>{
   await client.get('/api/projects');
   await client.get('/api/jobs/job_missing');
 
-  const errors=await client.get('/api/logs?status=4xx');
+  const errors=await client.get('/api/logs?source=all&status=4xx');
   assert.equal(errors.status,200);
   assert.ok(errors.json.logs.length>0);
   assert.ok(errors.json.logs.every(row=>row.status>=400&&row.status<500));
 
-  const ok=await client.get('/api/logs?status=2xx');
+  const ok=await client.get('/api/logs?source=all&status=2xx');
   assert.ok(ok.json.logs.length>0);
   assert.ok(ok.json.logs.every(row=>row.status>=200&&row.status<300));
 
-  const exact=await client.get('/api/logs?status=404');
+  const exact=await client.get('/api/logs?source=all&status=404');
   assert.ok(exact.json.logs.length>0);
   assert.ok(exact.json.logs.every(row=>row.status===404));
 
@@ -75,4 +75,43 @@ test('feedback lists include the reported image, and only for its owner',async()
   api.store.run('DELETE FROM results WHERE id=?',first.id);
   const after=await owner.get('/api/feedback');
   assert.equal(after.json.feedback.find(item=>item.id===sent.json.id).image,null);
+});
+
+test('request logs show API calls by default, dashboard activity only on request',async()=>{
+  const client=api.client();
+  await client.register('logs-source@example.test');
+  const {key}=await client.project('Log source');
+  await client.get('/api/projects');
+  await client.get('/api/usage');
+  await client.post('/v1/images/search',{query:'log source',count:'5'},{key});
+  await client.get('/v1/usage',{key});
+
+  const byDefault=await client.get('/api/logs');
+  assert.equal(byDefault.status,200);
+  assert.ok(byDefault.json.logs.length>=2);
+  assert.ok(byDefault.json.logs.every(row=>row.path.startsWith('/v1/')),'only API requests by default');
+  assert.ok(byDefault.json.logs.some(row=>row.path==='/v1/images/search'&&row.method==='POST'));
+
+  const everything=await client.get('/api/logs?source=all');
+  assert.ok(everything.json.logs.some(row=>row.path==='/api/projects'),'dashboard requests are available on request');
+  assert.ok(everything.json.logs.length>byDefault.json.logs.length);
+
+  assert.equal((await client.get('/api/logs?source=dashboard')).status,400);
+  const other=api.client();
+  await other.register('logs-source-other@example.test');
+  assert.equal((await other.get('/api/logs')).json.logs.length,0,'nobody sees another account’s calls');
+});
+
+test('the overview counts only API calls, not the dashboard’s own requests',async()=>{
+  const client=api.client();
+  await client.register('overview-count@example.test');
+  const {key}=await client.project('Counter');
+  for(let index=0;index<5;index++)await client.get('/api/projects');
+  const before=(await client.get('/api/overview')).json.requests.total;
+  assert.equal(before,0,'dashboard traffic is not counted');
+  await client.get('/v1/usage',{key});
+  await client.get('/v1/jobs',{key});
+  const after=(await client.get('/api/overview')).json.requests;
+  assert.equal(after.total,2);
+  assert.equal(after.errors??0,0);
 });
