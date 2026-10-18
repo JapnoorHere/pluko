@@ -96,3 +96,16 @@ test('signup is limited per network, not only per email',async()=>{
   assert.ok(blocked,'expected a SIGNUP_RATE_LIMIT response');
   assert.equal(blocked.json.error.code,'SIGNUP_RATE_LIMIT');
 });
+
+test('the health check answers whatever Host header it is called with, but other routes still check it',async()=>{
+  const {request}=await import('node:http');
+  const get=(path,host)=>new Promise((resolve,reject)=>{
+    const {port}=new URL(api.base);
+    const req=request({host:'127.0.0.1',port,path,method:'GET',headers:{Host:host}},res=>{let text='';res.on('data',chunk=>text+=chunk);res.on('end',()=>resolve({status:res.statusCode,text}));});
+    req.on('error',reject);req.end();
+  });
+  const health=await get('/health','127.0.0.1:4180');
+  assert.equal(health.status,200,'container health checks call 127.0.0.1, not the public name');
+  assert.equal(JSON.parse(health.text).status,'ok');
+  assert.equal((await get('/v1/status','evil.example.test')).status,403,'other routes still reject an unexpected Host');
+});

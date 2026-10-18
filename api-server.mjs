@@ -36,9 +36,9 @@ export function createServer(){return http.createServer(async(req,res)=>{
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src https: http: data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
   const respond=(status,data)=>{const response={...data,request_id:requestId};if(logged){try{run('UPDATE requests SET user_id=?,project_id=?,key_id=?,payload=?,response=?,status=?,duration=? WHERE id=?',auth?.user_id||null,auth?.project_id||null,auth?.key_id||null,JSON.stringify(redact(payload)),JSON.stringify(redact(response)),status,now()-started,requestId);}catch{res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({error:{code:'LOG_UNAVAILABLE',message:'Durable request logging is unavailable'},request_id:requestId}));return;}}if(status===429)res.setHeader('Retry-After','60');res.writeHead(status,{'Content-Type':'application/json'});res.end(JSON.stringify(response));};
   try{
+    if(req.method==='GET'&&url.pathname==='/health')return respond(200,{status:'ok'});
     if(req.headers.host!==new URL(config.origin).host)fail(403,'INVALID_HOST','Host does not match PUBLIC_ORIGIN');
     if(!['GET','POST'].includes(req.method))fail(405,'METHOD_NOT_ALLOWED','Use GET or POST');
-    if(req.method==='GET'&&url.pathname==='/health')return respond(200,{status:'ok'});
     if(req.method==='GET'&&['/','/app.js','/style.css','/logo.svg'].includes(url.pathname)){const name=url.pathname==='/'?'index.html':url.pathname.slice(1),types={html:'text/html',js:'text/javascript',css:'text/css',svg:'image/svg+xml'};res.setHeader('Content-Type',types[name.split('.').pop()]);return res.end(await readFile(path.join(root,'public',name)));}
     if(!url.pathname.startsWith('/api/')&&!url.pathname.startsWith('/v1/'))fail(404,'NOT_FOUND','Route not found');
     if(!rate('ip:'+clientIp(req),RATE_LIMITS.ipPerMinute,60000))fail(429,'RATE_LIMIT','Too many requests');
