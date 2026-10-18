@@ -1,57 +1,47 @@
 'use client';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo} from 'react';
 import Link from 'next/link';
-import {Copy,ExternalLink,RefreshCw,Repeat2,Search,Sparkles} from 'lucide-react';
-import {useWorkspace} from '@/components/workspace/context';
-import {DataTable,EmptyState,IdPill,LoadMore,PageHeader,RowActions,SearchInput,StatusBadge,TableToolbar,TimeAgo,copyWithToast,toast} from '@/components/workspace/ui';
-import {matches,percent} from '@/lib/ui-helpers';
+import {Copy,ExternalLink,Repeat2,Sparkles} from 'lucide-react';
+import {useResource,useWorkspace} from '@/components/workspace/context';
+import {DataTable,IdPill,PageHeader,RowActions,StatusBadge,TimeAgo,copyWithToast,toast} from '@/components/workspace/ui';
+import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {percent} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
-import {Tabs,TabsList,TabsTrigger} from '@/components/ui/tabs';
 
-const STATUSES=[['all','All'],['running','Running'],['queued','Queued'],['complete','Complete'],['partial','Partial'],['cancelled','Cancelled']];
+const STATUS_OPTIONS=[['running','Running'],['queued','Queued'],['complete','Complete'],['partial','Partial'],['cancelled','Cancelled']];
+const DEFAULTS={sort:'created_desc'};
+const ACTIVE_POLL=5000;
 
 export function Jobs(){
-  const {call,navigate,href}=useWorkspace();
-  const [jobs,setJobs]=useState([]),[status,setStatus]=useState('all'),[cursor,setCursor]=useState(null),[loading,setLoading]=useState(true),[loadingMore,setLoadingMore]=useState(false),[error,setError]=useState(null),[query,setQuery]=useState('');
-  const load=useCallback(async({before,quiet=false}={})=>{
-    if(before)setLoadingMore(true);else if(!quiet)setLoading(true);
-    try{
-      const params=new URLSearchParams({limit:'25'});
-      if(status!=='all')params.set('status',status);
-      if(before)params.set('before',before);
-      const data=await call(`/api/jobs?${params}`);
-      if(quiet){
-        // Merge fresh rows into what is loaded, so older pages the user opened stay in place.
-        setJobs(old=>{
-          const fresh=new Map(data.jobs.map(job=>[job.id,job]));
-          const known=new Set(old.map(job=>job.id));
-          return [...data.jobs.filter(job=>!known.has(job.id)),...old.map(job=>fresh.get(job.id)||job)];
-        });
-      }else{
-        setJobs(old=>before?old.concat(data.jobs):data.jobs);
-        setCursor(data.next_cursor);
-      }
-      setError(null);
-    }catch(failure){if(!quiet)setError(failure);}
-    finally{setLoading(false);setLoadingMore(false);}
-  },[call,status]);
-  useEffect(()=>{setJobs([]);load();},[load]);
-  const hasActive=jobs.some(job=>['queued','running'].includes(job.status));
-  // Keep running jobs fresh without flashing the table.
+  const {call,navigate,href,me}=useWorkspace();
+  const admin=me.role==='admin';
+  const projects=useResource('/api/projects'),keys=useResource('/api/keys');
+  const filters=useMemo(()=>[
+    {id:'status',label:'Status',type:'multi',options:STATUS_OPTIONS},
+    {id:'project_id',label:'Project',type:'select',anyLabel:'Any project',options:(projects.data?.projects||[]).map(p=>[p.id,admin?`${p.name} · ${p.owner}`:p.name])},
+    {id:'key_id',label:'API key',type:'select',anyLabel:'Any key',options:(keys.data?.keys||[]).map(k=>[k.id,`${k.name} · ${k.project}`])},
+    {id:'created',label:'Created',type:'date'},
+  ],[projects.data,keys.data,admin]);
+  const list=useListQuery('/api/jobs',{id:'jobs',itemsKey:'jobs',filters,defaults:DEFAULTS});
+
+  // While a job on this page is queued or running, reload quietly so progress moves without flashing the table.
+  const hasActive=Boolean(list.items?.some(job=>['queued','running'].includes(job.status)));
+  const {reload}=list;
   useEffect(()=>{
     if(!hasActive)return;
-    const timer=setInterval(()=>{if(document.visibilityState==='visible')load({quiet:true});},5000);
+    const timer=setInterval(()=>{if(document.visibilityState==='visible')reload({quiet:true});},ACTIVE_POLL);
     return()=>clearInterval(timer);
-  },[hasActive,load]);
+  },[hasActive,reload]);
 
   const runAgain=async job=>{try{const data=await call(`/api/jobs/${job.id}/retry`,{});toast.success('New job started');navigate('jobs',data.job_id);}catch(failure){toast.error(failure.message);}};
-  const rows=useMemo(()=>jobs.filter(job=>matches(job,query,[row=>row.queries.map(item=>item.query).join(' '),'id'])),[jobs,query]);
 
   const columns=[
     {key:'query',header:'Query',className:'max-w-0 w-full',cell:job=><div className="min-w-0"><Link href={href('jobs',job.id)} onClick={event=>event.stopPropagation()} className="block truncate font-medium hover:underline" title={job.queries.map(item=>item.query).join(', ')}>{job.queries[0]?.query||'—'}{job.queries.length>1&&<span className="font-normal text-muted-foreground"> +{job.queries.length-1} more</span>}</Link><IdPill value={job.id}/></div>},
+    ...(admin?[{key:'account',header:'Account',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell max-w-48 truncate text-muted-foreground',cell:job=>job.user_email}]:[]),
+    {key:'project',header:'Project',headClassName:'hidden xl:table-cell',className:'hidden xl:table-cell max-w-40 truncate text-muted-foreground',cell:job=>job.project_name||'—'},
     {key:'status',header:'Status',cell:job=><StatusBadge status={job.status}/>},
-    {key:'progress',header:'Found',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:job=>{const share=percent(job.returned,Number(job.requested));return <div className="grid w-36 gap-1"><span className="text-xs tabular-nums text-muted-foreground">{job.returned.toLocaleString()} / {Number(job.requested).toLocaleString()}</span><div className="h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-brand" style={{width:`${share}%`}}/></div></div>;}},
-    {key:'created',header:'Created',headClassName:'hidden sm:table-cell',className:'hidden sm:table-cell text-muted-foreground',cell:job=><TimeAgo value={job.created}/>},
+    {key:'progress',header:'Found',sortKey:'found',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:job=>{const share=percent(job.returned,Number(job.requested));return <div className="grid w-36 gap-1"><span className="text-xs tabular-nums text-muted-foreground">{job.returned.toLocaleString()} / {Number(job.requested).toLocaleString()}</span><div className="h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-brand" style={{width:`${share}%`}}/></div></div>;}},
+    {key:'created',header:'Created',sortKey:'created',headClassName:'hidden sm:table-cell',className:'hidden sm:table-cell text-muted-foreground whitespace-nowrap',cell:job=><TimeAgo value={job.created}/>},
     {key:'actions',header:<span className="sr-only">Actions</span>,className:'w-10 text-right',cell:job=><RowActions items={[
       {label:'Open job',icon:ExternalLink,onSelect:()=>navigate('jobs',job.id)},
       {label:'Run again',icon:Repeat2,disabled:['queued','running'].includes(job.status),onSelect:()=>runAgain(job)},
@@ -60,17 +50,12 @@ export function Jobs(){
   ];
 
   return <>
-    <PageHeader title="Search jobs" description="Every search you’ve run from the playground or the API. Finished jobs are removed after the retention period."
+    <PageHeader title="Search jobs" description={admin?'Every search on this Pluko instance, across all accounts.':'Every search you’ve run from the playground or the API. Finished jobs are removed after the retention period.'}
       actions={<Button asChild><Link href={href('playground')}><Sparkles/>New search</Link></Button>}/>
-    <DataTable columns={columns} rows={rows} loading={loading} error={error} onRetry={()=>load()} caption="Search jobs"
-      onRowClick={job=>navigate('jobs',job.id)}
-      toolbar={<TableToolbar end={<Button type="button" variant="outline" size="sm" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'animate-spin':undefined}/>Refresh</Button>}>
-        <Tabs value={status} onValueChange={setStatus}><TabsList className="h-8 max-w-full overflow-x-auto overflow-y-hidden">{STATUSES.map(([value,label])=><TabsTrigger key={value} value={value} className="text-xs">{label}</TabsTrigger>)}</TabsList></Tabs>
-        <SearchInput value={query} onChange={setQuery} placeholder="Filter loaded jobs…"/>
-      </TableToolbar>}
-      empty={query?<EmptyState icon={Search} title="No matching jobs" description={`Nothing loaded matches “${query}”.`} action={<Button variant="outline" onClick={()=>setQuery('')}>Clear filter</Button>}/>
-        :status!=='all'?<EmptyState icon={Search} title={`No ${status} jobs`} description="Try another status, or look at all jobs." action={<Button variant="outline" onClick={()=>setStatus('all')}>Show all jobs</Button>}/>
-        :<EmptyState icon={Sparkles} title="No searches yet" description="Run a search from the playground or call the API, and every job will show up here." action={<Button asChild><Link href={href('playground')}>Run your first search</Link></Button>}/>}
-      footer={cursor&&!query&&<LoadMore loading={loadingMore} onClick={()=>load({before:cursor})}>Load older jobs</LoadMore>}/>
+    <DataTable columns={columns} rows={list.items} loading={list.loading} error={list.error} onRetry={()=>list.reload()} caption="Search jobs"
+      sort={list.sort} onSort={list.setSort} onRowClick={job=>navigate('jobs',job.id)}
+      toolbar={<FilterBar list={list} placeholder="Search queries or job IDs…"/>}
+      empty={<ListEmpty list={list} icon={Sparkles} title="No searches yet" description="Run a search from the playground or call the API, and every job will show up here." action={<Button asChild><Link href={href('playground')}>Run your first search</Link></Button>}/>}
+      footer={<Pagination list={list} label="jobs"/>}/>
   </>;
 }

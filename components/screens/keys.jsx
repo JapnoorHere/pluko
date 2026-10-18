@@ -3,10 +3,10 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {Ban,FolderPlus,KeyRound,Pencil,Plus,RefreshCw,Search} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
+import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
 import {useReturnFocus} from '@/components/design/system';
-import {CodeBlock,ConfirmDialog,DataTable,EmptyState,FormDialog,InlineError,PageHeader,RowActions,SearchInput,SecretReveal,TableToolbar,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
+import {CodeBlock,ConfirmDialog,DataTable,EmptyState,FormDialog,InlineError,PageHeader,RowActions,SecretReveal,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
 import {daysLeft} from '@/lib/display';
-import {matches} from '@/lib/ui-helpers';
 import {cn} from '@/lib/utils';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -17,7 +17,6 @@ import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {Spinner} from '@/components/ui/spinner';
-import {Tabs,TabsList,TabsTrigger} from '@/components/ui/tabs';
 
 const parseScopes=value=>{try{return JSON.parse(value);}catch{return [];}};
 const EXPIRY=[['7','7 days'],['30','30 days'],['90','90 days'],['180','180 days'],['365','1 year']];
@@ -97,15 +96,16 @@ export function CreateKeyDialog({open,onOpenChange,projects,defaultProject,onCre
 }
 
 // The keys table with rename, rotate and revoke. Used on the API keys page and inside a project.
-export function KeysTable({keys,loading,error,reload,showProject=true,empty,toolbar}){
+export function KeysTable({keys,loading,error,reload,showProject=true,showOwner=false,empty,toolbar,footer,sort,onSort}){
   const {call}=useWorkspace();
   const [renaming,setRenaming]=useState(null),[name,setName]=useState(''),[rotating,setRotating]=useState(null),[revoking,setRevoking]=useState(null),[secret,setSecret]=useState(null);
   const columns=[
-    {key:'name',header:'Name',cell:item=><div className="grid gap-0.5"><span className={cn('font-medium',item.revoked&&'text-muted-foreground line-through')}>{item.name}</span><code className="text-xs text-muted-foreground">{item.prefix}…</code></div>},
+    {key:'name',header:'Name',sortKey:'name',sortFirst:'asc',cell:item=><div className="grid gap-0.5"><span className={cn('font-medium',item.revoked&&'text-muted-foreground line-through')}>{item.name}</span><code className="text-xs text-muted-foreground">{item.prefix}…</code></div>},
+    ...(showOwner?[{key:'owner',header:'Account',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell max-w-44 truncate text-muted-foreground',cell:item=>item.owner}]:[]),
     ...(showProject?[{key:'project',header:'Project',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:item=>item.project}]:[]),
     {key:'scopes',header:'Permissions',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell',cell:item=><div className="flex gap-1">{parseScopes(item.scopes).map(scope=><Badge key={scope} variant="secondary" className="font-mono text-[11px]">{scope}</Badge>)}</div>},
-    {key:'used',header:'Last used',headClassName:'hidden sm:table-cell',className:'hidden sm:table-cell text-muted-foreground',cell:item=>item.last_used?<TimeAgo value={item.last_used}/>:'Never'},
-    {key:'status',header:'Status',cell:item=><ExpiryCell item={item}/>},
+    {key:'used',header:'Last used',sortKey:'last_used',headClassName:'hidden sm:table-cell',className:'hidden sm:table-cell text-muted-foreground',cell:item=>item.last_used?<TimeAgo value={item.last_used}/>:'Never'},
+    {key:'status',header:'Expires',sortKey:'expires',sortFirst:'asc',cell:item=><ExpiryCell item={item}/>},
     {key:'actions',header:<span className="sr-only">Actions</span>,className:'w-10 text-right',cell:item=>!item.revoked&&<RowActions items={[
       {label:'Rename',icon:Pencil,onSelect:()=>{setRenaming(item);setName(item.name);}},
       {label:'Rotate key',icon:RefreshCw,onSelect:()=>setRotating(item)},
@@ -114,7 +114,7 @@ export function KeysTable({keys,loading,error,reload,showProject=true,empty,tool
     ]}/>},
   ];
   return <>
-    <DataTable columns={columns} rows={keys} loading={loading} error={error} onRetry={reload} empty={empty} toolbar={toolbar} caption="API keys"/>
+    <DataTable columns={columns} rows={keys} loading={loading} error={error} onRetry={reload} empty={empty} toolbar={toolbar} footer={footer} sort={sort} onSort={onSort} caption="API keys"/>
     <FormDialog open={Boolean(renaming)} onOpenChange={open=>{if(!open)setRenaming(null);}} title="Rename API key" description="Only the label changes. The key keeps working." submitLabel="Save name"
       onSubmit={async()=>{await call('/api/keys/rename',{id:renaming.id,name});toast.success('Key renamed');await reload({quiet:true});}}>
       <Field><FieldLabel htmlFor="rename-key">Name</FieldLabel><Input id="rename-key" required autoFocus maxLength={100} value={name} onChange={event=>setName(event.target.value)}/></Field>
@@ -127,29 +127,40 @@ export function KeysTable({keys,loading,error,reload,showProject=true,empty,tool
   </>;
 }
 
-const STATUS_TABS=[['active','Active'],['revoked','Revoked'],['all','All']];
+const STATUS_OPTIONS=[['active','Active'],['expiring','Expiring within 7 days'],['expired','Expired'],['revoked','Revoked']];
+const USE_OPTIONS=[['day','Used in the last 24 hours'],['week','Used in the last 7 days'],['inactive','Not used for 30+ days'],['never','Never used']];
+const DEFAULTS={sort:'created_desc'};
 
 export function Keys(){
-  const {href,takeIntent}=useWorkspace();
+  const {href,takeIntent,me}=useWorkspace();
+  const admin=me.role==='admin';
   const projects=useResource('/api/projects');
-  const keys=useResource('/api/keys');
-  const [creating,setCreating]=useState(false),[secret,setSecret]=useState(null),[tab,setTab]=useState('active'),[query,setQuery]=useState('');
+  // The full list powers the "expiring soon" warning; the table itself is paginated on the server.
+  const everyKey=useResource('/api/keys');
+  const [creating,setCreating]=useState(false),[secret,setSecret]=useState(null);
   useEffect(()=>{if(takeIntent('keys','create'))setCreating(true);},[takeIntent]);
+  const filters=useMemo(()=>[
+    {id:'status',label:'Status',type:'multi',options:STATUS_OPTIONS},
+    {id:'project_id',label:'Project',type:'select',anyLabel:'Any project',options:(projects.data?.projects||[]).map(p=>[p.id,admin?`${p.name} · ${p.owner}`:p.name])},
+    {id:'scope',label:'Permission',type:'multi',options:[['search','search'],['read','read']]},
+    {id:'used',label:'Last used',type:'select',anyLabel:'Any time',options:USE_OPTIONS},
+    {id:'created',label:'Created',type:'date'},
+  ],[projects.data,admin]);
+  const list=useListQuery('/api/keys',{id:'keys',itemsKey:'keys',filters,defaults:DEFAULTS});
   const noProjects=projects.data&&!projects.data.projects.length;
-  const all=keys.data?.keys;
-  const rows=useMemo(()=>all?.filter(item=>(tab==='all'||(tab==='revoked'?item.revoked:!item.revoked))&&matches(item,query,['name','project','prefix'])),[all,tab,query]);
-  const expiring=all?.filter(item=>keyState(item)==='expiring').length||0;
+  const expiring=everyKey.data?.keys?.filter(item=>keyState(item)==='expiring').length||0;
+  const reloadAll=async options=>{await Promise.all([list.reload(options),everyKey.reload(options)]);};
   return <>
-    <PageHeader title="API keys" description="Keys authenticate your backend. They’re shown once, scoped to a project, and expire automatically."
+    <PageHeader title="API keys" description={admin?'Every API key on this Pluko instance, across all accounts.':'Keys authenticate your backend. They’re shown once, scoped to a project, and expire automatically.'}
       actions={<Button type="button" disabled={!projects.data||noProjects} onClick={()=>setCreating(true)}><Plus/>Create API key</Button>}/>
     {expiring>0&&<p className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">{expiring} key{expiring===1?' expires':'s expire'} within 14 days. Rotate {expiring===1?'it':'them'} before then to avoid an outage.</p>}
     {noProjects?<EmptyState icon={FolderPlus} title="You need a project first" description="API keys belong to a project, so usage and limits stay separate per application." action={<Button asChild><Link href={href('projects')}><Plus/>Create a project</Link></Button>}/>
-    :<KeysTable keys={rows} loading={keys.loading} error={keys.error} reload={keys.reload}
-      toolbar={<TableToolbar><Tabs value={tab} onValueChange={setTab}><TabsList className="h-8">{STATUS_TABS.map(([value,label])=><TabsTrigger key={value} value={value} className="text-xs">{label}{value==='active'&&all&&<span className="ml-1 text-muted-foreground tabular-nums">{all.filter(item=>!item.revoked).length}</span>}</TabsTrigger>)}</TabsList></Tabs><SearchInput value={query} onChange={setQuery} placeholder="Search keys…"/></TableToolbar>}
-      empty={query?<EmptyState icon={Search} title="No matching keys" description={`No keys match “${query}”.`}/>
-        :tab==='revoked'?<EmptyState icon={KeyRound} title="No revoked keys" description="Keys you revoke or rotate out will be listed here."/>
-        :<EmptyState icon={KeyRound} title="No API keys yet" description="Create a key to call the Pluko API from your backend." action={<Button onClick={()=>setCreating(true)}><Plus/>Create API key</Button>}/>}/>}
-    <CreateKeyDialog open={creating} onOpenChange={setCreating} projects={projects.data?.projects||[]} onCreated={async value=>{setSecret(value);await keys.reload({quiet:true});}}/>
+    :<KeysTable keys={list.items} loading={list.loading} error={list.error} reload={reloadAll} showOwner={admin}
+      sort={list.sort} onSort={list.setSort}
+      toolbar={<FilterBar list={list} placeholder="Search names or key prefixes…"/>}
+      footer={<Pagination list={list} label="keys"/>}
+      empty={<ListEmpty list={list} icon={KeyRound} title="No API keys yet" description="Create a key to call the Pluko API from your backend." action={<Button onClick={()=>setCreating(true)}><Plus/>Create API key</Button>}/>}/>}
+    <CreateKeyDialog open={creating} onOpenChange={setCreating} projects={projects.data?.projects||[]} onCreated={async value=>{setSecret(value);await reloadAll({quiet:true});}}/>
     <KeyRevealDialog secret={secret} onClose={()=>{setSecret(null);toast.success('API key created');}}/>
   </>;
 }

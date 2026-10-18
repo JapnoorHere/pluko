@@ -48,9 +48,10 @@ export function useListQuery(endpoint,{id=endpoint,itemsKey='items',filters:defi
     return()=>clearTimeout(timer);
   },[search,state.q]);
 
-  const stateKey=JSON.stringify(state),fixedKey=JSON.stringify(fixed);
+  // Requests depend only on each filter's id and type, so options arriving later (e.g. project names) don't reload the list.
+  const stateKey=JSON.stringify(state),fixedKey=JSON.stringify(fixed),shapeKey=JSON.stringify(definitions.map(def=>({id:def.id,type:def.type})));
   // Built at request time, so "last 24 hours" moves forward on every refresh.
-  const buildQuery=useCallback(()=>apiParams(JSON.parse(stateKey),definitions,JSON.parse(fixedKey)).toString(),[stateKey,fixedKey,definitions]);
+  const buildQuery=useCallback(()=>apiParams(JSON.parse(stateKey),JSON.parse(shapeKey),JSON.parse(fixedKey)).toString(),[stateKey,fixedKey,shapeKey]);
 
   const load=useCallback(async({quiet=false,manual=false}={})=>{
     if(!enabled)return;
@@ -79,9 +80,9 @@ export function useListQuery(endpoint,{id=endpoint,itemsKey='items',filters:defi
   // Keep the URL in step without adding history entries for every filter change.
   useEffect(()=>{
     if(!syncUrl)return;
-    const next=writeState(window.location.search,JSON.parse(stateKey),definitions,defaults,prefix);
+    const next=writeState(window.location.search,JSON.parse(stateKey),JSON.parse(shapeKey),defaults,prefix);
     if(next!==window.location.search)window.history.replaceState(window.history.state,'',window.location.pathname+next+window.location.hash);
-  },[syncUrl,stateKey,definitions,defaults,prefix]);
+  },[syncUrl,stateKey,shapeKey,defaults,prefix]);
 
   // If rows were removed and the current page is now past the end, step back to the last page.
   const total=data?.total??0,pageSize=data?.page_size??state.pageSize;

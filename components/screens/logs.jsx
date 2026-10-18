@@ -1,18 +1,13 @@
 'use client';
-import {useCallback,useEffect,useState} from 'react';
-import {ClipboardList,RefreshCw,Search} from 'lucide-react';
-import {useWorkspace} from '@/components/workspace/context';
-import {CodeBlock,DataTable,DescriptionList,Duration,EmptyState,ErrorState,IdPill,LoadMore,PageHeader,SearchInput,Shimmer,TableToolbar,TimeAgo,ToneBadge,MethodBadge} from '@/components/workspace/ui';
+import {useEffect,useMemo,useState} from 'react';
+import {ClipboardList} from 'lucide-react';
+import {useResource,useWorkspace} from '@/components/workspace/context';
+import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {CodeBlock,DataTable,DescriptionList,Duration,ErrorState,IdPill,PageHeader,Shimmer,TimeAgo,ToneBadge,MethodBadge} from '@/components/workspace/ui';
 import {format} from '@/lib/display';
 import {httpTone} from '@/lib/ui-helpers';
-import {cn} from '@/lib/utils';
-import {Button} from '@/components/ui/button';
-import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {Sheet,SheetContent,SheetDescription,SheetHeader,SheetTitle} from '@/components/ui/sheet';
 import {Tabs,TabsContent,TabsList,TabsTrigger} from '@/components/ui/tabs';
-
-const CLASSES=[['all','All'],['2xx','Success'],['4xx','Client errors'],['5xx','Server errors']];
-const STATUS=[['all','Any exact code'],['200','200 OK'],['201','201 Created'],['202','202 Accepted'],['400','400 Bad request'],['401','401 Unauthorized'],['403','403 Forbidden'],['404','404 Not found'],['409','409 Conflict'],['429','429 Rate limited'],['500','500 Server error']];
 
 function StatusCode({status}){
   return <ToneBadge tone={httpTone(status)} className="font-mono normal-case">{status||'Interrupted'}</ToneBadge>;
@@ -46,47 +41,43 @@ function LogSheet({id,onClose}){
   </Sheet>;
 }
 
+const STATUS_OPTIONS=[['2xx','2xx Success'],['4xx','4xx Client errors'],['5xx','5xx Server errors'],['400','400 Bad request'],['401','401 Unauthorized'],['403','403 Forbidden'],['404','404 Not found'],['409','409 Conflict'],['429','429 Rate limited'],['500','500 Server error'],['503','503 Unavailable']];
+const ENDPOINT_OPTIONS=[['search','Image search'],['jobs','Jobs'],['results','Results'],['usage','Usage'],['feedback','Feedback']];
+const DEFAULTS={sort:'created_desc'};
+
 export function Logs(){
-  const {call}=useWorkspace();
-  const [logs,setLogs]=useState([]),[query,setQuery]=useState(''),[status,setStatus]=useState('all'),[source,setSource]=useState('api'),[loading,setLoading]=useState(true),[loadingMore,setLoadingMore]=useState(false),[error,setError]=useState(null),[selected,setSelected]=useState(null),[cursor,setCursor]=useState(null);
-  const load=useCallback(async before=>{
-    if(before)setLoadingMore(true);else setLoading(true);
-    try{
-      const params=new URLSearchParams();
-      if(query.trim())params.set('q',query.trim());
-      if(status!=='all')params.set('status',status);
-      if(source!=='api')params.set('source',source);
-      if(before)params.set('before',before);
-      const data=await call(`/api/logs?${params}`);
-      setLogs(old=>before?old.concat(data.logs):data.logs);setCursor(data.next_cursor);setError(null);
-    }catch(failure){setError(failure);}
-    finally{setLoading(false);setLoadingMore(false);}
-  },[call,query,status,source]);
-  useEffect(()=>{const timer=setTimeout(()=>load(),250);return()=>clearTimeout(timer);},[load]);
+  const {me}=useWorkspace();
+  const admin=me.role==='admin';
+  const [selected,setSelected]=useState(null);
+  const projects=useResource('/api/projects'),keys=useResource('/api/keys');
+  const filters=useMemo(()=>[
+    {id:'source',label:'Source',type:'select',anyLabel:'API requests only',options:[['all','Everything, incl. dashboard']]},
+    {id:'status',label:'Status',type:'multi',options:STATUS_OPTIONS},
+    {id:'endpoint',label:'Endpoint',type:'multi',options:ENDPOINT_OPTIONS},
+    {id:'method',label:'Method',type:'multi',options:[['GET','GET'],['POST','POST']]},
+    {id:'project_id',label:'Project',type:'select',anyLabel:'Any project',options:(projects.data?.projects||[]).map(p=>[p.id,admin?`${p.name} · ${p.owner}`:p.name])},
+    {id:'key_id',label:'API key',type:'select',anyLabel:'Any key',options:(keys.data?.keys||[]).map(k=>[k.id,`${k.name} · ${k.project}`])},
+    {id:'speed',label:'Duration',type:'select',anyLabel:'Any duration',options:[['slow','Slower than 1 s'],['very_slow','Slower than 5 s']]},
+    {id:'created',label:'Time',type:'date'},
+  ],[projects.data,keys.data,admin]);
+  const list=useListQuery('/api/logs',{id:'logs',itemsKey:'logs',filters,defaults:DEFAULTS});
+  const everything=list.filters.source==='all';
 
   const columns=[
     {key:'status',header:'Status',cell:row=><StatusCode status={row.status}/>},
     {key:'route',header:'Request',className:'max-w-0 w-full',cell:row=><div className="flex min-w-0 items-center gap-2"><MethodBadge method={row.method}/><span className="truncate font-mono text-xs">{row.path}</span></div>},
-    {key:'duration',header:'Duration',headClassName:'hidden sm:table-cell text-right',className:'hidden sm:table-cell text-right',cell:row=><Duration ms={row.duration}/>},
-    {key:'created',header:'Time',headClassName:'text-right',className:'text-right text-muted-foreground',cell:row=><TimeAgo value={row.created}/>},
+    ...(admin?[{key:'account',header:'Account',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell max-w-44 truncate text-muted-foreground',cell:row=>row.user_email||'—'}]:[]),
+    {key:'project',header:'Project',headClassName:'hidden xl:table-cell',className:'hidden xl:table-cell max-w-36 truncate text-muted-foreground',cell:row=>row.project_name||'—'},
+    {key:'duration',header:'Duration',sortKey:'duration',headClassName:'hidden sm:table-cell text-right',className:'hidden sm:table-cell text-right',cell:row=><Duration ms={row.duration}/>},
+    {key:'created',header:'Time',sortKey:'created',headClassName:'text-right',className:'text-right text-muted-foreground whitespace-nowrap',cell:row=><TimeAgo value={row.created}/>},
   ];
-  const filtered=query||status!=='all';
-  useEffect(()=>{const value=new URLSearchParams(window.location.search).get('status');if(value&&(CLASSES.some(([key])=>key===value)||STATUS.some(([key])=>key===value)))setStatus(value);},[]);
-  useEffect(()=>{const url=new URL(window.location.href);if(status==='all')url.searchParams.delete('status');else url.searchParams.set('status',status);window.history.replaceState(window.history.state,'',url);},[status]);
-  const exact=!CLASSES.some(([key])=>key===status);
   return <>
-    <PageHeader title="Request logs" description={source==='api'?'Calls your applications make to the Pluko API with your API keys, with sanitized request and response bodies. Secrets are never stored.':'Everything: API calls from your applications plus this dashboard’s own background requests. Secrets are never stored.'}/>
-    <DataTable columns={columns} rows={logs} loading={loading} error={error} onRetry={()=>load()} onRowClick={row=>setSelected(row.id)} selectedKey={selected} skeletonRows={8} caption="Request logs"
-      toolbar={<TableToolbar end={<Button type="button" variant="outline" size="sm" disabled={loading} onClick={()=>load()}><RefreshCw className={loading?'animate-spin':undefined}/>Refresh</Button>}>
-        <div role="radiogroup" aria-label="Source" className="flex gap-1.5">{[['api','API requests'],['all','Everything']].map(([value,label])=><button key={value} type="button" role="radio" aria-checked={source===value} onClick={()=>setSource(value)} className={cn('h-8 rounded-full border px-3 text-[13px] transition-colors',source===value?'border-foreground bg-foreground text-background':'bg-card text-muted-foreground hover:text-foreground')}>{label}</button>)}</div>
-        <SearchInput value={query} onChange={setQuery} placeholder="Search routes or bodies…" className="sm:w-72"/>
-        <div role="radiogroup" aria-label="Status" className="flex flex-wrap gap-1.5">{CLASSES.map(([value,label])=><button key={value} type="button" role="radio" aria-checked={status===value} onClick={()=>setStatus(value)} className={cn('h-8 rounded-full border px-3 text-[13px] transition-colors',status===value?'border-foreground bg-foreground text-background':'bg-card text-muted-foreground hover:text-foreground')}>{label}</button>)}</div>
-        <Select value={exact?status:'all'} onValueChange={setStatus}><SelectTrigger size="sm" className={cn('w-40',exact&&status!=='all'&&'border-foreground')} aria-label="More: exact status code"><SelectValue/></SelectTrigger><SelectContent>{STATUS.map(([value,label])=><SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
-        {filtered&&<Button type="button" variant="ghost" size="sm" onClick={()=>{setQuery('');setStatus('all');}}>Clear</Button>}
-      </TableToolbar>}
-      empty={filtered?<EmptyState icon={Search} title="No matching requests" description="Try a different search or status." action={<Button variant="outline" onClick={()=>{setQuery('');setStatus('all');}}>Clear filters</Button>}/>
-        :<EmptyState icon={ClipboardList} title={source==='api'?'No API requests yet':'No requests yet'} description={source==='api'?'Calls made with your API keys appear here as they happen. Create a key under API keys and call POST /v1/images/search from your backend. Choose Everything to see dashboard activity too.':'Requests from the dashboard and your API keys appear here as they happen.'}/>}
-      footer={cursor&&<LoadMore loading={loadingMore} onClick={()=>load(cursor)}>Load older requests</LoadMore>}/>
+    <PageHeader title="Request logs" description={everything?'Everything: API calls from your applications plus this dashboard’s own requests. Secrets are never stored.':'Calls your applications make to the Pluko API with your API keys, with sanitized request and response bodies. Secrets are never stored.'}/>
+    <DataTable columns={columns} rows={list.items} loading={list.loading} error={list.error} onRetry={()=>list.reload()} onRowClick={row=>setSelected(row.id)} selectedKey={selected} skeletonRows={8} caption="Request logs"
+      sort={list.sort} onSort={list.setSort}
+      toolbar={<FilterBar list={list} placeholder="Search paths, IDs or bodies…"/>}
+      empty={<ListEmpty list={list} icon={ClipboardList} title={everything?'No requests yet':'No API requests yet'} description={everything?'Requests from the dashboard and your API keys appear here as they happen.':'Calls made with your API keys appear here as they happen. Create a key under API keys and call POST /v1/images/search from your backend.'}/>}
+      footer={<Pagination list={list} label="requests"/>}/>
     <LogSheet id={selected} onClose={()=>setSelected(null)}/>
   </>;
 }

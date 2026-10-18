@@ -88,8 +88,13 @@ export function list(db,url,spec){
   if(q){
     if(q.length>MAX_SEARCH)fail('INVALID_SEARCH',`Search text must be ${MAX_SEARCH} characters or fewer`);
     if(spec.search?.length){
-      clauses.push('('+spec.search.map(column=>`${column} LIKE ? ESCAPE '\\'`).join(' OR ')+')');
-      values.push(...spec.search.map(()=>'%'+escapeLike(q)+'%'));
+      // A search entry is a column name, or a function of the LIKE pattern for searching related rows.
+      const pattern='%'+escapeLike(q)+'%',parts=[];
+      for(const entry of spec.search){
+        if(typeof entry==='function'){const out=entry(pattern);parts.push(out.sql);values.push(...out.values);}
+        else{parts.push(`${entry} LIKE ? ESCAPE '\\'`);values.push(pattern);}
+      }
+      clauses.push('('+parts.join(' OR ')+')');
     }
   }
   const sort=url.searchParams.get('sort')||spec.defaultSort;
