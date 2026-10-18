@@ -2,7 +2,7 @@
 // Customers always see only their own rows: the scope clause is added here, not taken from the request.
 // The public /v1 API keeps its own cursor-based responses and does not use this module.
 import {get,all} from './db.mjs';
-import {list,oneOf,equals,choice,range,pageInfo} from './lists.mjs';
+import {list,oneOf,equals,choice,range,pageInfo,escapeLike} from './lists.mjs';
 import {ApiError,jobView} from './jobs.mjs';
 import {dayKey} from './limits.mjs';
 
@@ -240,4 +240,66 @@ export function userStats(){
 export function waitlistStats(){
   const t=Date.now();
   return get('SELECT count(*) total,coalesce(sum(created>=?),0) last_week,coalesce(sum(created>=?),0) last_day FROM waitlist',t-7*DAY,t-DAY);
+}
+
+/** Workspace-only filters for a job's results (stored as JSON). The public /v1 results endpoint doesn't use these. */
+export function resultFilters(url){
+  const where=[],values=[],field=name=>`json_extract(data,'$.${name}')`;
+  const q=(url.searchParams.get('q')||'').trim();
+  if(q){
+    if(q.length>100)throw new ApiError(400,'INVALID_SEARCH','Search text must be 100 characters or fewer');
+    const pattern='%'+escapeLike(q)+'%';
+    where.push(`(${field('title')} LIKE ? ESCAPE '\\' OR ${field('source_domain')} LIKE ? ESCAPE '\\')`);values.push(pattern,pattern);
+  }
+  const query=url.searchParams.get('query');
+  if(query){if(query.length>500)throw new ApiError(400,'INVALID_FILTER','query is too long');where.push(`${field('query')}=?`);values.push(query);}
+  const minWidth=url.searchParams.get('min_width');
+  if(minWidth){const n=Number(minWidth);if(!Number.isInteger(n)||n<1||n>20000)throw new ApiError(400,'INVALID_FILTER','min_width must be a whole number of pixels');where.push(`${field('width')}>=?`);values.push(n);}
+  const shapes={landscape:`${field('width')}>${field('height')}`,portrait:`${field('width')}<${field('height')}`,square:`${field('width')}=${field('height')}`};
+  const orientation=url.searchParams.get('orientation');
+  if(orientation){if(!shapes[orientation])throw new ApiError(400,'INVALID_FILTER','orientation must be landscape, portrait or square');where.push(shapes[orientation]);}
+  const watermark=url.searchParams.get('watermark');
+  if(watermark){
+    const hints={flagged:`${field('watermark_hint')}='source_or_title_signal'`,clear:`coalesce(${field('watermark_hint')},'')<>'source_or_title_signal'`};
+    if(!hints[watermark])throw new ApiError(400,'INVALID_FILTER','watermark must be flagged or clear');
+    where.push(hints[watermark]);
+  }
+  return {sql:where.length?' AND '+where.join(' AND '):'',values,active:where.length>0};
+}
+// A feedback row plus the image it reports, or null once retention has removed the result.
+export function feedbackView({result_data,...row}){let image=null;try{const d=result_data?JSON.parse(result_data):null;if(d)image={title:d.title||null,image_url:d.image_url||null,thumbnail_url:d.thumbnail_url||null,source_domain:d.source_domain||null};}catch{}return {...row,image};}
+
+export const FEEDBACK_REASONS=['not_relevant','watermark','broken','other'];
+
+export function listFeedback(auth,url){
+  const admin=isAdmin(auth),project='(SELECT project_id FROM jobs WHERE id=f.job_id)';
+  const result=list(db,url,{
+    select:`f.*,r.data result_data,${project} project_id,(SELECT name FROM projects WHERE id=${project}) project_name`+(admin?',(SELECT email FROM users WHERE id=f.user_id) user_email':''),
+    from:'feedback f LEFT JOIN results r ON r.id=f.result_id AND r.job_id=f.job_id',...scope(auth,url,'f.user_id'),
+    filters:[
+      choice('status',{open:"coalesce(f.status,'open')<>'reviewed'",reviewed:"f.status='reviewed'"}),
+      oneOf('reason','f.reason',FEEDBACK_REASONS),
+      equals('project_id',project),equals('job_id','f.job_id'),equals('user_id','f.user_id'),range('created','f.created'),
+    ],
+    search:['f.note','f.job_id',"json_extract(r.data,'$.source_domain')","json_extract(r.data,'$.title')"],
+    sorts:{created_desc:'f.created DESC',created_asc:'f.created ASC'},
+    defaultSort:'created_desc',
+  });
+  return {feedback:result.items.map(feedbackView),...pageInfo(result)};
+}
+
+/** A project's webhook deliveries. The project must belong to the viewer, unless they are an administrator. */
+export function listDeliveries(auth,url){
+  const projectId=url.searchParams.get('project_id');
+  const project=projectId&&get('SELECT id,user_id FROM projects WHERE id=?',projectId);
+  if(!project||(!isAdmin(auth)&&project.user_id!==auth.user_id))throw new ApiError(404,'NOT_FOUND','Project not found');
+  const result=list(db,url,{
+    select:'id,event,job_id,status,attempts,last_status,last_error,created,delivered,next_at',from:'webhook_deliveries',
+    where:['project_id=?'],params:[project.id],
+    filters:[oneOf('status','status',['pending','delivered','failed']),oneOf('event','event',['job.finished','webhook.test']),range('created','created')],
+    search:['job_id','id','last_error'],
+    sorts:{created_desc:'created DESC,rowid DESC',created_asc:'created ASC,rowid ASC'},
+    defaultSort:'created_desc',
+  });
+  return {deliveries:result.items,...pageInfo(result)};
 }

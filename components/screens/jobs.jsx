@@ -4,13 +4,15 @@ import Link from 'next/link';
 import {Copy,ExternalLink,Repeat2,Sparkles} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
 import {DataTable,IdPill,PageHeader,RowActions,StatusBadge,TimeAgo,copyWithToast,toast} from '@/components/workspace/ui';
-import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {ExportButton,FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {isoTime} from '@/lib/display';
 import {percent} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
 
 const STATUS_OPTIONS=[['running','Running'],['queued','Queued'],['complete','Complete'],['partial','Partial'],['cancelled','Cancelled']];
 const DEFAULTS={sort:'created_desc'};
 const ACTIVE_POLL=5000;
+const JOB_CSV=[['job_id',j=>j.id],['status',j=>j.status],['queries',j=>j.queries.map(q=>q.query).join(' | ')],['found',j=>j.returned],['requested',j=>j.requested],['project',j=>j.project_name],['account',j=>j.user_email||''],['created_at',j=>isoTime(j.created)],['updated_at',j=>isoTime(j.updated)]];
 
 /** Project and key choices for filters: everything the viewer can see, or one account's when `userId` is set. */
 export function useOwnedOptions(userId){
@@ -62,7 +64,7 @@ export function JobsList({fixed={},showAccount=false}){
 
   return <DataTable columns={columns} rows={list.items} loading={list.loading} error={list.error} onRetry={()=>list.reload()} caption="Search jobs"
     sort={list.sort} onSort={list.setSort} onRowClick={job=>navigate('jobs',job.id)}
-    toolbar={<FilterBar list={list} placeholder="Search queries or job IDs…"/>}
+    toolbar={<FilterBar list={list} placeholder="Search queries or job IDs…" end={<ExportButton list={list} filename="pluko-jobs" columns={JOB_CSV}/>}/>}
     empty={<ListEmpty list={list} icon={Sparkles} title="No searches yet" description={fixed.user_id?'This account hasn’t run any searches.':'Run a search from the playground or call the API, and every job will show up here.'} action={!fixed.user_id&&<Button asChild><Link href={href('playground')}>Run your first search</Link></Button>}/>}
     footer={<Pagination list={list} label="jobs"/>}/>;
 }

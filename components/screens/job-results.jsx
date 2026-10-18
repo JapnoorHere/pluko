@@ -1,6 +1,8 @@
 'use client';
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {ChevronLeft,ChevronRight,Copy,Download,ExternalLink,Flag,ImageOff,LayoutGrid,List,Maximize2} from 'lucide-react';
+import {ChevronLeft,ChevronRight,Copy,Download,ExternalLink,Flag,ImageOff,LayoutGrid,List,Maximize2,SearchX} from 'lucide-react';
+import {useRefreshable} from '@/components/workspace/refresh';
+import {FilterBar} from '@/components/workspace/list';
 import {useWorkspace} from '@/components/workspace/context';
 import {useReturnFocus} from '@/components/design/system';
 import {CopyButton,DescriptionList,EmptyState,FormDialog,GallerySkeleton,toast,useCopy,CodeBlock} from '@/components/workspace/ui';
@@ -22,24 +24,30 @@ const EXPORT_CAP=20000;
 const POLL_MS=2500;
 
 // Loads a job and its results, and keeps both fresh while the job is still running.
-export function useJob(id){
+// `filterQuery` (from useFilterState) narrows the results; changing it reloads the grid but keeps the job on screen.
+export function useJob(id,filterQuery=''){
   const {call}=useWorkspace();
-  const [job,setJob]=useState(),[images,setImages]=useState([]),[more,setMore]=useState(false),[error,setError]=useState(null),[loadingMore,setLoadingMore]=useState(false);
+  const [job,setJob]=useState(),[images,setImages]=useState([]),[more,setMore]=useState(false),[error,setError]=useState(null),[loadingMore,setLoadingMore]=useState(false),[counts,setCounts]=useState(null),[filtering,setFiltering]=useState(false);
   const tail=useRef(0),stepping=useRef(false);
   const loadResults=useCallback(async(after,replace=false)=>{
-    const data=await call(`/api/jobs/${id}/results?limit=${PAGE}&after=${after}`);
+    const data=await call(`/api/jobs/${id}/results?limit=${PAGE}&after=${after}${filterQuery?'&'+filterQuery:''}`);
     setImages(old=>replace?data.images:old.concat(data.images));
+    setCounts({total:data.total,matching:data.matching});
     tail.current=data.poll_after;
     setMore(data.next_cursor!==null);
     return data;
-  },[call,id]);
-  const reload=useCallback(async()=>{
+  },[call,id,filterQuery]);
+  const reload=useCallback(async({manual=false}={})=>{
+    setFiltering(true);
     try{
       const [detail]=await Promise.all([call(`/api/jobs/${id}`),loadResults(0,true)]);
       setJob(detail.job);setError(null);
-    }catch(failure){setError(failure);}
+    }catch(failure){setError(failure);if(manual)throw failure;}
+    finally{setFiltering(false);}
   },[call,id,loadResults]);
-  useEffect(()=>{setJob(undefined);setImages([]);tail.current=0;reload();},[reload]);
+  useEffect(()=>{setJob(undefined);setImages([]);tail.current=0;},[id]);
+  useEffect(()=>{reload();},[reload]);
+  useRefreshable(reload);
   const active=job&&ACTIVE.includes(job.status);
   useEffect(()=>{
     if(!active)return;
@@ -52,7 +60,7 @@ export function useJob(id){
     return()=>clearInterval(timer);
   },[active,call,id,loadResults]);
   const loadMore=async()=>{setLoadingMore(true);try{await loadResults(tail.current);}catch(failure){toast.error(failure.message);}finally{setLoadingMore(false);}};
-  return {job,images,more,error,active,reload,loadMore,loadingMore};
+  return {job,images,more,error,active,reload,loadMore,loadingMore,counts,filtering};
 }
 
 export function useJobActions(job,{onRetried}={}){
@@ -202,13 +210,22 @@ function ListRow({image,onOpen,onReport}){
   </li>;
 }
 
-export function ResultsGallery({jobId,images,active,more,loadMore,loadingMore,expected}){
+/**
+ * The job's images as a grid or list. `filters` (from useFilterState) adds a filter bar; `counts` is {total, matching}
+ * from the results endpoint, so the header can say how many images match.
+ */
+export function ResultsGallery({jobId,images,active,more,loadMore,loadingMore,expected,filters,counts,filtering}){
   const [layout,setLayout]=useState('grid'),[open,setOpen]=useState(null),[report,setReport]=useState(null);
+  const filterBar=filters&&(counts?.total>0||filters.isFiltered)&&<FilterBar list={filters} placeholder="Search titles or sites…"/>;
+  if(!images.length&&filters?.isFiltered)return <div className="grid gap-4">{filterBar}{filtering?<GallerySkeleton count={3}/>:<EmptyState icon={SearchX} title="No images match these filters" description={`${(counts?.total||0).toLocaleString()} ${counts?.total===1?'image was':'images were'} found in total. Try removing a filter.`} action={<Button type="button" variant="outline" onClick={filters.clearFilters}>Clear filters</Button>}/>}</div>;
   if(!images.length)return active?<div className="grid gap-3"><p className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite"><Spinner/>Searching the source. The first results usually arrive within a few seconds.</p><GallerySkeleton count={Math.min(8,Math.max(3,Number(expected)||6))}/></div>
     :<EmptyState icon={ImageOff} title="No images found" description="The source returned nothing new for these queries. Try broader wording or fewer filters."/>;
-  return <div className="grid gap-4">
+  const shown=counts?.matching!=null?`${images.length.toLocaleString()} of ${counts.matching.toLocaleString()} matching · ${counts.total.toLocaleString()} found in total`
+    :counts?.total!=null?`${images.length.toLocaleString()} of ${counts.total.toLocaleString()} shown`:`${images.length.toLocaleString()} shown`;
+  return <div className={cn('grid gap-4',filtering&&'[&>*:not(:first-child)]:opacity-60')}>
+    {filterBar}
     <div className="flex items-center justify-between gap-3">
-      <p className="text-sm text-muted-foreground" aria-live="polite">{images.length.toLocaleString()} shown{active&&<span className="ml-2 inline-flex items-center gap-1.5 text-brand"><Spinner className="size-3"/>finding more…</span>}</p>
+      <p className="text-sm text-muted-foreground" aria-live="polite">{shown}{active&&<span className="ml-2 inline-flex items-center gap-1.5 text-brand"><Spinner className="size-3"/>finding more…</span>}</p>
       <ToggleGroup type="single" variant="outline" size="sm" value={layout} onValueChange={value=>value&&setLayout(value)} aria-label="Result layout">
         <ToggleGroupItem value="grid" aria-label="Grid view"><LayoutGrid/></ToggleGroupItem>
         <ToggleGroupItem value="list" aria-label="List view"><List/></ToggleGroupItem>

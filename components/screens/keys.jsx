@@ -3,11 +3,11 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import Link from 'next/link';
 import {Ban,FolderPlus,KeyRound,Pencil,Plus,RefreshCw,Search} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {ExportButton,FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
 import {useOwnedOptions} from '@/components/screens/jobs';
 import {useReturnFocus} from '@/components/design/system';
 import {CodeBlock,ConfirmDialog,DataTable,EmptyState,FormDialog,InlineError,PageHeader,RowActions,SecretReveal,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
-import {daysLeft} from '@/lib/display';
+import {daysLeft,isoTime} from '@/lib/display';
 import {cn} from '@/lib/utils';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -131,6 +131,7 @@ export function KeysTable({keys,loading,error,reload,showProject=true,showOwner=
 const STATUS_OPTIONS=[['active','Active'],['expiring','Expiring within 7 days'],['expired','Expired'],['revoked','Revoked']];
 const USE_OPTIONS=[['day','Used in the last 24 hours'],['week','Used in the last 7 days'],['inactive','Not used for 30+ days'],['never','Never used']];
 const DEFAULTS={sort:'created_desc'};
+const KEY_CSV=[['key_id',k=>k.id],['name',k=>k.name],['prefix',k=>k.prefix],['project',k=>k.project],['owner',k=>k.owner||''],['scopes',k=>parseScopes(k.scopes).join(' ')],['status',k=>keyState(k)],['expires_at',k=>isoTime(k.expires)],['last_used_at',k=>isoTime(k.last_used)],['created_at',k=>isoTime(k.created)]];
 
 /**
  * The key table with filters and pages. `fixed` locks hidden filters such as {user_id}; bump `version` to reload
@@ -154,7 +155,7 @@ export function KeysList({fixed={},showOwner=false,version=0,onChange,emptyActio
   const reloadAll=async options=>{await reload(options);await onChange?.();};
   return <KeysTable keys={list.items} loading={list.loading} error={list.error} reload={reloadAll} showOwner={showOwner}
     sort={list.sort} onSort={list.setSort}
-    toolbar={<FilterBar list={list} placeholder="Search names or key prefixes…"/>}
+    toolbar={<FilterBar list={list} placeholder="Search names or key prefixes…" end={<ExportButton list={list} filename="pluko-api-keys" columns={KEY_CSV}/>}/>}
     footer={<Pagination list={list} label="keys"/>}
     empty={<ListEmpty list={list} icon={KeyRound} title={fixed.user_id?'No API keys':'No API keys yet'} description={fixed.user_id?'This account hasn’t created any keys.':'Create a key to call the Pluko API from your backend.'} action={emptyAction}/>}/>;
 }

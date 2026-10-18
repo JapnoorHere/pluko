@@ -1,12 +1,15 @@
 'use client';
-import {useMemo,useState} from 'react';
+import {useMemo} from 'react';
 import Link from 'next/link';
 import {CheckCheck,ExternalLink,MessageSquareWarning} from 'lucide-react';
-import {useResource,useWorkspace} from '@/components/workspace/context';
-import {EmptyState,ErrorState,IdPill,PageHeader,RowActions,Shimmer,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
+import {useWorkspace} from '@/components/workspace/context';
+import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {useOwnedOptions} from '@/components/screens/jobs';
+import {cn} from '@/lib/utils';
+import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
+import {EmptyState,ErrorState,IdPill,PageHeader,RowActions,Shimmer,StatusBadge,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
 import {ResultImage} from '@/components/screens/job-results';
 import {Button} from '@/components/ui/button';
-import {Tabs,TabsList,TabsTrigger} from '@/components/ui/tabs';
 
 const REASONS={not_relevant:['Not relevant','neutral'],watermark:['Watermarked','warning'],broken:['Broken','danger'],other:['Other','info']};
 
@@ -38,28 +41,40 @@ function ReportCard({item,admin,onReview}){
         <Link href={href('jobs',item.job_id)} className="font-mono text-brand hover:underline">{item.job_id.slice(0,14)}…</Link>
         <span className="flex items-center gap-2"><StatusBadge status={status}/><TimeAgo value={item.created}/></span>
       </div>
-      {admin&&<div className="text-xs text-muted-foreground">Result <IdPill value={item.result_id}/></div>}
+      {item.project_name&&<div className="truncate text-xs text-muted-foreground">Project · {item.project_name}</div>}
+      {admin&&<div className="flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-muted-foreground">{item.user_email&&<Link href={href('users',item.user_id)} className="truncate hover:text-foreground hover:underline">{item.user_email}</Link>}<span>Result <IdPill value={item.result_id}/></span></div>}
     </div>
   </li>;
 }
 
+const DEFAULTS={sort:'created_desc',filters:{status:'open'}};
+const REASON_OPTIONS=Object.entries(REASONS).map(([value,[label]])=>[value,label]);
+
 export function Feedback(){
   const {me,call,href}=useWorkspace();
   const admin=me.role==='admin';
-  const feedback=useResource('/api/feedback');
-  const [tab,setTab]=useState('open');
-  const all=feedback.data?.feedback;
-  const rows=useMemo(()=>all?.filter(item=>tab==='all'||(tab==='open'?(item.status||'open')!=='reviewed':item.status==='reviewed')),[all,tab]);
-  const review=async item=>{try{await call('/api/admin/feedback',{id:item.id});toast.success('Marked as reviewed');await feedback.reload({quiet:true});}catch(failure){toast.error(failure.message);}};
-  const openCount=all?.filter(item=>(item.status||'open')!=='reviewed').length;
+  const {projects}=useOwnedOptions();
+  const filters=useMemo(()=>[
+    {id:'status',label:'Status',type:'select',anyLabel:'Open and reviewed',options:[['open','Open'],['reviewed','Reviewed']]},
+    {id:'reason',label:'Reason',type:'multi',options:REASON_OPTIONS},
+    {id:'project_id',label:'Project',type:'select',anyLabel:'Any project',options:projects.map(p=>[p.id,admin?`${p.name} · ${p.owner}`:p.name])},
+    {id:'created',label:'Reported',type:'date'},
+  ],[projects,admin]);
+  const list=useListQuery('/api/feedback',{id:'feedback',itemsKey:'feedback',filters,defaults:DEFAULTS});
+  const rows=list.items;
+  const review=async item=>{try{await call('/api/admin/feedback',{id:item.id});toast.success('Marked as reviewed');await list.reload({quiet:true});}catch(failure){toast.error(failure.message);}};
   return <>
     <PageHeader title="Quality feedback" description={admin?'Reports from every account. Review them to tune source rules and ranking.':'Problems you reported on search results. Each report stays linked to its job and image.'}/>
     <div className="grid gap-4">
-      <TableToolbar><Tabs value={tab} onValueChange={setTab}><TabsList className="h-8"><TabsTrigger value="open" className="text-xs">Open{openCount!==undefined&&<span className="ml-1 text-muted-foreground tabular-nums">{openCount}</span>}</TabsTrigger><TabsTrigger value="reviewed" className="text-xs">Reviewed</TabsTrigger><TabsTrigger value="all" className="text-xs">All</TabsTrigger></TabsList></Tabs></TableToolbar>
-      {feedback.error&&!all?<ErrorState error={feedback.error} onRetry={feedback.reload} title="Couldn’t load feedback"/>
-      :!all?<ul className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]" aria-busy="true">{[1,2,3].map(index=><li key={index} className="overflow-hidden rounded-2xl border bg-card"><Shimmer className="aspect-[16/10] w-full rounded-none"/><div className="grid gap-2 p-4"><Shimmer className="h-4 w-2/3"/><Shimmer className="h-10 w-full rounded-xl"/></div></li>)}</ul>
-      :!rows.length?<EmptyState icon={MessageSquareWarning} title={tab==='open'?'Nothing waiting for review':'No reports here'} description="Open any search result and choose “Report a problem” to flag irrelevant, watermarked or broken images." action={<Button asChild variant="outline" className="rounded-full"><Link href={href('jobs')}>Go to search jobs</Link></Button>}/>
-      :<ul className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]" aria-label="Feedback reports">{rows.map(item=><ReportCard key={item.id} item={item} admin={admin} onReview={review}/>)}</ul>}
+      <FilterBar list={list} placeholder="Search notes, sites or job IDs…" end={
+        <Select value={list.sort} onValueChange={list.setSort}><SelectTrigger size="sm" className="w-36" aria-label="Order"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="created_desc">Newest first</SelectItem><SelectItem value="created_asc">Oldest first</SelectItem></SelectContent></Select>}/>
+      {list.error&&!rows?<ErrorState error={list.error} onRetry={()=>list.reload()} title="Couldn’t load feedback"/>
+      :!rows?<ul className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]" aria-busy="true">{[1,2,3].map(index=><li key={index} className="overflow-hidden rounded-2xl border bg-card"><Shimmer className="aspect-[16/10] w-full rounded-none"/><div className="grid gap-2 p-4"><Shimmer className="h-4 w-2/3"/><Shimmer className="h-10 w-full rounded-xl"/></div></li>)}</ul>
+      :!rows.length?(list.filters.status==='open'&&list.activeCount===1&&!list.state.q.trim()
+        ?<EmptyState icon={MessageSquareWarning} title="Nothing waiting for review" description="Open any search result and choose “Report a problem” to flag irrelevant, watermarked or broken images." action={<Button asChild variant="outline" className="rounded-full"><Link href={href('jobs')}>Go to search jobs</Link></Button>}/>
+        :<ListEmpty list={list} icon={MessageSquareWarning} title="No reports yet" description="Open any search result and choose “Report a problem” to flag irrelevant, watermarked or broken images."/>)
+      :<ul className={cn('grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]',list.loading&&'opacity-60 transition-opacity')} aria-label="Feedback reports">{rows.map(item=><ReportCard key={item.id} item={item} admin={admin} onReview={review}/>)}</ul>}
+      {rows?.length>0&&<Pagination list={list} label="reports"/>}
     </div>
   </>;
 }

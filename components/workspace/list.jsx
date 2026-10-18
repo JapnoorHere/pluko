@@ -1,11 +1,12 @@
 'use client';
-import {useCallback,useEffect,useRef,useState} from 'react';
-import {Check,ChevronLeft,ChevronRight,ListFilter,PlusCircle,SearchX,X} from 'lucide-react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Check,ChevronLeft,ChevronRight,Download,ListFilter,PlusCircle,SearchX,X} from 'lucide-react';
 import {cn} from '@/lib/utils';
+import {downloadText,rowsToCsv} from '@/lib/display';
 import {DATE_PRESETS,PAGE_SIZES,activeFilterCount,apiParams,describeDateRange,emptyState,pageWindow,rangeLabel,readState,writeState} from '@/lib/list-query';
 import {useWorkspace} from '@/components/workspace/context';
 import {useRefreshScope,useRefreshable} from '@/components/workspace/refresh';
-import {EmptyState,SearchInput,TableToolbar} from '@/components/workspace/ui';
+import {EmptyState,SearchInput,TableToolbar,toast} from '@/components/workspace/ui';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Checkbox} from '@/components/ui/checkbox';
@@ -14,6 +15,7 @@ import {Label} from '@/components/ui/label';
 import {Popover,PopoverContent,PopoverTrigger} from '@/components/ui/popover';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {Separator} from '@/components/ui/separator';
+import {Spinner} from '@/components/ui/spinner';
 import {Sheet,SheetContent,SheetDescription,SheetFooter,SheetHeader,SheetTitle,SheetTrigger} from '@/components/ui/sheet';
 
 const SEARCH_DELAY=300;
@@ -93,7 +95,7 @@ export function useListQuery(endpoint,{id=endpoint,itemsKey='items',filters:defi
   },[data,total,pageSize,state.page]);
 
   const setFilter=useCallback((name,value)=>setState(old=>({...old,page:1,filters:{...old.filters,[name]:value}})),[]);
-  const clearFilters=useCallback(()=>{setSearch('');setState(old=>({...old,q:'',page:1,filters:{...(defaults.filters||{})}}));},[defaults.filters]);
+  const clearFilters=useCallback(()=>{setSearch('');setState(old=>({...old,q:'',page:1,filters:{}}));},[]);
   const setSort=useCallback(sort=>setState(old=>({...old,sort,page:1})),[]);
   const setPage=useCallback(page=>setState(old=>({...old,page})),[]);
   const setPageSize=useCallback(size=>{
@@ -101,13 +103,46 @@ export function useListQuery(endpoint,{id=endpoint,itemsKey='items',filters:defi
     setState(old=>({...old,pageSize:size,page:1}));
   },[storageKey]);
 
+  // Every row matching the current filters and sort (up to the server's export limit), for CSV downloads.
+  const exportRows=useCallback(async()=>(await call(`${endpoint}?${buildQuery()}&export=1`))[itemsKey],[call,endpoint,buildQuery,itemsKey]);
+
   const activeCount=activeFilterCount(state,definitions);
   return {
-    items:data?.[itemsKey],data,total,loading,error,reload:load,
+    items:data?.[itemsKey],data,total,loading,error,reload:load,exportRows,
     search,setSearch,state,filters:state.filters,setFilter,clearFilters,definitions,activeCount,
     isFiltered:activeCount>0||Boolean(state.q.trim()),
     sort:state.sort,setSort,page:state.page,pageSize:state.pageSize,setPage,setPageSize,
   };
+}
+
+/**
+ * Filter and search state without loading anything, for lists that page differently (e.g. a results grid with
+ * "Load more"). Works with FilterBar and returns `query`, the filter parameters to send.
+ */
+export function useFilterState(definitions,{defaults={},prefix='',syncUrl=true}={}){
+  const [state,setState]=useState(()=>syncUrl&&typeof window!=='undefined'&&window.location.search?readState(window.location.search,definitions,defaults,prefix):emptyState(defaults));
+  const [search,setSearch]=useState(state.q);
+  useEffect(()=>{
+    if(search===state.q)return;
+    const timer=setTimeout(()=>setState(old=>({...old,q:search})),SEARCH_DELAY);
+    return()=>clearTimeout(timer);
+  },[search,state.q]);
+  const stateKey=JSON.stringify(state),shapeKey=JSON.stringify(definitions.map(def=>({id:def.id,type:def.type})));
+  useEffect(()=>{
+    if(!syncUrl)return;
+    const next=writeState(window.location.search,JSON.parse(stateKey),JSON.parse(shapeKey),defaults,prefix);
+    if(next!==window.location.search)window.history.replaceState(window.history.state,'',window.location.pathname+next+window.location.hash);
+  },[syncUrl,stateKey,shapeKey,defaults,prefix]);
+  // Only the filters and search are sent; paging is up to the caller.
+  const query=useMemo(()=>{
+    const params=apiParams(JSON.parse(stateKey),JSON.parse(shapeKey));
+    params.delete('page');params.delete('page_size');params.delete('sort');
+    return params.toString();
+  },[stateKey,shapeKey]);
+  const setFilter=useCallback((name,value)=>setState(old=>({...old,filters:{...old.filters,[name]:value}})),[]);
+  const clearFilters=useCallback(()=>{setSearch('');setState(old=>({...old,q:'',filters:{}}));},[]);
+  const activeCount=activeFilterCount(state,definitions);
+  return {state,filters:state.filters,setFilter,clearFilters,definitions,activeCount,isFiltered:activeCount>0||Boolean(state.q.trim()),search,setSearch,query};
 }
 
 /* ---------- filter controls ---------- */
@@ -256,6 +291,23 @@ export function Pagination({list,label='results'}){
       </div>}
     </div>
   </nav>;
+}
+
+/** Downloads every row matching the list's current filters as CSV. `columns` is [[header, row => value]]. */
+export function ExportButton({list,filename,columns}){
+  const [busy,setBusy]=useState(false);
+  const run=async()=>{
+    setBusy(true);
+    try{
+      const rows=await list.exportRows();
+      downloadText(`${filename}-${new Date().toISOString().slice(0,10)}.csv`,rowsToCsv(rows,columns),'text/csv');
+      toast.success(`Downloaded ${rows.length.toLocaleString()} ${rows.length===1?'row':'rows'}${rows.length<list.total?' (the export limit)':''}`);
+    }catch(failure){toast.error(failure.message);}
+    finally{setBusy(false);}
+  };
+  return <Button type="button" variant="outline" size="sm" className="h-9 rounded-xl" disabled={busy||!list.total} onClick={run}>
+    {busy?<Spinner/>:<Download/>}Export CSV
+  </Button>;
 }
 
 /** Empty state that tells "nothing yet" apart from "nothing matches these filters". */

@@ -20,7 +20,12 @@ function valuesOf(url,name){
   return values;
 }
 
+/** Rows a single export may return. Larger exports should narrow their filters. */
+export const EXPORT_MAX=10000;
+
 export function pageParams(url){
+  // ?export=1 returns every matching row (up to EXPORT_MAX) in one response, for CSV downloads.
+  if(url.searchParams.get('export')==='1')return {page:1,page_size:EXPORT_MAX};
   const rawPage=url.searchParams.get('page')??'1',rawSize=url.searchParams.get('page_size')??String(DEFAULT_PAGE_SIZE);
   const page=Number(rawPage),page_size=Number(rawSize);
   if(!Number.isInteger(page)||page<1||page>MAX_PAGE)fail('INVALID_PAGE',`page must be a whole number from 1 to ${MAX_PAGE}`);

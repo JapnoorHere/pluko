@@ -4,7 +4,8 @@ import Link from 'next/link';
 import {ExternalLink,KeyRound,ShieldCheck,UserCheck,UserPlus,UserX,UsersRound} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
 import {ConfirmDialog,DataTable,FormDialog,InfoDialog,PageHeader,RowActions,SecretReveal,StatCard,StatGridSkeleton,StatusBadge,TimeAgo,ToneBadge,toast,StatGrid} from '@/components/workspace/ui';
-import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {ExportButton,FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {isoTime} from '@/lib/display';
 import {initials} from '@/lib/ui-helpers';
 import {Avatar,AvatarFallback} from '@/components/ui/avatar';
 import {Button} from '@/components/ui/button';
@@ -12,6 +13,7 @@ import {Field,FieldDescription,FieldLabel} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
 
 const DEFAULTS={sort:'created_desc'};
+const USER_CSV=[['user_id',u=>u.id],['email',u=>u.email],['role',u=>u.role],['status',u=>u.active?'active':'suspended'],['two_step',u=>u.mfa?'on':'off'],['projects',u=>u.projects],['jobs',u=>u.jobs],['last_login_at',u=>isoTime(u.last_login)],['created_at',u=>isoTime(u.created)]];
 const FILTERS=[
   {id:'role',label:'Role',type:'multi',options:[['admin','Administrator'],['user','Customer']]},
   {id:'status',label:'Status',type:'select',anyLabel:'Any status',options:[['active','Active'],['suspended','Suspended']]},
@@ -74,7 +76,7 @@ export function AdminUsers(){
     </StatGrid>}
     <DataTable columns={columns} rows={list.items} loading={list.loading} error={list.error} onRetry={()=>list.reload()} caption="Users"
       sort={list.sort} onSort={list.setSort} onRowClick={user=>navigate('users',user.id)}
-      toolbar={<FilterBar list={list} placeholder="Search by email or ID…"/>}
+      toolbar={<FilterBar list={list} placeholder="Search by email or ID…" end={<ExportButton list={list} filename="pluko-users" columns={USER_CSV}/>}/>}
       empty={<ListEmpty list={list} icon={UserPlus} title="It’s just you so far" description="Invite teammates or customers. Each person gets a one-time link to set their own password." action={<Button className="rounded-full px-4" onClick={()=>{setEmail('');setInviting(true);}}><UserPlus/>Invite someone</Button>}/>}
       footer={<Pagination list={list} label="users"/>}/>
     <FormDialog open={inviting} onOpenChange={setInviting} title="Invite a user" description="Pluko creates a one-time link that’s valid for 24 hours. Share it over a secure channel." submitLabel="Create invitation" busyLabel="Creating…"

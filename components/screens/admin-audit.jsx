@@ -3,9 +3,9 @@ import {useEffect,useMemo,useState} from 'react';
 import {History} from 'lucide-react';
 import Link from 'next/link';
 import {useResource,useWorkspace} from '@/components/workspace/context';
-import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {ExportButton,FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {format,isoTime} from '@/lib/display';
 import {CodeBlock,DescriptionList,IdPill,PageHeader,ErrorState,TableSkeleton} from '@/components/workspace/ui';
-import {format} from '@/lib/display';
 import {cn} from '@/lib/utils';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {Sheet,SheetContent,SheetDescription,SheetHeader,SheetTitle} from '@/components/ui/sheet';
@@ -21,6 +21,7 @@ function AreaBadge({action}){
 }
 
 const DEFAULTS={sort:'created_desc'};
+const AUDIT_CSV=[['event_id',a=>a.id],['action',a=>a.action],['actor',a=>a.actor||''],['actor_email',a=>a.actor_email||''],['target',a=>a.target||''],['details',a=>a.details||''],['created_at',a=>isoTime(a.created)]];
 const dayLabel=day=>{const today=new Date().toDateString(),yesterday=new Date(Date.now()-86400000).toDateString();return day===today?'Today':day===yesterday?'Yesterday':new Date(day).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});};
 
 /**
@@ -50,8 +51,9 @@ export function AuditList({fixed={},compact=false,pageSize}){
 
   return <>
     <div className="grid gap-4">
-      {!compact&&<FilterBar list={list} placeholder="Search actions, subjects or details…" end={
-        <Select value={list.sort} onValueChange={list.setSort}><SelectTrigger size="sm" className="w-36" aria-label="Order"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="created_desc">Newest first</SelectItem><SelectItem value="created_asc">Oldest first</SelectItem></SelectContent></Select>}/>}
+      {!compact&&<FilterBar list={list} placeholder="Search actions, subjects or details…" end={<>
+        <ExportButton list={list} filename="pluko-audit" columns={AUDIT_CSV}/>
+        <Select value={list.sort} onValueChange={list.setSort}><SelectTrigger size="sm" className="w-36" aria-label="Order"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="created_desc">Newest first</SelectItem><SelectItem value="created_asc">Oldest first</SelectItem></SelectContent></Select></>}/>}
       {list.error&&!rows?.length?<ErrorState error={list.error} onRetry={()=>list.reload()} title="Couldn’t load audit history"/>
       :!rows?<TableSkeleton rows={compact?4:8} columns={3}/>
       :!rows.length?<ListEmpty list={list} icon={History} title="No activity yet" description={fixed.user?'Nothing has been recorded for this account yet.':'Administrator and account actions will be recorded here.'}/>

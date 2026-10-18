@@ -4,9 +4,9 @@ import {ClipboardList} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
 import Link from 'next/link';
 import {useOwnedOptions} from '@/components/screens/jobs';
-import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {ExportButton,FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
 import {CodeBlock,DataTable,DescriptionList,Duration,ErrorState,IdPill,PageHeader,Shimmer,TimeAgo,ToneBadge,MethodBadge} from '@/components/workspace/ui';
-import {format} from '@/lib/display';
+import {format,isoTime} from '@/lib/display';
 import {httpTone} from '@/lib/ui-helpers';
 import {Sheet,SheetContent,SheetDescription,SheetHeader,SheetTitle} from '@/components/ui/sheet';
 import {Tabs,TabsContent,TabsList,TabsTrigger} from '@/components/ui/tabs';
@@ -46,6 +46,7 @@ function LogSheet({id,onClose}){
 const STATUS_OPTIONS=[['2xx','2xx Success'],['4xx','4xx Client errors'],['5xx','5xx Server errors'],['400','400 Bad request'],['401','401 Unauthorized'],['403','403 Forbidden'],['404','404 Not found'],['409','409 Conflict'],['429','429 Rate limited'],['500','500 Server error'],['503','503 Unavailable']];
 const ENDPOINT_OPTIONS=[['search','Image search'],['jobs','Jobs'],['results','Results'],['usage','Usage'],['feedback','Feedback']];
 const DEFAULTS={sort:'created_desc'};
+const LOG_CSV=[['request_id',r=>r.id],['method',r=>r.method],['path',r=>r.path],['status',r=>r.status],['duration_ms',r=>r.duration],['project',r=>r.project_name],['account',r=>r.user_email||''],['created_at',r=>isoTime(r.created)]];
 
 /** The request log table with its filters, pages and detail panel. `fixed` locks hidden filters such as {user_id}. */
 export function LogsList({fixed={},showAccount=false,onSourceChange}){
@@ -78,7 +79,7 @@ export function LogsList({fixed={},showAccount=false,onSourceChange}){
   return <>
     <DataTable columns={columns} rows={list.items} loading={list.loading} error={list.error} onRetry={()=>list.reload()} onRowClick={row=>setSelected(row.id)} selectedKey={selected} skeletonRows={8} caption="Request logs"
       sort={list.sort} onSort={list.setSort}
-      toolbar={<FilterBar list={list} placeholder="Search paths, IDs or bodies…"/>}
+      toolbar={<FilterBar list={list} placeholder="Search paths, IDs or bodies…" end={<ExportButton list={list} filename="pluko-requests" columns={LOG_CSV}/>}/>}
       empty={<ListEmpty list={list} icon={ClipboardList} title={everything?'No requests yet':'No API requests yet'} description={fixed.user_id?'This account hasn’t made any matching requests.':everything?'Requests from the dashboard and your API keys appear here as they happen.':'Calls made with your API keys appear here as they happen. Create a key under API keys and call POST /v1/images/search from your backend.'}/>}
       footer={<Pagination list={list} label="requests"/>}/>
     <LogSheet id={selected} onClose={()=>setSelected(null)}/>

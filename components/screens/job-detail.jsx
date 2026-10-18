@@ -1,9 +1,10 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
-import {ArrowUpRight,Ban,RefreshCw,Repeat2,SearchX} from 'lucide-react';
+import {ArrowUpRight,Ban,Repeat2,SearchX} from 'lucide-react';
+import {useFilterState} from '@/components/workspace/list';
 import {useWorkspace} from '@/components/workspace/context';
-import {ConfirmDialog,DescriptionList,EmptyState,IdPill,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,toast,BrandProgress,StatGrid,Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/workspace/ui';
+import {ConfirmDialog,DescriptionList,EmptyState,IdPill,PageHeader,Shimmer,StatCard,StatusBadge,TimeAgo,BrandProgress,StatGrid,Card,CardContent,CardDescription,CardHeader,CardTitle} from '@/components/workspace/ui';
 import {ExportMenu,QueryBreakdown,ResultsGallery,useJob,useJobActions} from '@/components/screens/job-results';
 import {format} from '@/lib/display';
 import {percent} from '@/lib/ui-helpers';
@@ -32,14 +33,25 @@ export function JobHeaderActions({job,active,reload,compact=false}){
     {active?<Button type="button" variant="outline" onClick={()=>setConfirm(true)}><Ban/>Cancel</Button>
       :<Button type="button" variant="outline" disabled={retrying} onClick={runAgain}>{retrying?<Spinner/>:<Repeat2/>}Run again</Button>}
     <ExportMenu job={job} exportAs={exportAs} exporting={exporting}/>
-    {!compact&&<Button type="button" variant="ghost" size="icon" aria-label="Refresh" onClick={()=>reload().then(()=>toast.success('Refreshed'))}><RefreshCw/></Button>}
     <ConfirmDialog open={confirm} onOpenChange={setConfirm} title="Cancel this search?" description="Searching stops after the current page. Results found so far are kept, and the job is marked cancelled." confirmLabel="Cancel search" busyLabel="Cancelling…" onConfirm={async()=>{await cancel();await reload();}}/>
   </>;
 }
 
+const RESULT_FILTERS=[
+  {id:'orientation',label:'Shape',type:'select',anyLabel:'Any shape',options:[['landscape','Landscape'],['portrait','Portrait'],['square','Square']]},
+  {id:'min_width',label:'Width',type:'select',anyLabel:'Any width',options:[['800','800 px or wider'],['1200','1200 px or wider'],['1920','1920 px or wider'],['2560','2560 px or wider']]},
+  {id:'watermark',label:'Watermark',type:'select',anyLabel:'Any',options:[['clear','No watermark signals'],['flagged','Possible watermark']]},
+];
+
 export function JobPage(){
   const {route,href}=useWorkspace();
-  const {job,images,more,error,active,reload,loadMore,loadingMore}=useJob(route.id);
+  // Batch jobs also get a filter for each of their queries, once the job has loaded.
+  const [queryOptions,setQueryOptions]=useState([]);
+  const definitions=useMemo(()=>queryOptions.length>1?[{id:'query',label:'Query',type:'select',anyLabel:'All queries',options:queryOptions},...RESULT_FILTERS]:RESULT_FILTERS,[queryOptions]);
+  const resultFilters=useFilterState(definitions,{prefix:'r.'});
+  const {job,images,more,error,active,reload,loadMore,loadingMore,counts,filtering}=useJob(route.id,resultFilters.query);
+  const queriesKey=job?JSON.stringify(job.queries.map(item=>item.query)):'';
+  useEffect(()=>{if(queriesKey)setQueryOptions(JSON.parse(queriesKey).map(query=>[query,query]));},[queriesKey]);
   const {setCrumb}=useWorkspace();
   const crumbText=job?(job.queries[0]?.query||'Search job')+(job.queries.length>1?` +${job.queries.length-1}`:''):null;
   useEffect(()=>{if(crumbText)setCrumb(crumbText);},[crumbText,setCrumb]);
@@ -70,7 +82,7 @@ export function JobPage(){
 
     <section className="grid gap-4">
       <h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Results</h2>
-      <ResultsGallery jobId={job.id} images={images} active={active} more={more} loadMore={loadMore} loadingMore={loadingMore} expected={job.requested}/>
+      <ResultsGallery jobId={job.id} images={images} active={active} more={more} loadMore={loadMore} loadingMore={loadingMore} expected={job.requested} filters={resultFilters} counts={counts} filtering={filtering}/>
     </section>
   </>;
 }

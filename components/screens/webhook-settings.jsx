@@ -1,7 +1,8 @@
 'use client';
 import {useEffect,useState} from 'react';
-import {RefreshCw,RotateCw,Send,Trash2,Webhook} from 'lucide-react';
-import {useResource,useWorkspace} from '@/components/workspace/context';
+import {RotateCw,Send,Trash2,Webhook} from 'lucide-react';
+import {useWorkspace} from '@/components/workspace/context';
+import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
 import {CodeBlock,ConfirmDialog,EmptyState,InlineError,SecretReveal,StatusBadge,TimeAgo,toast,Card,CardAction,CardContent,CardDescription,CardFooter,CardHeader,CardTitle,ErrorState,TableSkeleton} from '@/components/workspace/ui';
 import {VERIFY_SNIPPET} from '@/lib/webhook-example';
 import {cn} from '@/lib/utils';
@@ -11,10 +12,18 @@ import {Field,FieldDescription,FieldLabel} from '@/components/ui/field';
 import {Input} from '@/components/ui/input';
 import {Spinner} from '@/components/ui/spinner';
 
+const DELIVERY_FILTERS=[
+  {id:'status',label:'Status',type:'multi',options:[['delivered','Delivered'],['pending','Pending'],['failed','Failed']]},
+  {id:'event',label:'Event',type:'multi',options:[['job.finished','job.finished'],['webhook.test','webhook.test']]},
+  {id:'created',label:'Sent',type:'date'},
+];
+const DELIVERY_DEFAULTS={sort:'created_desc'};
+
 export function WebhookSettings({project,refresh}){
   const {call}=useWorkspace();
   const [url,setUrl]=useState(project.webhook_url||''),[saved,setSaved]=useState(project.webhook_url||''),[secret,setSecret]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(null),[confirm,setConfirm]=useState(null);
-  const deliveries=useResource(`/api/webhooks/deliveries?project_id=${project.id}`,{poll:saved?10000:0});
+  const deliveries=useListQuery('/api/webhooks/deliveries',{id:'deliveries',itemsKey:'deliveries',filters:DELIVERY_FILTERS,defaults:DELIVERY_DEFAULTS,fixed:{project_id:project.id},prefix:'d.',poll:saved?10000:0});
+  const rows=deliveries.items;
   useEffect(()=>{setUrl(project.webhook_url||'');setSaved(project.webhook_url||'');},[project.webhook_url]);
 
   const save=async(rotate=false)=>{
@@ -66,16 +75,18 @@ export function WebhookSettings({project,refresh}){
     </Collapsible>
 
     <section className="grid gap-3">
-      <div className="flex items-center justify-between"><div><h3 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Recent deliveries</h3><p className="text-sm text-muted-foreground">The last attempts to reach your endpoint.</p></div><Button type="button" variant="outline" size="sm" onClick={()=>deliveries.reload()}><RefreshCw className={deliveries.loading?'animate-spin':undefined}/>Refresh</Button></div>
-      {deliveries.error&&!deliveries.data?<ErrorState error={deliveries.error} onRetry={deliveries.reload} title="Couldn’t load deliveries"/>
-      :!deliveries.data?<TableSkeleton rows={3} columns={3}/>
-      :!deliveries.data.deliveries.length?<EmptyState icon={Webhook} title="Nothing sent yet" description={saved?'Send a test event to check your endpoint.':'Save an endpoint URL to start receiving events.'} action={saved&&<Button size="sm" variant="outline" className="rounded-full" onClick={sendTest}><Send/>Send test event</Button>}/>
+      <div className="flex items-center justify-between"><div><h3 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Recent deliveries</h3><p className="text-sm text-muted-foreground">Every attempt to reach your endpoint, newest first.</p></div></div>
+      <FilterBar list={deliveries} placeholder="Search job IDs or errors…"/>
+      {deliveries.error&&!rows?<ErrorState error={deliveries.error} onRetry={()=>deliveries.reload()} title="Couldn’t load deliveries"/>
+      :!rows?<TableSkeleton rows={3} columns={3}/>
+      :!rows.length&&deliveries.isFiltered?<ListEmpty list={deliveries} icon={Webhook} title="" description=""/>
+      :!rows.length?<EmptyState icon={Webhook} title="Nothing sent yet" description={saved?'Send a test event to check your endpoint.':'Save an endpoint URL to start receiving events.'} action={saved&&<Button size="sm" variant="outline" className="rounded-full" onClick={sendTest}><Send/>Send test event</Button>}/>
       // A timeline of delivery attempts, newest first.
-      :<ol className="relative grid gap-0 rounded-2xl border bg-card px-5 py-2" aria-label="Webhook deliveries">
-        {deliveries.data.deliveries.map((row,index)=>{
+      :<ol className={cn('relative grid gap-0 rounded-2xl border bg-card px-5 py-2',deliveries.loading&&'opacity-60 transition-opacity')} aria-label="Webhook deliveries">
+        {rows.map((row,index)=>{
           const tone=row.status==='delivered'?'bg-emerald-500':row.status==='failed'?'bg-destructive':'bg-amber-500';
           return <li key={row.id} className="relative grid grid-cols-[1.25rem_minmax(0,1fr)] gap-x-3 py-3">
-            {index<deliveries.data.deliveries.length-1&&<span className="absolute top-7 bottom-0 left-[0.55rem] w-px bg-border" aria-hidden/>}
+            {index<rows.length-1&&<span className="absolute top-7 bottom-0 left-[0.55rem] w-px bg-border" aria-hidden/>}
             <span className={cn('mt-1.5 size-2.5 rounded-full ring-4 ring-card',tone)} aria-hidden/>
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-4 gap-y-1">
               <div className="min-w-0">
@@ -87,6 +98,7 @@ export function WebhookSettings({project,refresh}){
           </li>;
         })}
       </ol>}
+      {rows?.length>0&&<Pagination list={deliveries} label="deliveries"/>}
     </section>
 
     <ConfirmDialog open={confirm==='rotate'} onOpenChange={open=>{if(!open)setConfirm(null);}} destructive={false} title="Rotate the signing secret?" description="A new secret is created and the old one stops being used right away. Update your server before the next job finishes." confirmLabel="Rotate secret" busyLabel="Rotating…" onConfirm={()=>save(true)}/>

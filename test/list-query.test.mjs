@@ -63,3 +63,18 @@ test('labels, sorting and filter counts',()=>{
   assert.equal(nextSort('created_desc','name','asc'),'name_asc');
   assert.equal(activeFilterCount({filters:{status:[],project_id:'x',created:''}},defs),1);
 });
+
+test('CSV rows escape formulas, quotes and commas',async()=>{
+  const {rowsToCsv,isoTime}=await import('../lib/display.js');
+  const csv=rowsToCsv([{name:'=SUM(A1)',note:'a, "b"',at:0},{name:'plain',note:'',at:Date.UTC(2026,0,2)}],[['name',r=>r.name],['note',r=>r.note],['at',r=>isoTime(r.at)]]);
+  assert.equal(csv,'name,note,at\n\'=SUM(A1),"a, ""b""",\nplain,,2026-01-02T00:00:00.000Z');
+});
+
+test('a cleared default filter stays cleared after a reload',()=>{
+  const withDefault={sort:'created_desc',filters:{status:['open']}};
+  const cleared={...emptyState(withDefault),filters:{}};
+  const search=writeState('',cleared,defs,withDefault);
+  assert.equal(search,'?status=');
+  assert.deepEqual(readState(search,defs,withDefault).filters.status,[]);
+  assert.equal(writeState('',emptyState(withDefault),defs,withDefault),'','the default itself is not written');
+});
