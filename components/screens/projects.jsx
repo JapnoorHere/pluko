@@ -60,11 +60,14 @@ const FILTERS=[
   {id:'created',label:'Created',type:'date'},
 ];
 
-export function Projects(){
+/** Projects as a grid or table. `embedded` (an administrator's user page) shows only the table, locked to `fixed`. */
+export function Projects({fixed={},embedded=false}={}){
   const {me,navigate,href,takeIntent}=useWorkspace();
   const admin=me.role==='admin';
-  const list=useListQuery('/api/projects',{id:'projects',itemsKey:'projects',filters:FILTERS,defaults:DEFAULTS});
-  const [creating,setCreating]=useState(false),[renaming,setRenaming]=useState(null),[quota,setQuota]=useState(null),[deleting,setDeleting]=useState(null),[view,setViewState]=useState('grid');
+  const list=useListQuery('/api/projects',{id:'projects',itemsKey:'projects',filters:FILTERS,defaults:DEFAULTS,fixed});
+  const [creating,setCreating]=useState(false),[renaming,setRenaming]=useState(null),[quota,setQuota]=useState(null),[deleting,setDeleting]=useState(null),[savedView,setViewState]=useState('grid');
+  const view=embedded?'table':savedView;
+  const showOwner=admin&&!fixed.user_id;
   // Grid or table, remembered in this browser.
   useEffect(()=>{try{const saved=localStorage.getItem(VIEW_KEY);if(saved==='grid'||saved==='table')setViewState(saved);}catch{}},[]);
   const setView=value=>{if(!value)return;setViewState(value);try{localStorage.setItem(VIEW_KEY,value);}catch{}};
@@ -75,7 +78,7 @@ export function Projects(){
 
   const columns=[
     {key:'name',header:'Project',sortKey:'name',sortFirst:'asc',cell:project=><div className="grid min-w-0 gap-0.5"><Link href={href('projects',project.id)} onClick={event=>event.stopPropagation()} className="truncate font-medium hover:underline">{project.name}</Link><IdPill value={project.id}/></div>},
-    ...(admin?[{key:'owner',header:'Owner',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell text-muted-foreground',cell:project=>project.owner}]:[]),
+    ...(showOwner?[{key:'owner',header:'Owner',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell max-w-48 truncate',cell:project=><Link href={href('users',project.user_id)} onClick={event=>event.stopPropagation()} className="text-muted-foreground hover:text-foreground hover:underline">{project.owner}</Link>}]:[]),
     {key:'usage',header:'Today',sortKey:'usage',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:project=><div className="w-44">{meter(project)}</div>},
     {key:'keys',header:'Keys',headClassName:'hidden lg:table-cell text-right',className:'hidden lg:table-cell text-right tabular-nums text-muted-foreground',cell:project=>project.active_keys},
     {key:'webhook',header:'Webhook',headClassName:'hidden sm:table-cell',className:'hidden sm:table-cell',cell:project=>project.webhook_url?<StatusBadge status="active" label="On"/>:<span className="text-sm text-muted-foreground">Off</span>},
@@ -91,18 +94,19 @@ export function Projects(){
     ]}/>},
   ];
 
-  const empty=<ListEmpty list={list} icon={FolderKanban} title="Create your first project" description="Projects keep API keys, usage and webhooks separate for each app you build." action={<Button className="rounded-full px-4" onClick={()=>setCreating(true)}><Plus/>New project</Button>}/>;
+  const empty=embedded?<ListEmpty list={list} icon={FolderKanban} title="No projects" description="This account hasn’t created any projects."/>
+    :<ListEmpty list={list} icon={FolderKanban} title="Create your first project" description="Projects keep API keys, usage and webhooks separate for each app you build." action={<Button className="rounded-full px-4" onClick={()=>setCreating(true)}><Plus/>New project</Button>}/>;
   const actionsCell=columns.find(column=>column.key==='actions').cell;
   // The grid has no column headers, so it gets a sort menu; the table sorts from its headers.
-  const toolbar=<FilterBar list={list} placeholder={admin?'Search projects, IDs or owners…':'Search projects…'} end={<>
+  const toolbar=<FilterBar list={list} placeholder={showOwner?'Search projects, IDs or owners…':'Search projects…'} end={!embedded&&<>
     {view==='grid'&&<Select value={list.sort} onValueChange={list.setSort}><SelectTrigger size="sm" className="w-44" aria-label="Sort projects"><SelectValue/></SelectTrigger><SelectContent>{SORT_OPTIONS.map(([value,label])=><SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>}
     <ToggleGroup type="single" variant="outline" size="sm" value={view} onValueChange={setView} aria-label="Layout"><ToggleGroupItem value="grid" aria-label="Grid view"><LayoutGrid/></ToggleGroupItem><ToggleGroupItem value="table" aria-label="Table view"><List/></ToggleGroupItem></ToggleGroup>
   </>}/>;
   const footer=<Pagination list={list} label="projects"/>;
 
   return <>
-    <PageHeader title="Projects" description={admin?'Every project on this instance, with its owner and daily usage.':'One project per application. Each has its own API keys, limits and webhook.'}
-      actions={<Button type="button" onClick={()=>setCreating(true)}><Plus/>New project</Button>}/>
+    {!embedded&&<PageHeader title="Projects" description={admin?'Every project on this instance, with its owner and daily usage.':'One project per application. Each has its own API keys, limits and webhook.'}
+      actions={<Button type="button" onClick={()=>setCreating(true)}><Plus/>New project</Button>}/>}
     {view==='table'
       ?<DataTable columns={columns} rows={rows} loading={list.loading} error={list.error} onRetry={()=>list.reload()} caption="Projects" onRowClick={project=>navigate('projects',project.id)} toolbar={toolbar} empty={empty} footer={footer} sort={list.sort} onSort={list.setSort}/>
       :<div className="grid gap-3">
@@ -119,7 +123,7 @@ export function Projects(){
                 <div className="min-w-0 flex-1"><p className="truncate font-semibold tracking-[-0.01em]">{project.name}</p><IdPill value={project.id}/></div>
                 <div onClick={event=>event.stopPropagation()}>{actionsCell(project)}</div>
               </div>
-              {admin&&<p className="mt-3 truncate text-xs text-muted-foreground">Owner · {project.owner}</p>}
+              {showOwner&&<p className="mt-3 truncate text-xs text-muted-foreground">Owner · {project.owner}</p>}
               <div className="mt-5 flex-1">{meter(project)}</div>
               <div className="mt-5 flex items-center justify-between gap-3 border-t pt-4 text-xs text-muted-foreground">
                 {project.webhook_url?<StatusBadge status="active" label="Webhook on"/>:<span>Webhook off</span>}

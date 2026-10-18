@@ -29,6 +29,9 @@ test('routes map URLs to views and refuse unknown or admin-only views',()=>{
   assert.equal(parseRoute('/app/account/sessions').tab,'sessions');
   assert.equal(parseRoute('/app/users').view,'overview');
   assert.equal(parseRoute('/admin/users','admin').view,'users');
+  assert.deepEqual(parseRoute('/admin/users/usr_1/jobs','admin'),{base:'/admin',view:'users',id:'usr_1',tab:'jobs'});
+  assert.equal(parseRoute('/admin/users/usr_1/nope','admin').tab,'overview');
+  assert.equal(parseRoute('/admin/users/usr_1/jobs').view,'overview','the customer portal has no user pages');
   assert.equal(parseRoute('/app/keys/extra').id,null);
   assert.equal(parseRoute('/app').view,'overview');
   assert.equal(routePath('/app','projects','a b','keys'),'/app/projects/a%20b/keys');

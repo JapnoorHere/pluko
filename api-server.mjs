@@ -11,7 +11,7 @@ import {openApiDocument} from './openapi.mjs';
 import {db,get,all,run,tx,id,now,audit,rate,setting,cleanup} from './db.mjs';
 import {secret,hash,passwordHash,passwordCheck,redact,newTotp,checkTotp,seal,unseal} from './security.mjs';
 import {ApiError,createJob,jobView,cancelJob} from './jobs.mjs';
-import {listJobs,listLogs,listKeys,listProjects} from './workspace-lists.mjs';
+import {listJobs,listLogs,listKeys,listProjects,listUsers,listAudit,auditAreas,listWaitlist,listAttempts,userSummary,userStats,waitlistStats} from './workspace-lists.mjs';
 const fail=(status,code,message)=>{throw new ApiError(status,code,message);};
 // Request-log status filter: an exact code (404) or a class (4xx).
 const STATUS_CLASS=/^([1-5])xx$/;
@@ -129,6 +129,13 @@ export function createServer(){return http.createServer(async(req,res)=>{
     if(url.pathname==='/api/feedback'||url.pathname==='/v1/feedback'){if(req.method==='POST'){const j=ownedJob(auth,payload.job_id),r=get('SELECT id FROM results WHERE id=? AND job_id=?',payload.result_id,j.id);if(!r)fail(404,'NOT_FOUND','Result not found');if(!['not_relevant','watermark','broken','other'].includes(payload.reason))fail(400,'INVALID_REASON','Invalid feedback reason');const fid=id('fb');run('INSERT INTO feedback(id,user_id,job_id,result_id,reason,note,created) VALUES(?,?,?,?,?,?,?)',fid,auth.user_id,j.id,r.id,payload.reason,String(payload.note||'').slice(0,1000),now());return respond(201,{id:fid});}return respond(200,{feedback:all('SELECT f.*,r.data result_data FROM feedback f LEFT JOIN results r ON r.id=f.result_id AND r.job_id=f.job_id '+(auth.role==='admin'?'':'WHERE f.user_id=? ')+'ORDER BY f.created DESC LIMIT 100',...(auth.role==='admin'?[]:[auth.user_id])).map(feedbackView)});}
     if(url.pathname.startsWith('/api/admin/')){
       if(auth.role!=='admin')fail(403,'ADMIN_REQUIRED','Administrator access required');
+      const ADMIN_LISTS={'/api/admin/users':listUsers,'/api/admin/audit':listAudit,'/api/admin/waitlist':listWaitlist,'/api/admin/attempts':listAttempts};
+      if(req.method==='GET'&&url.searchParams.has('page')&&ADMIN_LISTS[url.pathname])return respond(200,ADMIN_LISTS[url.pathname](url));
+      if(req.method==='GET'&&url.pathname==='/api/admin/audit/areas')return respond(200,{areas:auditAreas()});
+      if(req.method==='GET'&&url.pathname==='/api/admin/user-stats')return respond(200,{stats:userStats()});
+      if(req.method==='GET'&&url.pathname==='/api/admin/waitlist/stats')return respond(200,{stats:waitlistStats()});
+      const userPage=url.pathname.match(/^\/api\/admin\/users\/(usr_[A-Za-z0-9_]{1,64})$/);
+      if(userPage&&req.method==='GET')return respond(200,userSummary(userPage[1]));
       if(url.pathname==='/api/admin/users')return respond(200,{users:all('SELECT u.id,u.email,u.role,u.active,(u.totp IS NOT NULL) mfa,u.created,(SELECT count(*) FROM projects p WHERE p.user_id=u.id) projects FROM users u ORDER BY created DESC LIMIT 500')});
       if(url.pathname==='/api/admin/waitlist'&&req.method==='GET'){const total=get('SELECT count(*) n FROM waitlist').n;return respond(200,{total,entries:all('SELECT email,created FROM waitlist ORDER BY created DESC LIMIT ?',WAITLIST_EXPORT_MAX),truncated:total>WAITLIST_EXPORT_MAX});}
       if(url.pathname==='/api/admin/waitlist/remove'&&req.method==='POST'){const address=email(payload.email);if(!run('DELETE FROM waitlist WHERE email=?',address).changes)fail(404,'NOT_FOUND','That email isn’t on the waitlist');audit(auth.user_id,'waitlist.removed',address);return respond(200,{ok:true});}

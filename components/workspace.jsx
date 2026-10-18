@@ -22,6 +22,7 @@ import { Guide } from "@/components/screens/guide";
 import { Account } from "@/components/screens/account";
 import { AdminUsers } from "@/components/screens/admin-users";
 import { AdminWaitlist } from "@/components/screens/admin-waitlist";
+import { UserPage } from "@/components/screens/admin-user";
 import { AdminProvider } from "@/components/screens/admin-provider";
 import { AdminAudit } from "@/components/screens/admin-audit";
 import { AdminStorage } from "@/components/screens/admin-storage";
@@ -190,7 +191,7 @@ export default function Workspace({ audience = "customer" }) {
   if (!me) return <AuthScreen call={call} onAuthenticated={refresh} adminOnly={audience === "admin"} />;
   const Screen = SCREENS[route.view] || Overview;
   // Until an administrator turns on the authenticator, every other API call is refused, so only Security renders.
-  const Detail = mfaRequired ? Account : route.view === "jobs" && route.id ? JobPage : route.view === "projects" && route.id ? ProjectPage : Screen;
+  const Detail = mfaRequired ? Account : route.view === "jobs" && route.id ? JobPage : route.view === "projects" && route.id ? ProjectPage : route.view === "users" && route.id ? UserPage : Screen;
   return (
     <WorkspaceContext.Provider value={value}>
       <WorkspaceShell titles={TITLES}>

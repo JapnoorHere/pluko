@@ -128,3 +128,116 @@ export function listProjects(auth,url){
   });
   return {projects:result.items,...pageInfo(result)};
 }
+
+/* ---------- administrator lists (routes under /api/admin already require an administrator) ---------- */
+
+export function listUsers(url){
+  const result=list(db,url,{
+    select:'u.id,u.email,u.role,u.active,(u.totp IS NOT NULL) mfa,u.created,u.last_login,(SELECT count(*) FROM projects p WHERE p.user_id=u.id) projects,(SELECT count(*) FROM jobs j WHERE j.user_id=u.id) jobs',
+    from:'users u',
+    filters:[
+      oneOf('role','u.role',['admin','user']),
+      choice('status',{active:'u.active=1',suspended:'u.active=0'}),
+      choice('mfa',{on:'u.totp IS NOT NULL',off:'u.totp IS NULL'}),
+      choice('active_within',{
+        day:now=>({sql:'u.last_login>=?',values:[now-DAY]}),
+        week:now=>({sql:'u.last_login>=?',values:[now-7*DAY]}),
+        month:now=>({sql:'u.last_login>=?',values:[now-30*DAY]}),
+        dormant:now=>({sql:'u.last_login<?',values:[now-30*DAY]}),
+        never:'u.last_login IS NULL',
+      }),
+      choice('has_projects',{yes:'EXISTS (SELECT 1 FROM projects p WHERE p.user_id=u.id)',no:'NOT EXISTS (SELECT 1 FROM projects p WHERE p.user_id=u.id)'}),
+      range('created','u.created'),
+    ],
+    search:['u.email','u.id'],
+    sorts:{
+      created_desc:'u.created DESC',created_asc:'u.created ASC',email_asc:'u.email COLLATE NOCASE ASC',email_desc:'u.email COLLATE NOCASE DESC',
+      last_login_desc:'u.last_login IS NULL,u.last_login DESC',last_login_asc:'u.last_login IS NULL,u.last_login ASC',
+      projects_desc:'projects DESC,u.created DESC',jobs_desc:'jobs DESC,u.created DESC',
+    },
+    defaultSort:'created_desc',
+  });
+  return {users:result.items.map(user=>({...user,mfa:Boolean(user.mfa)})),...pageInfo(result)};
+}
+
+/** One account's profile and activity totals, for the administrator's user page. */
+export function userSummary(userId){
+  const user=get('SELECT id,email,role,active,(totp IS NOT NULL) mfa,created,last_login FROM users WHERE id=?',userId);
+  if(!user)throw new ApiError(404,'NOT_FOUND','User not found');
+  const today=dayKey(Date.now()),since=Date.now()-30*DAY;
+  return {user:{...user,mfa:Boolean(user.mfa)},stats:{
+    projects:get('SELECT count(*) n FROM projects WHERE user_id=?',userId).n,
+    active_keys:get('SELECT count(*) n FROM api_keys k JOIN projects p ON p.id=k.project_id WHERE p.user_id=? AND k.revoked=0 AND (k.expires IS NULL OR k.expires>?)',userId,Date.now()).n,
+    jobs:get('SELECT count(*) n FROM jobs WHERE user_id=?',userId).n,
+    active_jobs:get("SELECT count(*) n FROM jobs WHERE user_id=? AND status IN ('queued','running')",userId).n,
+    requests_30d:get("SELECT count(*) n FROM requests WHERE user_id=? AND created>=? AND path LIKE '/v1/%'",userId,since).n,
+    errors_30d:get("SELECT count(*) n FROM requests WHERE user_id=? AND created>=? AND path LIKE '/v1/%' AND status>=400",userId,since).n,
+    pages_today:get('SELECT coalesce(sum(u.pages),0) n FROM usage u JOIN projects p ON p.id=u.project_id WHERE p.user_id=? AND u.day=?',userId,today).n,
+    open_feedback:get("SELECT count(*) n FROM feedback WHERE user_id=? AND coalesce(status,'open')<>'reviewed'",userId).n,
+    sessions:get('SELECT count(*) n FROM sessions WHERE user_id=? AND expires>?',userId,Date.now()).n,
+    last_request:get('SELECT max(created) n FROM requests WHERE user_id=?',userId).n,
+  }};
+}
+
+// Audit areas are the part of the action before the first dot ("key.created" -> "key").
+const auditArea=(name,column)=>({params:[name],apply(url){
+  const values=url.searchParams.getAll(name).flatMap(v=>v.split(',')).map(v=>v.trim()).filter(Boolean);
+  if(!values.length)return null;
+  for(const v of values)if(!/^[a-z_]{1,32}$/.test(v))throw new ApiError(400,'INVALID_FILTER',`${name} must be an area name like key or user`);
+  return {sql:'('+values.map(()=>`${column} LIKE ? ESCAPE '\\'`).join(' OR ')+')',values:values.map(v=>v.replace(/_/g,'\\_')+'.%')};
+}});
+// Events done by an account or done to it.
+const involving=name=>({params:[name],apply(url){
+  const value=url.searchParams.get(name);
+  if(!value)return null;
+  if(value.length>64)throw new ApiError(400,'INVALID_FILTER',`${name} is too long`);
+  return {sql:'(a.actor=? OR a.target=?)',values:[value,value]};
+}});
+
+export function listAudit(url){
+  const result=list(db,url,{
+    select:'a.*,(SELECT email FROM users WHERE id=a.actor) actor_email',
+    from:'audit a',
+    filters:[auditArea('area','a.action'),equals('action','a.action'),equals('actor','a.actor'),involving('user'),range('created','a.created')],
+    search:['a.action','a.target','a.details'],
+    sorts:{created_desc:'a.id DESC',created_asc:'a.id ASC'},
+    defaultSort:'created_desc',
+  });
+  return {audit:result.items,...pageInfo(result)};
+}
+export const auditAreas=()=>all("SELECT DISTINCT substr(action,1,instr(action||'.','.')-1) area FROM audit ORDER BY area").map(row=>row.area).filter(Boolean);
+
+export function listWaitlist(url){
+  const result=list(db,url,{
+    select:'email,created',from:'waitlist',
+    filters:[range('created','created')],
+    search:['email'],
+    sorts:{created_desc:'created DESC',created_asc:'created ASC',email_asc:'email COLLATE NOCASE ASC',email_desc:'email COLLATE NOCASE DESC'},
+    defaultSort:'created_desc',
+  });
+  return {entries:result.items,...pageInfo(result)};
+}
+
+export function listAttempts(url){
+  const result=list(db,url,{
+    select:'*',from:'attempts',
+    filters:[oneOf('status','status',['ok','error']),equals('provider','provider'),equals('job_id','job_id'),range('created','created'),
+      choice('speed',{slow:'duration>=3000',very_slow:'duration>=10000'}),
+      choice('yield',{none:'accepted=0',some:'accepted>0'})],
+    search:['job_id','error'],
+    sorts:{created_desc:'id DESC',created_asc:'id ASC',duration_desc:'duration DESC,id DESC'},
+    defaultSort:'created_desc',
+  });
+  return {attempts:result.items,...pageInfo(result)};
+}
+
+/** Totals for the Users page header, counted on the server so they stay right past any page size. */
+export function userStats(){
+  return get(`SELECT count(*) total,coalesce(sum(active=1),0) active,coalesce(sum(active=0),0) suspended,coalesce(sum(totp IS NOT NULL),0) mfa_on,
+    coalesce(sum(role='admin'),0) admins,coalesce(sum(created>=?),0) new_week FROM users`,Date.now()-7*DAY);
+}
+
+export function waitlistStats(){
+  const t=Date.now();
+  return get('SELECT count(*) total,coalesce(sum(created>=?),0) last_week,coalesce(sum(created>=?),0) last_day FROM waitlist',t-7*DAY,t-DAY);
+}

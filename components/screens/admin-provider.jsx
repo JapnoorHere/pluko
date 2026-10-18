@@ -2,6 +2,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Activity,Ban,CheckCircle2,Clock,Plus,ShieldBan,Trash2,LayoutGrid,List} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
+import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
 import {CardSkeleton,ConfirmDialog,DataTable,Duration,EmptyState,ErrorState,FormDialog,IdPill,PageHeader,RowActions,SearchInput,StatCard,StatusBadge,TableToolbar,TimeAgo,ToneBadge,toast,StatGrid,Card,CardContent,CardDescription,CardHeader,CardTitle,MiniBars} from '@/components/workspace/ui';
 import {formatDuration,matches,percent,settingsPayload} from '@/lib/ui-helpers';
 import {cn} from '@/lib/utils';
@@ -14,6 +15,33 @@ import {Switch} from '@/components/ui/switch';
 import {ToggleGroup,ToggleGroupItem} from '@/components/ui/toggle-group';
 
 const RULES_VIEW_KEY='pluko-rules-view';
+const ATTEMPT_FILTERS=[
+  {id:'status',label:'Outcome',type:'multi',options:[['ok','Succeeded'],['error','Failed']]},
+  {id:'yield',label:'Accepted',type:'select',anyLabel:'Any',options:[['none','Nothing accepted'],['some','Some accepted']]},
+  {id:'speed',label:'Time',type:'select',anyLabel:'Any time',options:[['slow','Slower than 3 s'],['very_slow','Slower than 10 s']]},
+  {id:'created',label:'When',type:'date'},
+];
+const ATTEMPT_DEFAULTS={sort:'created_desc'};
+
+/** Every provider page request, filterable and paginated. Refreshes in the background while the page is open. */
+function AttemptsList(){
+  const {href}=useWorkspace();
+  const list=useListQuery('/api/admin/attempts',{id:'attempts',itemsKey:'attempts',filters:ATTEMPT_FILTERS,defaults:ATTEMPT_DEFAULTS,poll:20000});
+  return <DataTable rows={list.items} loading={list.loading} error={list.error} onRetry={()=>list.reload()} skeletonRows={6} caption="Provider attempts"
+    sort={list.sort} onSort={list.setSort}
+    toolbar={<FilterBar list={list} placeholder="Search job IDs or errors…"/>}
+    footer={<Pagination list={list} label="attempts"/>}
+    columns={[
+      {key:'created',header:'When',sortKey:'created',className:'text-muted-foreground whitespace-nowrap',cell:item=><TimeAgo value={item.created}/>},
+      {key:'job',header:'Job',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:item=>item.job_id?<a href={href('jobs',item.job_id)} className="hover:underline"><IdPill value={item.job_id}/></a>:'—'},
+      {key:'status',header:'Status',cell:item=><StatusBadge status={item.error?'failed':item.status}/>},
+      {key:'yield',header:'Accepted',headClassName:'text-right',className:'text-right tabular-nums',cell:item=><span>{item.accepted}<span className="text-muted-foreground"> / {item.candidates}</span></span>},
+      {key:'duration',header:'Time',sortKey:'duration',headClassName:'hidden sm:table-cell text-right',className:'hidden sm:table-cell text-right',cell:item=><Duration ms={item.duration}/>},
+      {key:'error',header:'Error',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell max-w-64 truncate text-muted-foreground',cell:item=><span title={item.error||''}>{item.error||'—'}</span>},
+    ]}
+    empty={<ListEmpty list={list} icon={Activity} title="No provider activity yet" description="Attempts appear here once the worker starts processing searches."/>}/>;
+}
+
 
 export function AdminProvider(){
   const {call,takeIntent}=useWorkspace();
@@ -80,18 +108,9 @@ export function AdminProvider(){
     </section>
 
     <section className="grid gap-3">
-      <div><h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Recent provider attempts</h2><p className="text-sm text-muted-foreground">One row per page requested from the source. Refreshes every 20 seconds.</p></div>
+      <div><h2 className="text-[1.375rem] leading-tight font-semibold tracking-[-0.03em]">Recent provider attempts</h2><p className="text-sm text-muted-foreground">One row per page requested from the source. The chart shows the latest 24; the table covers everything kept, and refreshes every 20 seconds.</p></div>
       {list.length>1&&<Card><CardHeader><CardTitle>Images accepted per page</CardTitle><CardDescription>The last {Math.min(24,list.length)} provider pages, oldest on the left. A low bar means filters or source rules removed most candidates.</CardDescription></CardHeader><CardContent><MiniBars height={110} valueLabel="images accepted" data={[...list].slice(0,24).reverse().map((item,index)=>({label:`#${index+1} · ${new Date(item.created).toLocaleTimeString()} · page ${item.page}`,short:new Date(item.created).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),value:item.accepted||0}))}/></CardContent></Card>}
-      <DataTable rows={attempts.data?.attempts} loading={attempts.loading} error={attempts.error} onRetry={attempts.reload} skeletonRows={6} caption="Provider attempts"
-        columns={[
-          {key:'created',header:'When',className:'text-muted-foreground',cell:item=><TimeAgo value={item.created}/>},
-          {key:'job',header:'Job',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:item=><IdPill value={item.job_id}/>},
-          {key:'status',header:'Status',cell:item=><StatusBadge status={item.error?'failed':item.status}/>},
-          {key:'yield',header:'Accepted',headClassName:'text-right',className:'text-right tabular-nums',cell:item=><span>{item.accepted}<span className="text-muted-foreground"> / {item.candidates}</span></span>},
-          {key:'duration',header:'Time',headClassName:'hidden sm:table-cell text-right',className:'hidden sm:table-cell text-right',cell:item=><Duration ms={item.duration}/>},
-          {key:'error',header:'Error',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell max-w-64 truncate text-muted-foreground',cell:item=><span title={item.error||''}>{item.error||'—'}</span>},
-        ]}
-        empty={<EmptyState icon={Activity} title="No provider activity yet" description="Attempts appear here once the worker starts processing searches."/>}/>
+      <AttemptsList/>
     </section>
 
     <ConfirmDialog open={pausing} onOpenChange={setPausing} title="Pause the image provider?" description="No new pages are requested from the source. Queued and running jobs wait until you resume, and customers see that searches are paused." confirmLabel="Pause provider" busyLabel="Pausing…" onConfirm={()=>setProvider(false)}/>
