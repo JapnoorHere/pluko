@@ -5,7 +5,7 @@ export const alt = 'Pluko — Every image. One API.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="17" fill="#818CF8"/><path d="M12 23v23a6 6 0 0 0 6 6h23" stroke="#171717" stroke-width="3.5" stroke-linecap="round" opacity=".45"/><path d="M35 15H24a5 5 0 0 0-5 5v20a5 5 0 0 0 5 5h20a5 5 0 0 0 5-5V29" stroke="#171717" stroke-width="3.5" stroke-linecap="round"/><path d="m21 38 9-10 7 7 5-5 7 8v2a5 5 0 0 1-5 5H24a5 5 0 0 1-5-5l2-2Z" fill="#171717"/><path d="m46 8 2.9 7.1L56 18l-7.1 2.9L46 28l-2.9-7.1L36 18l7.1-2.9L46 8Z" fill="#171717"/></svg>`;
+const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="t" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop stop-color="#818CF8"/><stop offset="1" stop-color="#4F46E5"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#t)"/><path d="M20.5 17v30" stroke="#fff" stroke-width="7" stroke-linecap="round"/><circle cx="32" cy="28.5" r="11.5" stroke="#fff" stroke-width="7"/><circle cx="32" cy="28.5" r="3.5" fill="#fff"/></svg>`;
 const logoSrc = `data:image/svg+xml;base64,${Buffer.from(LOGO).toString('base64')}`;
 
 export default function OpenGraphImage() {
