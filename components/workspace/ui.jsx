@@ -2,10 +2,11 @@
 import {useEffect,useId,useState} from 'react';
 import Link from 'next/link';
 import {toast} from 'sonner';
-import {ArrowLeft,Check,Copy,Eye,EyeOff,MoreHorizontal,RefreshCw,Search} from 'lucide-react';
+import {ArrowDown,ArrowLeft,ArrowUp,ArrowUpDown,Check,Copy,Eye,EyeOff,MoreHorizontal,RefreshCw,Search} from 'lucide-react';
 import {cn} from '@/lib/utils';
 import {copyText,format} from '@/lib/display';
 import {formatDuration,passwordStrength,percent,statusTone,timeAgo} from '@/lib/ui-helpers';
+import {nextSort,splitSort} from '@/lib/list-query';
 import {AlertDialog,AlertDialogContent,AlertDialogDescription,AlertDialogFooter,AlertDialogHeader,AlertDialogTitle} from '@/components/ui/alert-dialog';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -23,6 +24,7 @@ import {Switch} from '@/components/ui/switch';
 import {Table,TableBody,TableCell,TableHead,TableHeader,TableRow} from '@/components/ui/table';
 import {Tooltip,TooltipContent,TooltipTrigger} from '@/components/ui/tooltip';
 import {Callout,CodeBlock,LanguageProvider,Reveal,useReturnFocus} from '@/components/design/system';
+import {RefreshButton} from '@/components/workspace/refresh';
 
 export {toast};
 
@@ -36,7 +38,7 @@ export function PageHeader({title,description,actions,back,eyebrow}){
       <h1 className="text-[clamp(1.875rem,3.4vw,2.625rem)] leading-[1.05] font-semibold tracking-[-0.04em] text-balance">{title}</h1>
       {description&&<p className="max-w-2xl text-[15px] leading-relaxed text-muted-foreground sm:text-base">{description}</p>}
     </div>
-    {actions&&<div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+    <div className="flex shrink-0 flex-wrap items-center gap-2"><RefreshButton/>{actions}</div>
   </div>;
 }
 
@@ -390,7 +392,18 @@ export function RowActions({items,label='Actions'}){
 
 // A table with a shimmer while loading, an empty state, an error state, and optional row links.
 // On phones each row becomes a card. columns: [{key, header, cell(row), className, headClassName, mobile:false}]
-export function DataTable({columns,rows,loading,error,onRetry,empty,rowKey='id',onRowClick,selectedKey,footer,toolbar,skeletonRows=5,caption}){
+// A column header that sorts the list when clicked. Columns opt in with `sortKey` (and `sortFirst:'asc'` for names).
+function SortableHeader({column,sort,onSort}){
+  const [field,direction]=splitSort(sort);
+  const active=field===column.sortKey;
+  const Icon=!active?ArrowUpDown:direction==='asc'?ArrowUp:ArrowDown;
+  return <button type="button" onClick={()=>onSort(nextSort(sort,column.sortKey,column.sortFirst))} className={cn('-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 uppercase hover:text-foreground focus-visible:outline-2 focus-visible:outline-[var(--ring)]',active&&'text-foreground')}>
+    {column.header}<Icon className={cn('size-3',!active&&'opacity-50')} aria-hidden/>
+  </button>;
+}
+const ariaSort=(column,sort)=>{const [field,direction]=splitSort(sort);return column.sortKey&&field===column.sortKey?(direction==='asc'?'ascending':'descending'):undefined;};
+
+export function DataTable({columns,rows,loading,error,onRetry,empty,rowKey='id',onRowClick,selectedKey,footer,toolbar,skeletonRows=5,caption,sort,onSort}){
   const showSkeleton=loading&&!rows?.length;
   const keyOf=row=>typeof rowKey==='function'?rowKey(row):row[rowKey];
   const actions=columns.find(column=>column.key==='actions');
@@ -404,7 +417,7 @@ export function DataTable({columns,rows,loading,error,onRetry,empty,rowKey='id',
       <div className="hidden overflow-hidden rounded-2xl border bg-card sm:block">
         <Table>
           {caption&&<caption className="sr-only">{caption}</caption>}
-          <TableHeader className="bg-muted/50"><TableRow className="hover:bg-transparent">{columns.map(column=><TableHead key={column.key} className={cn('h-10 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase',column.headClassName)}>{column.header}</TableHead>)}</TableRow></TableHeader>
+          <TableHeader className="bg-muted/50"><TableRow className="hover:bg-transparent">{columns.map(column=><TableHead key={column.key} aria-sort={ariaSort(column,sort)} className={cn('h-10 text-[11px] font-medium tracking-[0.06em] text-muted-foreground uppercase',column.headClassName)}>{column.sortKey&&onSort?<SortableHeader column={column} sort={sort} onSort={onSort}/>:column.header}</TableHead>)}</TableRow></TableHeader>
           <TableBody className={cn(loading&&'opacity-60 transition-opacity')}>
             {rows.map(row=>{
               const key=keyOf(row);

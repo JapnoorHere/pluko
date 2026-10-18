@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {ArrowRight,FolderPlus,Keyboard,KeyRound,LogOut,Monitor,Moon,Search,ShieldPlus,Sparkles,Sun,UserPlus,FolderOpen,History} from 'lucide-react';
+import {ArrowRight,FolderPlus,Keyboard,KeyRound,LogOut,Monitor,Moon,Search,ShieldPlus,Sparkles,Sun,UserPlus,FolderOpen,History,RefreshCw} from 'lucide-react';
+import {REFRESH_EVENT} from '@/components/workspace/refresh';
 import {useWorkspace} from '@/components/workspace/context';
 import {Kbd} from '@/components/workspace/ui';
 import {useReturnFocus} from '@/components/design/system';
@@ -25,6 +26,7 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
     const pages=groups.flatMap(group=>group.items.map(([id,name,Icon])=>({id:`go-${id}`,group:'Go to',label:name,icon:Icon,run:()=>navigate(id)})));
     const actions=[
       {id:'new-search',group:'Actions',label:'New search',icon:Sparkles,hint:'N',run:()=>navigate('playground')},
+      {id:'refresh',group:'Actions',label:'Refresh this page',icon:RefreshCw,hint:'R',run:()=>window.dispatchEvent(new Event(REFRESH_EVENT))},
       {id:'new-project',group:'Actions',label:'Create project',icon:FolderPlus,run:()=>start('projects','create')},
       {id:'new-key',group:'Actions',label:'Create API key',icon:KeyRound,run:()=>start('keys','create')},
       ...(me.role==='admin'?[
@@ -95,7 +97,7 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
 }
 
 const SHORTCUTS=[
-  ['General',[['Ctrl K','Open the command menu'],['?','Show keyboard shortcuts'],['/','Search the current list'],['N','New search']]],
+  ['General',[['Ctrl K','Open the command menu'],['?','Show keyboard shortcuts'],['/','Search the current list'],['R','Refresh the current page'],['N','New search']]],
   ['Go to',[['G O','Overview'],['G S','Playground'],['G P','Projects'],['G K','API keys'],['G J','Search jobs'],['G L','Request logs'],['G F','Quality feedback'],['G D','API guide'],['G A','Account settings']]],
   ['Results',[['← →','Previous or next image in the preview'],['Esc','Close a dialog or preview']]],
 ];

@@ -65,7 +65,7 @@ export function createServer(){return http.createServer(async(req,res)=>{
       const address=email(payload.email);if(!rate('login:'+hash(address),RATE_LIMITS.loginPerWindow,900000))fail(429,'LOGIN_RATE_LIMIT','Wait before trying again');
       const user=get('SELECT * FROM users WHERE email=?',address);if(!user||!user.active||(payload.portal==='admin'&&user.role!=='admin')||!await passwordCheck(payload.password,user.password)){audit(null,'login.failed',hash(address));fail(401,'LOGIN_FAILED','Invalid credentials');}
       if(prelaunch()&&user.role!=='admin')fail(403,'PRELAUNCH',NOT_OPEN);
-      if(user.totp)consumeCode(user,payload.code);const token=secret();run('INSERT INTO sessions(hash,user_id,csrf,expires,created,label) VALUES(?,?,?,?,?,?)',hash(token),user.id,secret(),now()+LIMITS.sessionHours*3600000,now(),deviceLabel(req.headers['user-agent']));cookie(res,token);auth={user_id:user.id};audit(user.id,'login.success',user.id);return respond(200,{ok:true});
+      if(user.totp)consumeCode(user,payload.code);const token=secret();run('INSERT INTO sessions(hash,user_id,csrf,expires,created,label) VALUES(?,?,?,?,?,?)',hash(token),user.id,secret(),now()+LIMITS.sessionHours*3600000,now(),deviceLabel(req.headers['user-agent']));run('UPDATE users SET last_login=? WHERE id=?',now(),user.id);cookie(res,token);auth={user_id:user.id};audit(user.id,'login.success',user.id);return respond(200,{ok:true});
     }
     if(url.pathname==='/api/register'&&req.method==='POST'){
       if(prelaunch())fail(403,'PRELAUNCH',NOT_OPEN);
@@ -74,7 +74,7 @@ export function createServer(){return http.createServer(async(req,res)=>{
       if(!rate('register-ip:'+clientIp(req),RATE_LIMITS.signupPerIpPerHour,3600000))fail(429,'SIGNUP_RATE_LIMIT','Too many accounts were created from this network. Try again later.');
       const pw=await passwordHash(payload.password);
       if(get('SELECT id FROM users WHERE email=?',address))fail(409,'EMAIL_IN_USE','An account already uses this email');
-      const userId=id('usr');tx(()=>{run('INSERT INTO users(id,email,password,role,created) VALUES(?,?,?,?,?)',userId,address,pw,'user',now());audit(userId,'user.self_registered',userId);});
+      const userId=id('usr');tx(()=>{run('INSERT INTO users(id,email,password,role,created,last_login) VALUES(?,?,?,?,?,?)',userId,address,pw,'user',now(),now());audit(userId,'user.self_registered',userId);});
       const token=secret();run('INSERT INTO sessions(hash,user_id,csrf,expires,created,label) VALUES(?,?,?,?,?,?)',hash(token),userId,secret(),now()+LIMITS.sessionHours*3600000,now(),deviceLabel(req.headers['user-agent']));cookie(res,token);return respond(201,{ok:true});
     }
     if(url.pathname==='/api/accept'&&req.method==='POST'){

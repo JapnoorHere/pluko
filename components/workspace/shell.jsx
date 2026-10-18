@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
 import {CommandPalette,ShortcutsDialog} from '@/components/workspace/command-palette';
+import {REFRESH_EVENT} from '@/components/workspace/refresh';
 import {Kbd,UsageMeter} from '@/components/workspace/ui';
 import {initials} from '@/lib/ui-helpers';
 import {Avatar,AvatarFallback} from '@/components/ui/avatar';
@@ -99,6 +100,7 @@ function useShortcuts({openPalette,openShortcuts}){
       pending.current=0;
       if(key==='g'){pending.current=Date.now();return;}
       if(key==='n'){event.preventDefault();navigate('playground');return;}
+      if(key==='r'){event.preventDefault();window.dispatchEvent(new Event(REFRESH_EVENT));return;}
       if(key==='?'){event.preventDefault();openShortcuts();return;}
       if(key==='/'){const input=document.querySelector('[data-search-input]');if(input){event.preventDefault();input.focus();}}
     };

@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { WorkspaceContext } from "@/components/workspace/context";
 import { WorkspaceShell } from "@/components/workspace/shell";
+import { RefreshScope } from "@/components/workspace/refresh";
 import { useWorkspaceTheme } from "@/components/workspace/theme";
 import { Shimmer } from "@/components/workspace/ui";
 import { parseRoute, routePath } from "@/lib/ui-helpers";
@@ -193,9 +194,11 @@ export default function Workspace({ audience = "customer" }) {
   return (
     <WorkspaceContext.Provider value={value}>
       <WorkspaceShell titles={TITLES}>
-        <div key={`${route.view}/${route.id || ""}`} className="page-enter grid gap-6">
-          <Detail />
-        </div>
+        <RefreshScope key={`${route.view}/${route.id || ""}`}>
+          <div className="page-enter grid gap-6">
+            <Detail />
+          </div>
+        </RefreshScope>
       </WorkspaceShell>
     </WorkspaceContext.Provider>
   );

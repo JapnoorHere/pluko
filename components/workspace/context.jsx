@@ -1,5 +1,6 @@
 'use client';
 import {createContext,useCallback,useContext,useEffect,useRef,useState} from 'react';
+import {useRefreshable,useRefreshScope} from '@/components/workspace/refresh';
 
 export const WorkspaceContext=createContext(null);
 
@@ -16,21 +17,24 @@ export function useResource(path,{poll=0,enabled=true}={}){
   const {call}=useWorkspace();
   const [data,setData]=useState(),[error,setError]=useState(null),[loading,setLoading]=useState(Boolean(path&&enabled));
   const latest=useRef(0);
-  const load=useCallback(async({quiet=false}={})=>{
+  const markUpdated=useRefreshScope()?.markUpdated;
+  const load=useCallback(async({quiet=false,manual=false}={})=>{
     if(!path||!enabled)return;
     const ticket=++latest.current;
     if(!quiet)setLoading(true);
     try{
       const result=await call(path);
-      if(ticket===latest.current){setData(result);setError(null);}
+      if(ticket===latest.current){setData(result);setError(null);markUpdated?.();}
       return result;
     }catch(failure){
       if(ticket===latest.current&&!quiet)setError(failure);
+      if(manual)throw failure;
     }finally{
       if(ticket===latest.current&&!quiet)setLoading(false);
     }
-  },[call,path,enabled]);
+  },[call,path,enabled,markUpdated]);
   useEffect(()=>{load();},[load]);
+  useRefreshable(load,Boolean(path&&enabled));
   useEffect(()=>{
     if(!poll||!enabled)return;
     const timer=setInterval(()=>{if(document.visibilityState==='visible')load({quiet:true});},poll);

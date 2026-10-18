@@ -64,6 +64,26 @@ INSERT OR IGNORE INTO settings VALUES('prelaunch_enabled','false');`);
     db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}
 }
+// 5: filtered, paginated workspace lists. Indexes for the common filters, and when each user last signed in.
+if(!db.prepare('SELECT 1 FROM migrations WHERE version=5').get()){
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.exec(`ALTER TABLE users ADD COLUMN last_login INTEGER;
+CREATE INDEX IF NOT EXISTS jobs_project ON jobs(project_id,created);
+CREATE INDEX IF NOT EXISTS jobs_status ON jobs(status,created);
+CREATE INDEX IF NOT EXISTS requests_project ON requests(project_id,created);
+CREATE INDEX IF NOT EXISTS requests_key ON requests(key_id,created);
+CREATE INDEX IF NOT EXISTS audit_actor ON audit(actor,id);
+CREATE INDEX IF NOT EXISTS audit_action ON audit(action,id);
+CREATE INDEX IF NOT EXISTS feedback_user ON feedback(user_id,created);
+CREATE INDEX IF NOT EXISTS feedback_status ON feedback(status,created);
+CREATE INDEX IF NOT EXISTS keys_project ON api_keys(project_id,created);
+CREATE INDEX IF NOT EXISTS projects_user ON projects(user_id,created);
+CREATE INDEX IF NOT EXISTS attempts_created ON attempts(created);`);
+    db.prepare('INSERT INTO migrations(version,applied) VALUES(5,?)').run(Date.now());
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+}
 export const now=()=>Date.now();
 export const id=prefix=>prefix+'_'+randomUUID().replaceAll('-','');
 export const get=(sql,...p)=>db.prepare(sql).get(...p);
