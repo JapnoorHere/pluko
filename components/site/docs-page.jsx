@@ -129,7 +129,7 @@ export function DocsPage(){
       </div>
 
       <div className="mx-auto max-w-[1440px] gap-12 px-5 pt-10 pb-24 sm:px-8 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:pt-28 xl:grid-cols-[15rem_minmax(0,1fr)_13rem]">
-        <aside className="hidden lg:block"><div className="sticky top-24 grid max-h-[calc(100svh-7rem)] gap-6 overflow-y-auto pr-2 pb-6 [scrollbar-width:thin] [scrollbar-color:transparent_transparent] hover:[scrollbar-color:var(--border)_transparent]">{searchButton}<NavList active={active}/></div></aside>
+        <aside className="hidden lg:block"><div className="sticky top-24 grid max-h-[calc(100svh-7rem)] gap-6 overflow-y-auto pr-2 pb-6 scrollbar-quiet">{searchButton}<NavList active={active}/></div></aside>
 
         <article className="min-w-0 max-w-3xl">
           <header className="mb-14">
