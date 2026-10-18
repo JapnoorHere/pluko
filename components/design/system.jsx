@@ -179,3 +179,20 @@ export function PrintButton({children='Print'}){
     <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M6 9V3h12v6M6 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-2M6 14h12v7H6z"/></svg>{children}
   </button>;
 }
+
+// Dialogs opened from state have no trigger, so Radix can't send focus back on close.
+// This remembers what had focus when the dialog opened (or the menu button, for menu items) and returns focus there.
+function focusTarget(element){
+  const menu=element?.closest?.('[role=menu]');
+  if(menu?.id)return document.querySelector(`[aria-controls="${CSS.escape(menu.id)}"]`)||element;
+  return element;
+}
+export function useReturnFocus(open){
+  const saved=useRef(null),wasOpen=useRef(false);
+  if(open&&!wasOpen.current&&typeof document!=='undefined')saved.current=focusTarget(document.activeElement);
+  wasOpen.current=open;
+  return useCallback(event=>{
+    const element=saved.current;saved.current=null;
+    if(element?.isConnected&&element!==document.body){event.preventDefault();element.focus({preventScroll:true});}
+  },[]);
+}

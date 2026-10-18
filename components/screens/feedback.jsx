@@ -57,9 +57,9 @@ export function Feedback(){
     <div className="grid gap-4">
       <TableToolbar><Tabs value={tab} onValueChange={setTab}><TabsList className="h-8"><TabsTrigger value="open" className="text-xs">Open{openCount!==undefined&&<span className="ml-1 text-muted-foreground tabular-nums">{openCount}</span>}</TabsTrigger><TabsTrigger value="reviewed" className="text-xs">Reviewed</TabsTrigger><TabsTrigger value="all" className="text-xs">All</TabsTrigger></TabsList></Tabs></TableToolbar>
       {feedback.error&&!all?<ErrorState error={feedback.error} onRetry={feedback.reload} title="Couldn’t load feedback"/>
-      :!all?<ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">{[1,2,3].map(index=><li key={index} className="overflow-hidden rounded-2xl border bg-card"><Shimmer className="aspect-[16/10] w-full rounded-none"/><div className="grid gap-2 p-4"><Shimmer className="h-4 w-2/3"/><Shimmer className="h-10 w-full rounded-xl"/></div></li>)}</ul>
+      :!all?<ul className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]" aria-busy="true">{[1,2,3].map(index=><li key={index} className="overflow-hidden rounded-2xl border bg-card"><Shimmer className="aspect-[16/10] w-full rounded-none"/><div className="grid gap-2 p-4"><Shimmer className="h-4 w-2/3"/><Shimmer className="h-10 w-full rounded-xl"/></div></li>)}</ul>
       :!rows.length?<EmptyState icon={MessageSquareWarning} title={tab==='open'?'Nothing waiting for review':'No reports here'} description="Open any search result and choose “Report a problem” to flag irrelevant, watermarked or broken images." action={<Button asChild variant="outline" className="rounded-full"><Link href={href('jobs')}>Go to search jobs</Link></Button>}/>
-      :<ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Feedback reports">{rows.map(item=><ReportCard key={item.id} item={item} admin={admin} onReview={review}/>)}</ul>}
+      :<ul className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]" aria-label="Feedback reports">{rows.map(item=><ReportCard key={item.id} item={item} admin={admin} onReview={review}/>)}</ul>}
     </div>
   </>;
 }

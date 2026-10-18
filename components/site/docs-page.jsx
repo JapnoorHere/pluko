@@ -12,6 +12,7 @@ import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@
 import {Sheet,SheetContent,SheetHeader,SheetTitle,SheetTrigger} from '@/components/ui/sheet';
 import {BackToTop,Callout,CodeBlock,Heading,LanguageProvider,Prose,PublicShell,SimpleTable,useActiveSection} from './ui';
 import site from '@/components/design/design.module.css';
+import {useReturnFocus} from '@/components/design/system';
 
 /* ---------- Navigation and search index ---------- */
 
@@ -48,8 +49,9 @@ function DocsSearch({open,onOpenChange}){
   useEffect(()=>setIndex(0),[query]);
   useEffect(()=>{list.current?.querySelector(`[data-index="${index}"]`)?.scrollIntoView({block:'nearest'});},[index]);
   const go=item=>{onOpenChange(false);setTimeout(()=>{document.getElementById(item.id)?.scrollIntoView({behavior:'smooth'});window.history.replaceState(null,'',`#${item.id}`);},50);};
+  const returnFocus=useReturnFocus(open);
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent showCloseButton={false} className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
+    <DialogContent onCloseAutoFocus={returnFocus} showCloseButton={false} className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
       <DialogHeader className="sr-only"><DialogTitle>Search the documentation</DialogTitle><DialogDescription>Find a section, endpoint, field or error code</DialogDescription></DialogHeader>
       <div className="flex items-center gap-3 border-b px-4"><Search className="size-4 text-muted-foreground"/>
         <input autoFocus value={query} onChange={event=>setQuery(event.target.value)} placeholder="Search endpoints, fields, error codes…" aria-label="Search the documentation"

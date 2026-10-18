@@ -2,6 +2,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {ChevronLeft,ChevronRight,Copy,Download,ExternalLink,Flag,ImageOff,LayoutGrid,List,Maximize2} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
+import {useReturnFocus} from '@/components/design/system';
 import {CopyButton,DescriptionList,EmptyState,FormDialog,GallerySkeleton,toast,useCopy,CodeBlock} from '@/components/workspace/ui';
 import {downloadText,reasonText,resultsToCsv} from '@/lib/display';
 import {cn} from '@/lib/utils';
@@ -140,8 +141,9 @@ function Lightbox({images,index,onIndex,onClose,onReport}){
     window.addEventListener('keydown',onKey);
     return()=>window.removeEventListener('keydown',onKey);
   },[index,images.length,onIndex]);
+  const returnFocus=useReturnFocus(index!==null);
   return <Dialog open={index!==null&&Boolean(image)} onOpenChange={open=>{if(!open)onClose();}}>
-    <DialogContent className="max-h-[96vh] gap-5 overflow-y-auto rounded-2xl sm:max-w-6xl">
+    <DialogContent onCloseAutoFocus={returnFocus} className="max-h-[96vh] gap-5 overflow-y-auto rounded-2xl sm:max-w-6xl">
       {image&&<>
         <DialogHeader className="pr-8"><DialogTitle className="truncate text-xl font-semibold tracking-[-0.025em]">{image.title||image.source_domain}</DialogTitle><DialogDescription>{index+1} of {images.length}{image.query?` · “${image.query}”`:''}</DialogDescription></DialogHeader>
         {/* Image on the left; details, actions and the raw result on the right. */}

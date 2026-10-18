@@ -3,6 +3,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {ArrowRight,FolderPlus,Keyboard,KeyRound,LogOut,Monitor,Moon,Search,ShieldPlus,Sparkles,Sun,UserPlus,FolderOpen,History} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
 import {Kbd} from '@/components/workspace/ui';
+import {useReturnFocus} from '@/components/design/system';
 import {cn} from '@/lib/utils';
 import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@/components/ui/dialog';
 
@@ -61,8 +62,9 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
   };
 
   let lastGroup=null;
+  const returnFocus=useReturnFocus(open);
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent showCloseButton={false} className="top-[16%] translate-y-0 gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:max-w-xl">
+    <DialogContent onCloseAutoFocus={returnFocus} showCloseButton={false} className="top-[16%] translate-y-0 gap-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:max-w-xl">
       <DialogHeader className="sr-only"><DialogTitle>Command menu</DialogTitle><DialogDescription>Search pages and actions</DialogDescription></DialogHeader>
       <div className="flex items-center gap-2 border-b px-4">
         <Search className="size-4 shrink-0 text-muted-foreground"/>
@@ -99,8 +101,9 @@ const SHORTCUTS=[
 ];
 
 export function ShortcutsDialog({open,onOpenChange}){
+  const returnFocus=useReturnFocus(open);
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="rounded-2xl sm:max-w-lg">
+    <DialogContent onCloseAutoFocus={returnFocus} className="rounded-2xl sm:max-w-lg">
       <DialogHeader><DialogTitle>Keyboard shortcuts</DialogTitle><DialogDescription>Move around Pluko without the mouse. On a Mac, use ⌘ instead of Ctrl.</DialogDescription></DialogHeader>
       <div className="grid gap-5">
         {SHORTCUTS.map(([group,items])=><div key={group} className="grid gap-2">

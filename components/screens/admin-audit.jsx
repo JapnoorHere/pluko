@@ -58,7 +58,7 @@ export function AdminAudit(){
           <h2 className="mb-2 px-1 text-xs font-medium tracking-[0.06em] text-muted-foreground uppercase">{dayLabel(day)}</h2>
           <ol className="overflow-hidden rounded-2xl border bg-card">
             {events.map(row=><li key={row.id} className="border-b last:border-0">
-              <button type="button" onClick={()=>setSelected(row)} aria-pressed={selected?.id===row.id} className={cn('grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none',selected?.id===row.id&&'bg-muted/60')}>
+              <button type="button" onClick={()=>setSelected(row)} aria-pressed={selected?.id===row.id} className={cn('grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',selected?.id===row.id&&'bg-muted/60')}>
                 <AreaBadge action={row.action}/>
                 <span className="min-w-0"><code className="block truncate font-mono text-[13px]">{row.action}</code><span className="block truncate font-mono text-xs text-muted-foreground" title={row.target||''}>{row.target||'—'}</span></span>
                 <span className="text-xs text-muted-foreground">{new Date(row.created).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>

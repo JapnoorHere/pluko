@@ -22,7 +22,7 @@ import {Spinner} from '@/components/ui/spinner';
 import {Switch} from '@/components/ui/switch';
 import {Table,TableBody,TableCell,TableHead,TableHeader,TableRow} from '@/components/ui/table';
 import {Tooltip,TooltipContent,TooltipTrigger} from '@/components/ui/tooltip';
-import {Callout,CodeBlock,LanguageProvider,Reveal} from '@/components/design/system';
+import {Callout,CodeBlock,LanguageProvider,Reveal,useReturnFocus} from '@/components/design/system';
 
 export {toast};
 
@@ -160,6 +160,7 @@ export function InlineError({error}){
 // onSubmit errors are shown inside the dialog. Return false from onSubmit to keep it open.
 export function FormDialog({open,onOpenChange,title,description,submitLabel='Save',busyLabel,destructive=false,onSubmit,submitDisabled=false,children,size='md',footer,hideFooter=false}){
   const [busy,setBusy]=useState(false),[error,setError]=useState(null);
+  const returnFocus=useReturnFocus(open);
   useEffect(()=>{if(open){setError(null);setBusy(false);}},[open]);
   const submit=async event=>{
     event.preventDefault();
@@ -171,7 +172,7 @@ export function FormDialog({open,onOpenChange,title,description,submitLabel='Sav
     finally{setBusy(false);}
   };
   return <Dialog open={open} onOpenChange={next=>{if(!busy)onOpenChange(next);}}>
-    <DialogContent className={cn('max-h-[92vh] overflow-y-auto rounded-2xl',size==='lg'?'sm:max-w-2xl':size==='sm'?'sm:max-w-sm':'sm:max-w-lg')}>
+    <DialogContent onCloseAutoFocus={returnFocus} className={cn('max-h-[92vh] overflow-y-auto rounded-2xl',size==='lg'?'sm:max-w-2xl':size==='sm'?'sm:max-w-sm':'sm:max-w-lg')}>
       <form onSubmit={submit} className="grid gap-5">
         <DialogHeader><DialogTitle className="text-xl font-semibold tracking-[-0.025em]">{title}</DialogTitle>{description&&<DialogDescription>{description}</DialogDescription>}</DialogHeader>
         <div className="grid gap-4">{children}</div>
@@ -187,8 +188,9 @@ export function FormDialog({open,onOpenChange,title,description,submitLabel='Sav
 
 // A plain dialog with no form, for content such as a secret reveal or a preview.
 export function InfoDialog({open,onOpenChange,title,description,children,size='md',footer,dismissible=true}){
+  const returnFocus=useReturnFocus(open);
   return <Dialog open={open} onOpenChange={next=>{if(dismissible||next)onOpenChange(next);}}>
-    <DialogContent showCloseButton={dismissible} onInteractOutside={event=>{if(!dismissible)event.preventDefault();}} onEscapeKeyDown={event=>{if(!dismissible)event.preventDefault();}} className={cn('max-h-[92vh] overflow-y-auto rounded-2xl',size==='xl'?'sm:max-w-5xl':size==='lg'?'sm:max-w-2xl':'sm:max-w-lg')}>
+    <DialogContent onCloseAutoFocus={returnFocus} showCloseButton={dismissible} onInteractOutside={event=>{if(!dismissible)event.preventDefault();}} onEscapeKeyDown={event=>{if(!dismissible)event.preventDefault();}} className={cn('max-h-[92vh] overflow-y-auto rounded-2xl',size==='xl'?'sm:max-w-5xl':size==='lg'?'sm:max-w-2xl':'sm:max-w-lg')}>
       <DialogHeader><DialogTitle className="text-xl font-semibold tracking-[-0.025em]">{title}</DialogTitle>{description&&<DialogDescription>{description}</DialogDescription>}</DialogHeader>
       {children}
       {footer&&<DialogFooter>{footer}</DialogFooter>}
@@ -200,6 +202,7 @@ export function InfoDialog({open,onOpenChange,title,description,children,size='m
 export function ConfirmDialog({open,onOpenChange,title,description,confirmLabel='Confirm',busyLabel='Working…',destructive=true,onConfirm,confirmText,children}){
   const [busy,setBusy]=useState(false),[error,setError]=useState(null),[typed,setTyped]=useState('');
   const inputId=useId();
+  const returnFocus=useReturnFocus(open);
   useEffect(()=>{if(open){setBusy(false);setError(null);setTyped('');}},[open]);
   const confirm=async event=>{
     event?.preventDefault();
@@ -210,7 +213,7 @@ export function ConfirmDialog({open,onOpenChange,title,description,confirmLabel=
   };
   const blocked=confirmText!==undefined&&typed!==confirmText;
   return <AlertDialog open={open} onOpenChange={next=>{if(!busy)onOpenChange(next);}}>
-    <AlertDialogContent className="rounded-2xl">
+    <AlertDialogContent onCloseAutoFocus={returnFocus} className="rounded-2xl">
       <form onSubmit={confirm} className="grid gap-4">
         <AlertDialogHeader><AlertDialogTitle className="text-xl font-semibold tracking-[-0.025em]">{title}</AlertDialogTitle>{description&&<AlertDialogDescription>{description}</AlertDialogDescription>}</AlertDialogHeader>
         {children}

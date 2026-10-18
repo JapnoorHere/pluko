@@ -93,9 +93,9 @@ export function Projects(){
       :<div className="grid gap-3">
         {toolbar}
         {projects.error&&!rows?.length?<ErrorState error={projects.error} onRetry={projects.reload} title="Couldn’t load your projects"/>
-        :!rows?<ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-busy="true">{[1,2,3].map(index=><li key={index} className="grid gap-4 rounded-2xl border bg-card p-5"><div className="flex gap-3"><Shimmer className="size-10 rounded-xl"/><div className="grid flex-1 gap-2"><Shimmer className="h-4 w-2/3"/><Shimmer className="h-3 w-1/2"/></div></div><Shimmer className="h-2 w-full"/><Shimmer className="h-3 w-1/3"/></li>)}</ul>
+        :!rows?<ul className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]" aria-busy="true">{[1,2,3].map(index=><li key={index} className="grid gap-4 rounded-2xl border bg-card p-5"><div className="flex gap-3"><Shimmer className="size-10 rounded-xl"/><div className="grid flex-1 gap-2"><Shimmer className="h-4 w-2/3"/><Shimmer className="h-3 w-1/2"/></div></div><Shimmer className="h-2 w-full"/><Shimmer className="h-3 w-1/3"/></li>)}</ul>
         :!rows.length?empty
-        :<ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        :<ul className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]">
           {rows.map(project=>{
             const item=usageById.get(project.id);
             return <li key={project.id}>

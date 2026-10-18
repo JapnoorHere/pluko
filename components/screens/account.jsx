@@ -171,7 +171,7 @@ export function Account(){
   return <>
     <PageHeader title="Account settings" description="Manage your profile, sign-in security and data."/>
     <div className="grid items-start gap-10 lg:grid-cols-[13rem_minmax(0,1fr)]">
-      <nav aria-label="Account sections" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 lg:sticky lg:top-24 lg:flex-col lg:gap-0 lg:border-l lg:pb-0">
+      <nav aria-label="Account sections" className="flex flex-wrap gap-1.5 lg:sticky lg:top-24 lg:flex-col lg:gap-0 lg:border-l lg:pb-0">
         <p className="mb-3 hidden pl-4 text-xs font-medium tracking-wide text-muted-foreground uppercase lg:block">On this page</p>
         {sections.map(([value,label,Icon],index)=>{
           const on=active===`account-${value}`;

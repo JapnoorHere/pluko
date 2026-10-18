@@ -3,6 +3,7 @@ import {useEffect,useMemo,useState} from 'react';
 import Link from 'next/link';
 import {Ban,FolderPlus,KeyRound,Pencil,Plus,RefreshCw,Search} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
+import {useReturnFocus} from '@/components/design/system';
 import {CodeBlock,ConfirmDialog,DataTable,EmptyState,FormDialog,InlineError,PageHeader,RowActions,SearchInput,SecretReveal,TableToolbar,TimeAgo,ToneBadge,toast} from '@/components/workspace/ui';
 import {daysLeft} from '@/lib/display';
 import {matches} from '@/lib/ui-helpers';
@@ -48,8 +49,9 @@ function testSnippet(secret){
 
 // Shows a newly created or rotated key once. The dialog can only close after the user confirms they saved it.
 export function KeyRevealDialog({secret,onClose,rotated=false}){
+  const returnFocus=useReturnFocus(Boolean(secret));
   return <Dialog open={Boolean(secret)} onOpenChange={()=>{}}>
-    <DialogContent showCloseButton={false} onInteractOutside={event=>event.preventDefault()} onEscapeKeyDown={event=>event.preventDefault()} className="sm:max-w-xl">
+    <DialogContent onCloseAutoFocus={returnFocus} showCloseButton={false} onInteractOutside={event=>event.preventDefault()} onEscapeKeyDown={event=>event.preventDefault()} className="sm:max-w-xl">
       <DialogHeader><DialogTitle>{rotated?'Your new API key':'Your API key is ready'}</DialogTitle><DialogDescription>{rotated?'The previous key stopped working. Update your backend with this one now.':'Keep it in your backend’s environment variables. Never ship it in browser or mobile code.'}</DialogDescription></DialogHeader>
       {secret&&<SecretReveal secret={secret} label="API key" warning="This is the only time the full key is shown. If you lose it, rotate the key to get a new one." onDone={onClose}>
         <CodeBlock title="Test it from a terminal" language="bash" code={testSnippet(secret)}/>
@@ -71,8 +73,9 @@ export function CreateKeyDialog({open,onOpenChange,projects,defaultProject,onCre
     finally{setBusy(false);}
   };
   const toggle=(scope,on)=>setScopes(current=>on?[...new Set([...current,scope])]:current.filter(item=>item!==scope));
+  const returnFocus=useReturnFocus(open);
   return <Dialog open={open} onOpenChange={next=>{if(!busy)onOpenChange(next);}}>
-    <DialogContent className="sm:max-w-lg">
+    <DialogContent onCloseAutoFocus={returnFocus} className="sm:max-w-lg">
       <form onSubmit={submit} className="grid gap-5">
         <DialogHeader><DialogTitle>Create an API key</DialogTitle><DialogDescription>Keys belong to one project and expire automatically.</DialogDescription></DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">

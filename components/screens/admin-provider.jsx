@@ -70,7 +70,7 @@ export function AdminProvider(){
           {key:'reason',header:'Reason',className:'max-w-0 w-full truncate text-muted-foreground',cell:rule=><span title={rule.reason}>{rule.reason}</span>},
           {key:'actions',header:<span className="sr-only">Actions</span>,className:'w-10 text-right',cell:rule=><RowActions items={[{label:'Remove rule',icon:Trash2,destructive:true,onSelect:()=>setRemoving(rule)}]}/>},
         ]} empty={<EmptyState icon={ShieldBan} title={query?'No matching rules':'No source rules yet'} description="Add a rule to block or downrank a domain, for example one that often serves watermarked images." action={!query&&<Button className="rounded-full px-4" onClick={()=>setAdding(true)}><Plus/>Add source rule</Button>}/>}/>
-        :<ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Source rules">
+        :<ul className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))]" aria-label="Source rules">
           {ruleRows.map(rule=><li key={rule.domain} className={cn('flex flex-col gap-3 rounded-2xl border bg-card p-5',rule.action==='block'?'border-l-[3px] border-l-destructive':'border-l-[3px] border-l-amber-500')}>
             <div className="flex items-start gap-2"><code className="min-w-0 flex-1 truncate font-mono text-[15px] font-medium">{rule.domain}</code><RowActions items={[{label:'Remove rule',icon:Trash2,destructive:true,onSelect:()=>setRemoving(rule)}]}/></div>
             <ToneBadge tone={rule.action==='block'?'danger':'warning'} className="self-start">{rule.action==='block'?'Blocked':'Downranked'}</ToneBadge>
