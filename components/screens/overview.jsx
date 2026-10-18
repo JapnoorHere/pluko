@@ -2,7 +2,7 @@
 import {useEffect,useState} from 'react';
 import Link from 'next/link';
 import {ResultImage} from '@/components/screens/job-results';
-import {Activity,ArrowRight,ArrowUpRight,BookOpen,Check,Clock,FolderPlus,KeyRound,Search,Sparkles,Zap} from 'lucide-react';
+import {Activity,ArrowRight,ArrowUpRight,BookOpen,Check,Clock,FolderPlus,KeyRound,MailPlus,Search,Sparkles,Zap} from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
 import {CardSkeleton,CodeBlock,ErrorState,MiniBars,PageHeader,Shimmer,StatCard,StatGridSkeleton,StatusBadge,TimeAgo,UsageMeter,BrandProgress,StatGrid,Callout,Card,CardAction,CardContent,CardDescription,CardHeader,CardTitle,EmptyState} from '@/components/workspace/ui';
 import {compactNumber,dailySeries,formatDuration,percent} from '@/lib/ui-helpers';
@@ -111,6 +111,18 @@ function Health({data}){
   </section>;
 }
 
+// Waitlist sign-ups from the coming-soon page, for administrators.
+function WaitlistCard({waitlist}){
+  const {href}=useWorkspace();
+  return <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2"><MailPlus className="size-4"/>Waitlist</CardTitle>
+      <CardDescription>{waitlist.total?`${waitlist.total.toLocaleString()} ${waitlist.total===1?'person is':'people are'} waiting for launch, ${waitlist.last_week.toLocaleString()} joined in the last 7 days.`:'No sign-ups yet. People join from the coming-soon page.'}</CardDescription>
+      <CardAction><Button asChild variant="ghost" size="sm"><Link href={href('waitlist')}>View waitlist<ArrowRight/></Link></Button></CardAction>
+    </CardHeader>
+  </Card>;
+}
+
 // "Good evening, Jane." from the account email and the viewer's local time.
 function greeting(email){
   const hour=new Date().getHours();
@@ -139,7 +151,9 @@ export function Overview(){
     {data&&!data.provider_enabled&&<Callout type="warning" title="Searches are paused">{admin?<>The image provider is turned off, so queued jobs are waiting. <Link className="underline underline-offset-2" href={href('provider')}>Turn it back on</Link>.</>:'New searches will wait in the queue until the service resumes. Existing results are still available.'}</Callout>}
     {admin&&data&&!data.workers.length&&<Callout type="danger" title="No search worker is running">Queued jobs won’t be processed until a worker starts. Run <code>npm run worker</code> or check the worker service on the server.</Callout>}
 
+    {admin&&data?.prelaunch_enabled&&<Callout type="note" title="Coming-soon mode is on">Visitors see the coming-soon page, and customers and API keys are blocked. <Link className="underline underline-offset-2" href={href('settings')}>Platform settings</Link>.</Callout>}
     {admin&&data&&<Health data={data}/>}
+    {admin&&data?.waitlist&&<WaitlistCard waitlist={data.waitlist}/>}
     {ready&&!admin&&<Onboarding projects={projects.data.projects.length} keys={keys.data.keys.filter(key=>!key.revoked).length} jobs={data.jobs.total||0}/>}
 
     {overview.error?<ErrorState error={overview.error} onRetry={overview.reload} title="Couldn’t load your workspace"/>

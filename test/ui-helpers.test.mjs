@@ -68,7 +68,7 @@ test('initials, tones and search matching',()=>{
 
 test('settings changes are merged onto the stored string settings',()=>{
   const stored={provider_enabled:'true',self_signup_enabled:'false',body_days:'7',summary_days:'30',job_days:'30',audit_days:'365'};
-  assert.deepEqual(settingsPayload(stored,{provider_enabled:false}),{provider_enabled:false,self_signup_enabled:false,body_days:7,summary_days:30,job_days:30,audit_days:365});
+  assert.deepEqual(settingsPayload(stored,{provider_enabled:false}),{provider_enabled:false,self_signup_enabled:false,prelaunch_enabled:false,body_days:7,summary_days:30,job_days:30,audit_days:365});
   assert.equal(settingsPayload(stored,{job_days:'60'}).job_days,60);
   assert.equal(settingsPayload(stored).provider_enabled,true);
 });

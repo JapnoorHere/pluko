@@ -20,6 +20,7 @@ import { Feedback } from "@/components/screens/feedback";
 import { Guide } from "@/components/screens/guide";
 import { Account } from "@/components/screens/account";
 import { AdminUsers } from "@/components/screens/admin-users";
+import { AdminWaitlist } from "@/components/screens/admin-waitlist";
 import { AdminProvider } from "@/components/screens/admin-provider";
 import { AdminAudit } from "@/components/screens/admin-audit";
 import { AdminStorage } from "@/components/screens/admin-storage";
@@ -36,6 +37,7 @@ const SCREENS = {
   guide: Guide,
   account: Account,
   users: AdminUsers,
+  waitlist: AdminWaitlist,
   provider: AdminProvider,
   audit: AdminAudit,
   storage: AdminStorage,
@@ -53,6 +55,7 @@ export const TITLES = {
   guide: "API guide",
   account: "Account settings",
   users: "Users & invites",
+  waitlist: "Waitlist",
   provider: "Provider & rules",
   audit: "Audit history",
   storage: "Storage & retention",

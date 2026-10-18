@@ -53,6 +53,17 @@ CREATE INDEX IF NOT EXISTS webhook_project ON webhook_deliveries(project_id,crea
     db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}
 }
+// 4: pre-launch mode. A waitlist of emails from the coming-soon page, and the switch that turns the mode on (off by default).
+if(!db.prepare('SELECT 1 FROM migrations WHERE version=4').get()){
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.exec(`CREATE TABLE IF NOT EXISTS waitlist(email TEXT PRIMARY KEY,created INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS waitlist_created ON waitlist(created);
+INSERT OR IGNORE INTO settings VALUES('prelaunch_enabled','false');`);
+    db.prepare('INSERT INTO migrations(version,applied) VALUES(4,?)').run(Date.now());
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+}
 export const now=()=>Date.now();
 export const id=prefix=>prefix+'_'+randomUUID().replaceAll('-','');
 export const get=(sql,...p)=>db.prepare(sql).get(...p);

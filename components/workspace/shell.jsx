@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {
   Activity,BookOpen,Boxes,CheckCircle2,ChevronsUpDown,ClipboardList,CloudCog,ExternalLink,FileText,FolderKanban,Keyboard,KeyRound,
-  LayoutDashboard,LogOut,Monitor,Moon,Search,Settings2,SlidersHorizontal,Sparkles,Sun,UsersRound,
+  LayoutDashboard,LogOut,MailPlus,Monitor,Moon,Search,Settings2,SlidersHorizontal,Sparkles,Sun,UsersRound,
 } from 'lucide-react';
 import {useResource,useWorkspace} from '@/components/workspace/context';
 import {CommandPalette,ShortcutsDialog} from '@/components/workspace/command-palette';
@@ -26,7 +26,7 @@ export const NAV_GROUPS=[
   {label:'Monitor',items:[['jobs','Search jobs',Search],['logs','Request logs',ClipboardList],['feedback','Quality feedback',CheckCircle2]]},
   {label:'Resources',items:[['guide','API guide',BookOpen]],links:[['/docs','Documentation',FileText],['/status','System status',Activity]]},
 ];
-export const ADMIN_GROUP={label:'Administration',items:[['users','Users & invites',UsersRound],['provider','Provider & rules',CloudCog],['audit','Audit history',Activity],['storage','Storage & retention',Boxes],['settings','Platform settings',SlidersHorizontal]]};
+export const ADMIN_GROUP={label:'Administration',items:[['users','Users & invites',UsersRound],['waitlist','Waitlist',MailPlus],['provider','Provider & rules',CloudCog],['audit','Audit history',Activity],['storage','Storage & retention',Boxes],['settings','Platform settings',SlidersHorizontal]]};
 
 const THEME_ICONS={light:Sun,dark:Moon,system:Monitor};
 

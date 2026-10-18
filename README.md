@@ -313,6 +313,17 @@ To deploy by hand at any time, run `sudo /usr/local/bin/pluko-deploy` on the ser
 - **Run the worker.** Without the worker container, searches stay queued forever.
 - **Image source.** The default `bing` provider reads Bing's public image-search pages over plain HTTP. It is not an official Bing API. It can be blocked, rate limited or restricted by Bing's terms, so test it from your server and review those terms first. The `mock` provider exists for tests and is refused in production.
 
+### Coming-soon mode
+
+Not ready to open yet? In **/admin → Platform settings → Launch**, turn on **Coming-soon mode**. While it's on:
+
+- The home page shows a coming-soon page with a **Notify me** form. Every other page except privacy, terms and `/admin` redirects to it.
+- The public API answers every call with `503 PRELAUNCH`, and customers can't sign up, sign in or use the workspace.
+- Administrators keep full access. Signed in as an admin, you see the normal site.
+- Sign-ups appear under **/admin → Waitlist**, where you can download them as CSV for your launch email.
+
+Turn it off in the same place and everything reopens immediately. The change is recorded in the audit history.
+
 ### Configuration
 
 | Variable | Default / purpose |
