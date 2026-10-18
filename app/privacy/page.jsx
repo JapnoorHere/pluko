@@ -1,10 +1,11 @@
 import LegalPage, { LegalContact } from "@/components/site/legal-page";
+import { pageMetadata } from "@/lib/site-meta";
 
-export const metadata = {
+export const metadata = pageMetadata("/privacy", {
   title: "Privacy Policy — Pluko",
   description:
     "How pStack handles Pluko account information, search metadata, request logs, cookies, and privacy requests.",
-};
+});
 const sections = [
   {
     id: "operator",

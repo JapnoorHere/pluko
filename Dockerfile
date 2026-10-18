@@ -1,6 +1,8 @@
 FROM node:24-bookworm-slim
 WORKDIR /app
 COPY . .
+# Share links on prerendered pages need the public address at build time.
+ARG PUBLIC_ORIGIN
 RUN corepack enable && pnpm install --frozen-lockfile && pnpm build
 ENV NODE_ENV=production
 ENV PORT=4180

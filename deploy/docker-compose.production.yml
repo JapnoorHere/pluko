@@ -1,6 +1,9 @@
 services:
   api:
-    build: ..
+    build:
+      context: ..
+      args:
+        PUBLIC_ORIGIN: ${PUBLIC_ORIGIN}
     command: node start.mjs
     environment:
       NODE_ENV: production
@@ -30,7 +33,10 @@ services:
         max-file: "3"
 
   worker:
-    build: ..
+    build:
+      context: ..
+      args:
+        PUBLIC_ORIGIN: ${PUBLIC_ORIGIN}
     command: node worker.mjs
     environment:
       NODE_ENV: production

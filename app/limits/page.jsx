@@ -2,12 +2,13 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { LIMITS } from "@/limits.mjs";
 import { ArticleLayout, ArticleSection, Callout, PageHero, Prose, PublicShell, Reveal, SimpleTable } from "@/components/site/ui";
+import { pageMetadata } from "@/lib/site-meta";
 
-export const metadata = {
+export const metadata = pageMetadata("/limits", {
   title: "Limits — Pluko",
   description:
     "Request rates, daily usage, sizes, and how long Pluko keeps your data. What to expect before you integrate.",
-};
+});
 
 const contents = [
   ["rates", "Rates and sizes"],

@@ -2,12 +2,13 @@ import Link from "next/link";
 import { Activity, ArrowRight, ArrowUpRight, BookOpen, Download, Gauge, KeyRound, LifeBuoy, ShieldAlert, TrendingUp, UserLock } from "lucide-react";
 import { legal } from "@/lib/legal";
 import { Callout, PageHero, PublicShell, Reveal } from "@/components/site/ui";
+import { pageMetadata } from "@/lib/site-meta";
 
-export const metadata = {
+export const metadata = pageMetadata("/contact", {
   title: "Contact — Pluko",
   description:
     "How to reach the Pluko team for support, limits, privacy requests, or to report misuse or a security problem.",
-};
+});
 
 const mail = (subject) => `mailto:${legal.email}?subject=${encodeURIComponent(subject)}`;
 

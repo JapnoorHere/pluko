@@ -1,11 +1,12 @@
 import Link from "next/link";
 import LegalPage, { LegalContact } from "@/components/site/legal-page";
+import { pageMetadata } from "@/lib/site-meta";
 
-export const metadata = {
+export const metadata = pageMetadata("/terms", {
   title: "Terms of Service — Pluko",
   description:
     "Service rules for Pluko accounts, API access, image rights, acceptable use, and beta availability.",
-};
+});
 const sections = [
   {
     id: "service",
