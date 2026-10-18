@@ -148,6 +148,9 @@ Queries must be unique within a job, and a request body can be at most 64 KiB. S
 | Result feedback | Flag irrelevant, broken or watermarked results. |
 | Account controls | Optional authenticator app, session list, data export, account deletion. |
 | Admin workspace | Users, quotas, source rules, provider settings, audit history, retention, backups. |
+| Filters and pages | Every workspace list has search, filters, sortable columns, numbered pages and a shareable URL. Jobs, logs, keys, users and audit history export to CSV. |
+| Account pages | Administrators can open any account to see its projects, keys, jobs, requests and audit trail in one place. |
+| One-click refresh | Every page has a refresh button (or press <kbd>R</kbd>), and pages that update themselves can pause auto-refresh. |
 
 > **About image rights.** Finding an image does not give you permission to reuse it. Pluko keeps the source link with every result so you can check the license yourself, and it never claims a license unless the source provides one. Watermark filtering uses hints from the source and title. It does not remove watermarks or guarantee a clean image.
 

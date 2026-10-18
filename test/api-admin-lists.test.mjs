@@ -90,3 +90,17 @@ test('provider attempts filter by outcome and job',async()=>{
   assert.equal((await admin.get('/api/admin/attempts?page=1&yield=none&status=ok')).json.attempts[0].job_id,'job_b');
   assert.equal((await admin.get('/api/admin/attempts?page=1&q=timeout')).json.total,1);
 });
+
+test('quick lookup finds accounts, jobs and keys, scoped to the viewer',async()=>{
+  const forAdmin=await admin.get('/api/lookup?q=carol');
+  assert.equal(forAdmin.json.users[0].email,'carol@example.test');
+  const teapots=await carol.get('/api/lookup?q=teapot');
+  assert.equal(teapots.json.jobs.length,1);
+  assert.equal(teapots.json.users.length,0,'customers never get account results');
+  const keyPrefix=api.store.get('SELECT prefix FROM api_keys LIMIT 1').prefix;
+  assert.equal((await carol.get(`/api/lookup?q=${keyPrefix.slice(0,12)}`)).json.keys.length,1);
+  const stranger=api.client();
+  await stranger.register('stranger@example.test');
+  assert.equal((await stranger.get('/api/lookup?q=teapot')).json.jobs.length,0,'never another customer’s jobs');
+  assert.equal((await carol.get('/api/lookup?q=t')).json.jobs.length,0,'one character is too short to search');
+});

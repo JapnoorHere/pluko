@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {ArrowRight,FolderPlus,Keyboard,KeyRound,LogOut,Monitor,Moon,Search,ShieldPlus,Sparkles,Sun,UserPlus,FolderOpen,History,RefreshCw} from 'lucide-react';
+import {ArrowRight,FolderPlus,Keyboard,KeyRound,LogOut,Monitor,Moon,Search,ShieldPlus,Sparkles,Sun,UserPlus,FolderOpen,History,RefreshCw,UserRound} from 'lucide-react';
+import {useRouter} from 'next/navigation';
 import {REFRESH_EVENT} from '@/components/workspace/refresh';
 import {useWorkspace} from '@/components/workspace/context';
 import {Kbd} from '@/components/workspace/ui';
@@ -8,10 +9,13 @@ import {useReturnFocus} from '@/components/design/system';
 import {cn} from '@/lib/utils';
 import {Dialog,DialogContent,DialogDescription,DialogHeader,DialogTitle} from '@/components/ui/dialog';
 
+const LOOKUP_DELAY=200;
+
 // Ctrl/⌘+K: jump to any page or run a common action, filtered as you type.
 export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
-  const {me,call,navigate,start,setTheme,signOut}=useWorkspace();
-  const [recent,setRecent]=useState({projects:[],jobs:[]});
+  const {me,call,navigate,start,setTheme,signOut,href}=useWorkspace();
+  const router=useRouter();
+  const [recent,setRecent]=useState({projects:[],jobs:[]}),[found,setFound]=useState(null);
   const [query,setQuery]=useState(''),[active,setActive]=useState(0);
   const list=useRef(null);
   useEffect(()=>{if(open){setQuery('');setActive(0);}},[open]);
@@ -21,6 +25,26 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
     Promise.all([call('/api/projects').catch(()=>({projects:[]})),call('/api/jobs?limit=5').catch(()=>({jobs:[]}))]).then(([projects,jobs])=>{if(live)setRecent({projects:projects.projects.slice(0,5),jobs:jobs.jobs});});
     return()=>{live=false;};
   },[open,call,me.role,me.mfa]);
+
+  // Typing two or more characters also searches accounts, jobs, keys, projects and request IDs on the server.
+  useEffect(()=>{
+    const needle=query.trim();
+    if(!open||needle.length<2||(me.role==='admin'&&!me.mfa)){setFound(null);return;}
+    let live=true;
+    const timer=setTimeout(()=>{call(`/api/lookup?q=${encodeURIComponent(needle)}`).then(data=>{if(live)setFound(data);}).catch(()=>{if(live)setFound(null);});},LOOKUP_DELAY);
+    return()=>{live=false;clearTimeout(timer);};
+  },[open,query,call,me.role,me.mfa]);
+  const matches=useMemo(()=>{
+    if(!found)return [];
+    const withSearch=(view,params)=>()=>router.push(`${href(view)}?${new URLSearchParams(params)}`);
+    return [
+      ...found.users.map(user=>({id:`user-${user.id}`,group:'Accounts',label:user.email,meta:user.active?(user.role==='admin'?'administrator':''):'suspended',icon:UserRound,run:()=>navigate('users',user.id)})),
+      ...found.jobs.map(job=>({id:`found-job-${job.id}`,group:'Search jobs',label:job.query||job.id,meta:job.status,icon:History,run:()=>navigate('jobs',job.id)})),
+      ...found.projects.map(project=>({id:`found-project-${project.id}`,group:'Projects',label:project.name,icon:FolderOpen,run:()=>navigate('projects',project.id)})),
+      ...found.keys.map(key=>({id:`found-key-${key.id}`,group:'API keys',label:`${key.name} · ${key.prefix}…`,meta:key.project,icon:KeyRound,run:withSearch('keys',{q:key.prefix})})),
+      ...found.requests.map(request=>({id:`found-request-${request.id}`,group:'Requests',label:`${request.method} ${request.path}`,meta:String(request.status??''),icon:Search,run:withSearch('logs',{q:request.id,source:'all'})})),
+    ];
+  },[found,navigate,href,router]);
 
   const commands=useMemo(()=>{
     const pages=groups.flatMap(group=>group.items.map(([id,name,Icon])=>({id:`go-${id}`,group:'Go to',label:name,icon:Icon,run:()=>navigate(id)})));
@@ -50,9 +74,9 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
     const needle=query.trim().toLowerCase();
     const found=needle?commands.filter(command=>`${command.group} ${command.label}`.toLowerCase().includes(needle)):commands;
     // Pasting a job ID jumps straight to that job.
-    if(/^job_[\w-]{4,}$/i.test(query.trim()))return [{id:'open-job',group:'Jump to',label:`Open job ${query.trim()}`,icon:Search,run:()=>navigate('jobs',query.trim())},...found];
-    return found;
-  },[commands,query,navigate]);
+    if(/^job_[\w-]{4,}$/i.test(query.trim()))return [{id:'open-job',group:'Jump to',label:`Open job ${query.trim()}`,icon:Search,run:()=>navigate('jobs',query.trim())},...matches,...found];
+    return needle?[...matches,...found]:found;
+  },[commands,query,navigate,matches]);
   useEffect(()=>{setActive(0);},[query]);
   useEffect(()=>{list.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({block:'nearest'});},[active]);
 
@@ -70,7 +94,7 @@ export function CommandPalette({open,onOpenChange,groups,onShortcuts}){
       <DialogHeader className="sr-only"><DialogTitle>Command menu</DialogTitle><DialogDescription>Search pages and actions</DialogDescription></DialogHeader>
       <div className="flex items-center gap-2 border-b px-4">
         <Search className="size-4 shrink-0 text-muted-foreground"/>
-        <input autoFocus value={query} onChange={event=>setQuery(event.target.value)} onKeyDown={onKeyDown} placeholder="Type a command, page, or paste a job ID…" aria-label="Search commands" role="combobox" aria-expanded="true" aria-controls="command-results" aria-activedescendant={results[active]?`command-${results[active].id}`:undefined} className="h-14 w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"/>
+        <input autoFocus value={query} onChange={event=>setQuery(event.target.value)} onKeyDown={onKeyDown} placeholder="Search pages, actions, jobs, keys or accounts…" aria-label="Search commands" role="combobox" aria-expanded="true" aria-controls="command-results" aria-activedescendant={results[active]?`command-${results[active].id}`:undefined} className="h-14 w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"/>
         <Kbd>Esc</Kbd>
       </div>
       <div ref={list} id="command-results" role="listbox" className="max-h-[min(60vh,26rem)] overflow-y-auto p-2">

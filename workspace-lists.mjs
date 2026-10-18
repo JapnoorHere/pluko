@@ -303,3 +303,24 @@ export function listDeliveries(auth,url){
   });
   return {deliveries:result.items,...pageInfo(result)};
 }
+
+const LOOKUP_LIMIT=5;
+/**
+ * Quick search for the command menu: IDs, key prefixes, project names, job queries and (for administrators)
+ * account emails. Customers only ever see their own rows.
+ */
+export function lookup(auth,url){
+  const q=(url.searchParams.get('q')||'').trim();
+  if(q.length<2)return {users:[],jobs:[],keys:[],projects:[],requests:[]};
+  if(q.length>100)throw new ApiError(400,'INVALID_SEARCH','Search text must be 100 characters or fewer');
+  const admin=isAdmin(auth),like='%'+escapeLike(q)+'%',prefix=escapeLike(q)+'%',esc=" ESCAPE '\\'";
+  const own=column=>admin?{sql:'',values:[]}:{sql:` AND ${column}=?`,values:[auth.user_id]};
+  const jobsScope=own('j.user_id'),keysScope=own('p.user_id'),projectsScope=own('p.user_id'),requestsScope=own('r.user_id');
+  return {
+    users:admin?all(`SELECT id,email,role,active FROM users WHERE (email LIKE ?${esc} OR id LIKE ?${esc}) ORDER BY created DESC LIMIT ?`,like,prefix,LOOKUP_LIMIT):[],
+    jobs:all(`SELECT j.id,j.status,(SELECT query FROM tasks WHERE job_id=j.id ORDER BY rowid LIMIT 1) query FROM jobs j WHERE (j.id LIKE ?${esc} OR EXISTS (SELECT 1 FROM tasks t WHERE t.job_id=j.id AND t.query LIKE ?${esc}))${jobsScope.sql} ORDER BY j.created DESC LIMIT ?`,prefix,like,...jobsScope.values,LOOKUP_LIMIT),
+    keys:all(`SELECT k.id,k.name,k.prefix,p.name project FROM api_keys k JOIN projects p ON p.id=k.project_id WHERE (k.prefix LIKE ?${esc} OR k.name LIKE ?${esc} OR k.id LIKE ?${esc})${keysScope.sql} ORDER BY k.created DESC LIMIT ?`,prefix,like,prefix,...keysScope.values,LOOKUP_LIMIT),
+    projects:all(`SELECT p.id,p.name FROM projects p WHERE (p.name LIKE ?${esc} OR p.id LIKE ?${esc})${projectsScope.sql} ORDER BY p.created DESC LIMIT ?`,like,prefix,...projectsScope.values,LOOKUP_LIMIT),
+    requests:/^req_/i.test(q)?all(`SELECT r.id,r.method,r.path,r.status FROM requests r WHERE r.id LIKE ?${esc}${requestsScope.sql} ORDER BY r.created DESC LIMIT ?`,prefix,...requestsScope.values,LOOKUP_LIMIT):[],
+  };
+}

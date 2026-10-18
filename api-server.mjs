@@ -11,7 +11,7 @@ import {openApiDocument} from './openapi.mjs';
 import {db,get,all,run,tx,id,now,audit,rate,setting,cleanup} from './db.mjs';
 import {secret,hash,passwordHash,passwordCheck,redact,newTotp,checkTotp,seal,unseal} from './security.mjs';
 import {ApiError,createJob,jobView,cancelJob} from './jobs.mjs';
-import {listJobs,listLogs,listKeys,listProjects,listUsers,listAudit,auditAreas,listWaitlist,listAttempts,userSummary,userStats,waitlistStats,resultFilters,feedbackView,listFeedback,listDeliveries} from './workspace-lists.mjs';
+import {listJobs,listLogs,listKeys,listProjects,listUsers,listAudit,auditAreas,listWaitlist,listAttempts,userSummary,userStats,waitlistStats,resultFilters,feedbackView,listFeedback,listDeliveries,lookup} from './workspace-lists.mjs';
 const fail=(status,code,message)=>{throw new ApiError(status,code,message);};
 // Request-log status filter: an exact code (404) or a class (4xx).
 const STATUS_CLASS=/^([1-5])xx$/;
@@ -89,6 +89,7 @@ export function createServer(){return http.createServer(async(req,res)=>{
     // Workspace lists are filtered and paginated when the request asks for a page; older callers still get the full list.
     const WORKSPACE_LISTS={'/api/jobs':listJobs,'/api/logs':listLogs,'/api/keys':listKeys,'/api/projects':listProjects,'/api/feedback':listFeedback,'/api/webhooks/deliveries':listDeliveries};
     if(req.method==='GET'&&!auth.project_id&&url.searchParams.has('page')&&WORKSPACE_LISTS[url.pathname])return respond(200,WORKSPACE_LISTS[url.pathname](auth,url));
+    if(req.method==='GET'&&url.pathname==='/api/lookup')return respond(200,lookup(auth,url));
     if(url.pathname==='/api/me')return respond(200,{user:{id:auth.user_id,email:auth.email,role:auth.role,mfa:!!auth.totp},csrf:auth.csrf});
     if(url.pathname==='/api/logout'&&req.method==='POST'){run('DELETE FROM sessions WHERE hash=?',auth.hash);cookie(res,'',0);return respond(200,{ok:true});}
     if(url.pathname==='/api/mfa/setup'&&req.method==='POST'){if(auth.totp)fail(409,'ALREADY_ENABLED','MFA is already enabled');const value=newTotp();run('INSERT OR REPLACE INTO tokens VALUES(?,?,?,?,?)','mfa:'+auth.hash,seal(value),'mfa',now()+600000,now());return respond(200,{secret:value,uri:`otpauth://totp/Pluko:${encodeURIComponent(auth.email)}?secret=${value}&issuer=Pluko`});}

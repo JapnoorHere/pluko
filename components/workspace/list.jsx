@@ -5,7 +5,7 @@ import {cn} from '@/lib/utils';
 import {downloadText,rowsToCsv} from '@/lib/display';
 import {DATE_PRESETS,PAGE_SIZES,activeFilterCount,apiParams,describeDateRange,emptyState,pageWindow,rangeLabel,readState,writeState} from '@/lib/list-query';
 import {useWorkspace} from '@/components/workspace/context';
-import {useRefreshScope,useRefreshable} from '@/components/workspace/refresh';
+import {usePoll,useRefreshScope,useRefreshable} from '@/components/workspace/refresh';
 import {EmptyState,SearchInput,TableToolbar,toast} from '@/components/workspace/ui';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
@@ -73,11 +73,7 @@ export function useListQuery(endpoint,{id=endpoint,itemsKey='items',filters:defi
 
   useEffect(()=>{load();},[load]);
   useRefreshable(load,enabled);
-  useEffect(()=>{
-    if(!poll||!enabled)return;
-    const timer=setInterval(()=>{if(document.visibilityState==='visible')load({quiet:true});},poll);
-    return()=>clearInterval(timer);
-  },[poll,load,enabled]);
+  usePoll(load,poll,enabled);
 
   // Keep the URL in step without adding history entries for every filter change.
   useEffect(()=>{

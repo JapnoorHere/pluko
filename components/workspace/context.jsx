@@ -1,6 +1,6 @@
 'use client';
 import {createContext,useCallback,useContext,useEffect,useRef,useState} from 'react';
-import {useRefreshable,useRefreshScope} from '@/components/workspace/refresh';
+import {usePoll,useRefreshable,useRefreshScope} from '@/components/workspace/refresh';
 
 export const WorkspaceContext=createContext(null);
 
@@ -35,11 +35,7 @@ export function useResource(path,{poll=0,enabled=true}={}){
   },[call,path,enabled,markUpdated]);
   useEffect(()=>{load();},[load]);
   useRefreshable(load,Boolean(path&&enabled));
-  useEffect(()=>{
-    if(!poll||!enabled)return;
-    const timer=setInterval(()=>{if(document.visibilityState==='visible')load({quiet:true});},poll);
-    return()=>clearInterval(timer);
-  },[poll,load,enabled]);
+  usePoll(load,poll,enabled);
   return {data,error,loading,reload:load,setData};
 }
 

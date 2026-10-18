@@ -5,19 +5,28 @@ import {toast} from 'sonner';
 import {cn} from '@/lib/utils';
 import {timeAgo} from '@/lib/ui-helpers';
 import {Button} from '@/components/ui/button';
+import {Label} from '@/components/ui/label';
+import {Switch} from '@/components/ui/switch';
 import {Tooltip,TooltipContent,TooltipTrigger} from '@/components/ui/tooltip';
 
 // One refresh scope per screen. Every loader on the screen (useResource, useListQuery, or a custom
 // loader passed to useRefreshable) registers here, so a single button or the R key reloads the whole page.
 // Actions are stable and live in their own context, so loaders don't re-render when the status changes.
 export const REFRESH_EVENT='pluko:refresh';
+const AUTO_KEY='pluko.autoRefresh';
 const ActionsContext=createContext(null);
 const StatusContext=createContext(null);
 
 export function RefreshScope({children}){
   const loaders=useRef(new Set());
   const busy=useRef(false);
-  const [count,setCount]=useState(0),[refreshing,setRefreshing]=useState(false),[updated,setUpdated]=useState(null);
+  const [count,setCount]=useState(0),[refreshing,setRefreshing]=useState(false),[updated,setUpdated]=useState(null),[pollers,setPollers]=useState(0);
+  // Background polling can be switched off per browser; manual refresh always works.
+  const [auto,setAutoState]=useState(()=>{try{return window.localStorage.getItem(AUTO_KEY)!=='off';}catch{return true;}});
+  const autoRef=useRef(auto);
+  const setAuto=useCallback(on=>{autoRef.current=on;setAutoState(on);try{window.localStorage.setItem(AUTO_KEY,on?'on':'off');}catch{}},[]);
+  const isAuto=useCallback(()=>autoRef.current,[]);
+  const registerPoller=useCallback(()=>{setPollers(n=>n+1);return()=>setPollers(n=>n-1);},[]);
 
   const register=useCallback(load=>{
     loaders.current.add(load);setCount(loaders.current.size);
@@ -42,13 +51,25 @@ export function RefreshScope({children}){
     return()=>window.removeEventListener(REFRESH_EVENT,onRefresh);
   },[refresh]);
 
-  const actions=useMemo(()=>({register,refresh,markUpdated}),[register,refresh,markUpdated]);
-  const status=useMemo(()=>({count,refreshing,updated}),[count,refreshing,updated]);
+  const actions=useMemo(()=>({register,refresh,markUpdated,isAuto,setAuto,registerPoller}),[register,refresh,markUpdated,isAuto,setAuto,registerPoller]);
+  const status=useMemo(()=>({count,refreshing,updated,auto,pollers}),[count,refreshing,updated,auto,pollers]);
   return <ActionsContext.Provider value={actions}><StatusContext.Provider value={status}>{children}</StatusContext.Provider></ActionsContext.Provider>;
 }
 
-/** {register, refresh, markUpdated} for the current page, or null outside a scope. */
+/** {register, refresh, markUpdated, isAuto, setAuto, registerPoller} for the current page, or null outside a scope. */
 export const useRefreshScope=()=>useContext(ActionsContext);
+
+/** Calls `load({quiet:true})` every `interval` ms while the tab is visible and auto-refresh is on. */
+export function usePoll(load,interval,enabled=true){
+  const actions=useContext(ActionsContext);
+  const registerPoller=actions?.registerPoller,isAuto=actions?.isAuto;
+  useEffect(()=>{
+    if(!interval||!enabled)return;
+    const unregister=registerPoller?.();
+    const timer=setInterval(()=>{if(document.visibilityState==='visible'&&(isAuto?.()??true))load({quiet:true});},interval);
+    return()=>{clearInterval(timer);unregister?.();};
+  },[load,interval,enabled,registerPoller,isAuto]);
+}
 
 /** Registers a loader with the page's refresh scope. `load({quiet,manual})` should throw when manual and it fails. */
 export function useRefreshable(load,enabled=true){
@@ -78,6 +99,14 @@ export function RefreshButton({className}){
   if(!actions||!status?.count)return null;
   return <span className={cn('flex items-center gap-2',className)}>
     <UpdatedLabel at={status.updated}/>
+    {status.pollers>0&&<Tooltip>
+      <TooltipTrigger asChild>
+        <Label className="hidden h-8 cursor-pointer items-center gap-1.5 rounded-lg border px-2 text-xs font-normal text-muted-foreground sm:flex">
+          <Switch size="sm" checked={status.auto} onCheckedChange={actions.setAuto} aria-label="Refresh automatically"/>Auto
+        </Label>
+      </TooltipTrigger>
+      <TooltipContent>{status.auto?'Updating automatically. Turn off to pause background updates.':'Background updates are paused. Use refresh to update.'}</TooltipContent>
+    </Tooltip>}
     <Tooltip>
       <TooltipTrigger asChild>
         <Button type="button" variant="outline" size="icon" aria-label="Refresh this page" disabled={status.refreshing} onClick={actions.refresh}>
