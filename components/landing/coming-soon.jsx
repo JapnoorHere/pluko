@@ -63,7 +63,7 @@ export default function ComingSoon(){
 
   return <div className={site.page}>
     <header className="mx-auto flex max-w-[1200px] items-center justify-between px-5 py-5 sm:px-8">
-      <Link href="/" aria-label="Pluko home" className="flex items-center gap-2 text-[17px] font-semibold tracking-tight"><img src="/logo.svg" width="26" height="26" alt=""/>Pluko</Link>
+      <Link href="/" aria-label="Pluko home" className="flex items-center gap-2 text-[17px] font-semibold tracking-tight"><img src="/logo.png" width="26" height="26" alt=""/>Pluko</Link>
       <Badge variant="outline" className="rounded-full px-3 py-1 font-normal text-muted-foreground"><span className="size-1.5 rounded-full bg-[var(--accent-ink)]" aria-hidden/>Coming soon</Badge>
     </header>
 

@@ -196,7 +196,7 @@ function WorkspaceMock(){
   const bars=[34,48,41,62,55,82,70];
   return <div className="flex h-full text-left text-[11px] sm:text-xs" aria-hidden>
     <div className="hidden w-48 shrink-0 flex-col gap-1 border-r bg-white/[0.02] p-3 md:flex">
-      <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold"><img src="/logo.svg" width="22" height="22" alt=""/>Pluko</div>
+      <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold"><img src="/logo.png" width="22" height="22" alt=""/>Pluko</div>
       {nav.map(([Icon,label,on])=><span key={label} className={cn('flex items-center gap-2 rounded-md px-2 py-1.5',on?'bg-white/10 text-foreground':'text-muted-foreground')}><Icon className="size-3.5"/>{label}</span>)}
     </div>
     <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 sm:p-6">

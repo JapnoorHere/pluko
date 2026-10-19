@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/logo.svg" alt="Pluko" width="64" height="64" />
+  <img src="public/logo.png" alt="Pluko" width="64" height="64" />
   <h1>Pluko</h1>
   <p><strong>Image search for your applications.</strong></p>
   <p>Send a query. Get image URLs, source links and metadata back.<br />Manage keys and watch requests from one workspace.</p>

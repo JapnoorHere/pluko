@@ -12,7 +12,7 @@ const NAV=[['/#how-it-works','How it works'],['/#developers','Developers'],['/#w
 
 export function Logo({className}){
   return <Link href="/" aria-label="Pluko home" className={cn('flex items-center gap-2 text-[17px] font-semibold tracking-tight',className)}>
-    <img src="/logo.svg" width="26" height="26" alt=""/>Pluko
+    <img src="/logo.png" width="26" height="26" alt=""/>Pluko
   </Link>;
 }
 

@@ -131,7 +131,7 @@ export function WorkspaceShell({titles,children}){
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
         <SidebarMenu><SidebarMenuItem><SidebarMenuButton size="lg" asChild><Link href={href('overview')}>
-          <img src="/logo.svg" alt="" className="size-8 shrink-0"/>
+          <img src="/logo.png" alt="" className="size-8 shrink-0"/>
           <div className="grid flex-1 text-left text-sm leading-tight"><span className="flex items-center gap-1.5 font-semibold">Pluko<Badge variant="outline" className="h-4 px-1 text-[10px]">Beta</Badge></span><span className="truncate text-xs text-muted-foreground">{audience==='admin'?'Administration':'Image search workspace'}</span></div>
         </Link></SidebarMenuButton></SidebarMenuItem></SidebarMenu>
         <Button type="button" variant="outline" className="h-9 w-full justify-start gap-2 rounded-xl bg-card text-muted-foreground shadow-sm group-data-[collapsible=icon]:hidden" onClick={openPalette}><Search/>Search or jump to…<Kbd className="ml-auto">Ctrl K</Kbd></Button>

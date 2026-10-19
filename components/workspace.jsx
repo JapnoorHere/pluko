@@ -177,7 +177,7 @@ export default function Workspace({ audience = "customer" }) {
     return (
       <div className="flex min-h-svh bg-sidebar" aria-busy="true" aria-label="Loading your workspace">
         <div className="hidden w-64 shrink-0 flex-col gap-2 p-4 md:flex">
-          <div className="mb-3 flex items-center gap-2 px-1"><img src="/logo.svg" alt="" className="size-8" /><span className="font-semibold">Pluko</span></div>
+          <div className="mb-3 flex items-center gap-2 px-1"><img src="/logo.png" alt="" className="size-8" /><span className="font-semibold">Pluko</span></div>
           <Shimmer className="mb-3 h-9 w-full rounded-xl" />
           {Array.from({ length: 8 }, (_, index) => <Shimmer key={index} className="h-7 w-full" />)}
         </div>

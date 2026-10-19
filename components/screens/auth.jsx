@@ -64,7 +64,7 @@ export function AuthScreen({call,onAuthenticated,adminOnly=false}){
   return <div className="relative isolate flex min-h-svh flex-col overflow-x-clip">
     <div className={site.glow} style={{inset:'-10% 0 45%',opacity:0.45}} aria-hidden/>
     <header className="mx-auto flex h-16 w-full max-w-[1200px] items-center gap-6 px-5 sm:px-8">
-      <a href="/" className="flex items-center gap-2 text-[17px] font-semibold tracking-tight"><img src="/logo.svg" width="26" height="26" alt=""/>Pluko</a>
+      <a href="/" className="flex items-center gap-2 text-[17px] font-semibold tracking-tight"><img src="/logo.png" width="26" height="26" alt=""/>Pluko</a>
       <nav aria-label="Pluko" className="ml-auto flex items-center gap-1 text-sm">
         <a href="/docs" className="hidden rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground sm:block">Docs</a>
         <a href="/status" className="hidden rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground sm:block">Status</a>

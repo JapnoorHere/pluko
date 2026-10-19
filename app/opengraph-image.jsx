@@ -1,12 +1,14 @@
 import { ImageResponse } from 'next/og';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // The share card for every public page: logo, headline and one line about the product.
 export const alt = 'Pluko — Every image. One API.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><defs><linearGradient id="t" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop stop-color="#818CF8"/><stop offset="1" stop-color="#4F46E5"/></linearGradient></defs><rect width="64" height="64" rx="16" fill="url(#t)"/><path d="M20.5 17v30" stroke="#fff" stroke-width="7" stroke-linecap="round"/><circle cx="32" cy="28.5" r="11.5" stroke="#fff" stroke-width="7"/><circle cx="32" cy="28.5" r="3.5" fill="#fff"/></svg>`;
-const logoSrc = `data:image/svg+xml;base64,${Buffer.from(LOGO).toString('base64')}`;
+// The logo file in public/, embedded so the image renders without a network request.
+const logoSrc = `data:image/png;base64,${readFileSync(join(process.cwd(), 'public', 'logo.png')).toString('base64')}`;
 
 export default function OpenGraphImage() {
   return new ImageResponse(
