@@ -84,6 +84,18 @@ CREATE INDEX IF NOT EXISTS attempts_created ON attempts(created);`);
     db.exec('COMMIT');
   }catch(error){db.exec('ROLLBACK');throw error;}
 }
+// 6: how each project gets its results: 'poll' (check back), 'wait' (the search call waits) or 'webhook'.
+// Projects that already have a webhook keep using it.
+if(!db.prepare('SELECT 1 FROM migrations WHERE version=6').get()){
+  db.exec('BEGIN IMMEDIATE');
+  try{
+    db.exec(`ALTER TABLE projects ADD COLUMN delivery TEXT NOT NULL DEFAULT 'poll';
+ALTER TABLE projects ADD COLUMN wait_seconds INTEGER NOT NULL DEFAULT 10;
+UPDATE projects SET delivery='webhook' WHERE webhook_url IS NOT NULL;`);
+    db.prepare('INSERT INTO migrations(version,applied) VALUES(6,?)').run(Date.now());
+    db.exec('COMMIT');
+  }catch(error){db.exec('ROLLBACK');throw error;}
+}
 export const now=()=>Date.now();
 export const id=prefix=>prefix+'_'+randomUUID().replaceAll('-','');
 export const get=(sql,...p)=>db.prepare(sql).get(...p);

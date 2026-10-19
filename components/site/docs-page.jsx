@@ -18,7 +18,7 @@ import {useReturnFocus} from '@/components/design/system';
 
 const GROUPS=[
   {label:'Get started',items:[['quickstart','Quick start','api key environment first request 202'],['authentication','Authentication','bearer token scopes search read revoke']]},
-  {label:'Core concepts',items:[['jobs','Jobs and statuses','queued running complete partial cancelled reason'],['pagination','Reading results','next_cursor after poll_after limit page'],['idempotency','Retries and idempotency','idempotency-key 409 conflict retry']]},
+  {label:'Core concepts',items:[['jobs','Jobs and statuses','queued running complete partial cancelled reason'],['delivery','Getting results','wait webhook poll Prefer respond-async delivery'],['pagination','Reading results','next_cursor after poll_after limit page'],['idempotency','Retries and idempotency','idempotency-key 409 conflict retry']]},
   {label:'API reference',items:[['create-search','Create a search','POST /v1/images/search query count min_width'],['get-job','Get a job','GET /v1/jobs/{job_id} status'],['get-results','Read results','GET /v1/jobs/{job_id}/results images'],['list-jobs','List jobs','GET /v1/jobs before status'],['cancel-retry','Cancel and retry','POST cancel retry JOB_FINISHED'],['feedback','Send feedback','POST /v1/feedback not_relevant watermark broken'],['usage','Usage','GET /v1/usage pages quota reset'],['status','Service status','GET /v1/status worker provider']]},
   {label:'Features',items:[['batches','Batch searches','queries array 64 KiB'],['filters','Filters','safe_search image_type layout size color INVALID_FILTER'],['webhooks','Webhooks','job.finished signature hmac Pluko-Signature retries']]},
   {label:'Reference',items:[['errors','Errors and limits','401 403 400 409 413 429 Retry-After rate limit'],['metadata','Image metadata and reuse','image_url thumbnail_url source_url license watermark dimensions'],['openapi','OpenAPI and tools','openapi.json postman insomnia retention expires']]},
@@ -165,10 +165,20 @@ export function DocsPage(){
           </Section>
 
           <Section id="jobs" title="Jobs and statuses">
-            <Prose><p>A search is a background job. Poll {c('GET /v1/jobs/JOB_ID')} with backoff, or use a <a href="#webhooks">webhook</a>. A job is always in one of these states:</p></Prose>
+            <Prose><p>A search is a background job. Check {c('GET /v1/jobs/JOB_ID')}, wait for it, or use a webhook; see <a href="#delivery">Getting results</a>. A job is always in one of these states:</p></Prose>
             <SimpleTable columns={['Status','Meaning']} rows={[[c('queued'),'Accepted and waiting for the worker.'],[c('running'),'Pages are being fetched; results appear as they are found.'],[c('complete'),'Every query found what it asked for.'],[c('partial'),'Finished with fewer images than requested. Check each query’s reason.'],[c('cancelled'),'Stopped before it finished. Results found so far are kept.']]}/>
             <Prose><p>Each query in a job reports a {c('reason')} when it stops:</p></Prose>
             <SimpleTable columns={['Reason','What happened']} rows={REASONS.map(([code,text])=>[c(code),text])}/>
+          </Section>
+
+          <Section id="delivery" title="Getting results">
+            <Prose><p>Each project chooses how its searches return results, in the project’s Delivery tab in the workspace. You can change it at any time.</p></Prose>
+            <SimpleTable columns={['Mode','What happens','Best for']} rows={[
+              ['Check back (default)',<>The search returns {c('202')} with a job ID straight away. Check {c('GET /v1/jobs/JOB_ID')} until it finishes. Add {c('?wait=10')} to each check and it waits up to 10 seconds for the job, so you need far fewer requests.</>,'Large searches and batch jobs.'],
+              ['Wait for results',<>The search call stays open until the job finishes, up to the project’s limit (3, 5 or 10 seconds), then returns {c('200')} with {c('status')}, {c('job')} and the first page of {c('images')}. If it’s still running, you get the usual {c('202')} and can wait on the job.</>,'Small searches someone is waiting on.'],
+              ['Webhook',<>The search returns {c('202')} straight away, and Pluko sends a signed {c('job.finished')} event to your URL when the job ends. See <a href="#webhooks">Webhooks</a>.</>,'Backends that shouldn’t wait or check back.'],
+            ]}/>
+            <Prose><p>A single request can override its project: send {c('Prefer: wait=5')} to wait up to 5 seconds (10 at most), or {c('Prefer: respond-async')} to return straight away. Responses that waited include a {c('Preference-Applied')} header. Waits are always short, so a large search never holds a connection open; it carries on as a normal job.</p></Prose>
           </Section>
 
           <Section id="pagination" title="Reading results">

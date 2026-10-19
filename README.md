@@ -84,6 +84,18 @@ Search runs in the background, so the API answers right away with `202 Accepted`
 
 `count` is a positive number written as a string. Large counts are handled as paginated jobs. The `Idempotency-Key` header is optional. It lets you retry the same submission safely: identical input returns the original job, and different input with the same key returns `409 IDEMPOTENCY_CONFLICT`.
 
+### Choose how results arrive
+
+Each project picks one of three modes in the workspace (**Projects → your project → Delivery**):
+
+| Mode | What your app does |
+| --- | --- |
+| **Check back** (default) | Gets a job ID straight away, then checks the job until it finishes. |
+| **Wait for results** | The search call waits until the images are ready (up to 3, 5 or 10 seconds) and returns them with `200`. If the search runs longer, you get the usual `202` and a job ID. |
+| **Webhook** | Gets a job ID straight away; Pluko sends a signed `job.finished` event to your URL when the job ends. |
+
+One request can override its project with `Prefer: wait=5` (up to 10) or `Prefer: respond-async`. When checking back, add `?wait=10` to `GET /v1/jobs/JOB_ID` and each check waits for the job to finish, so you need far fewer requests.
+
 ### Check progress
 
 ```bash
@@ -143,6 +155,7 @@ Queries must be unique within a job, and a request body can be at most 64 KiB. S
 | Projects and API keys | Scoped keys with expiry dates and instant revoke. |
 | Playground | Try a query before wiring it into your app. |
 | Request logs | Sanitized request and response history with timing. |
+| Result delivery | Each project chooses how results arrive: check back for them, wait for them in the same call (up to 10 seconds), or get a webhook. |
 | Webhooks | Signed `job.finished` notifications with retries, instead of polling. |
 | Usage | Daily usage in the workspace and at `GET /v1/usage`. |
 | Result feedback | Flag irrelevant, broken or watermarked results. |

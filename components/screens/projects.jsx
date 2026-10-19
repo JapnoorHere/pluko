@@ -4,9 +4,10 @@ import Link from 'next/link';
 import {Copy,ExternalLink,FolderKanban,Gauge,LayoutGrid,List,Pencil,Plus,Search,Trash2,Webhook} from 'lucide-react';
 import {useWorkspace} from '@/components/workspace/context';
 import {FilterBar,ListEmpty,Pagination,useListQuery} from '@/components/workspace/list';
+import {DeliveryBadge,DeliveryChooser,SigningSecretDialog} from '@/components/screens/delivery';
 import {cn} from '@/lib/utils';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
-import {ConfirmDialog,DataTable,ErrorState,FormDialog,IdPill,PageHeader,RowActions,Shimmer,StatusBadge,TimeAgo,UsageMeter,copyWithToast,toast} from '@/components/workspace/ui';
+import {ConfirmDialog,DataTable,ErrorState,FormDialog,IdPill,PageHeader,RowActions,Shimmer,TimeAgo,UsageMeter,copyWithToast,toast} from '@/components/workspace/ui';
 import {ToggleGroup,ToggleGroupItem} from '@/components/ui/toggle-group';
 
 const VIEW_KEY='pluko-projects-view';
@@ -16,12 +17,28 @@ import {Input} from '@/components/ui/input';
 
 export function CreateProjectDialog({open,onOpenChange,onCreated}){
   const {call}=useWorkspace();
-  const [name,setName]=useState('');
-  useEffect(()=>{if(open)setName('');},[open]);
-  return <FormDialog open={open} onOpenChange={onOpenChange} title="Create a project" description="Use one project per application. Keys, usage limits and webhooks are kept per project." submitLabel="Create project" busyLabel="Creating…"
-    onSubmit={async()=>{const data=await call('/api/projects',{name});toast.success(`“${name}” created`);await onCreated?.(data.id);}}>
-    <Field><FieldLabel htmlFor="project-name">Project name</FieldLabel><Input id="project-name" required autoFocus maxLength={100} placeholder="Marketing site" value={name} onChange={event=>setName(event.target.value)}/><FieldDescription>You can rename it later.</FieldDescription></Field>
-  </FormDialog>;
+  const [name,setName]=useState(''),[mode,setMode]=useState('poll'),[wait,setWait]=useState(10),[url,setUrl]=useState('');
+  // A webhook project gets its signing secret once, before we move on to the new project.
+  const [created,setCreated]=useState(null);
+  useEffect(()=>{if(open){setName('');setMode('poll');setWait(10);setUrl('');}},[open]);
+  return <>
+    <FormDialog open={open} onOpenChange={onOpenChange} size="lg" title="Create a project" description="Use one project per application. Keys, usage limits and result delivery are set per project." submitLabel="Create project" busyLabel="Creating…"
+      submitDisabled={!name.trim()||(mode==='webhook'&&!url.trim())}
+      onSubmit={async()=>{
+        const data=await call('/api/projects',{name,delivery:mode,wait_seconds:wait,...(mode==='webhook'?{webhook_url:url.trim()}:{})});
+        toast.success(`“${name}” created`);
+        if(data.webhook_secret)setCreated({id:data.id,secret:data.webhook_secret});
+        else await onCreated?.(data.id);
+      }}>
+      <Field><FieldLabel htmlFor="project-name">Project name</FieldLabel><Input id="project-name" required autoFocus maxLength={100} placeholder="Marketing site" value={name} onChange={event=>setName(event.target.value)}/><FieldDescription>You can rename it later.</FieldDescription></Field>
+      <Field>
+        <FieldLabel>How should your app get results?</FieldLabel>
+        <DeliveryChooser value={mode} onChange={setMode} waitSeconds={wait} onWaitSeconds={setWait} webhookUrl={url} onWebhookUrl={setUrl} idPrefix="new-project"/>
+        <FieldDescription>You can change this later in the project’s Delivery tab.</FieldDescription>
+      </Field>
+    </FormDialog>
+    <SigningSecretDialog secret={created?.secret} onClose={async()=>{const id=created.id;setCreated(null);await onCreated?.(id);}}/>
+  </>;
 }
 
 export function RenameProjectDialog({project,onOpenChange,onDone}){
@@ -56,7 +73,7 @@ const SORT_OPTIONS=[['created_desc','Newest first'],['created_asc','Oldest first
 const DEFAULTS={sort:'created_desc'};
 const FILTERS=[
   {id:'usage',label:'Usage today',type:'multi',options:USAGE_OPTIONS},
-  {id:'webhook',label:'Webhook',type:'select',anyLabel:'Any',options:[['yes','Webhook on'],['no','Webhook off']]},
+  {id:'delivery',label:'Delivery',type:'multi',options:[['poll','Check back'],['wait','Wait for results'],['webhook','Webhook']]},
   {id:'created',label:'Created',type:'date'},
 ];
 
@@ -81,12 +98,12 @@ export function Projects({fixed={},embedded=false}={}){
     ...(showOwner?[{key:'owner',header:'Owner',headClassName:'hidden lg:table-cell',className:'hidden lg:table-cell max-w-48 truncate',cell:project=><Link href={href('users',project.user_id)} onClick={event=>event.stopPropagation()} className="text-muted-foreground hover:text-foreground hover:underline">{project.owner}</Link>}]:[]),
     {key:'usage',header:'Today',sortKey:'usage',headClassName:'hidden md:table-cell',className:'hidden md:table-cell',cell:project=><div className="w-44">{meter(project)}</div>},
     {key:'keys',header:'Keys',headClassName:'hidden lg:table-cell text-right',className:'hidden lg:table-cell text-right tabular-nums text-muted-foreground',cell:project=>project.active_keys},
-    {key:'webhook',header:'Webhook',headClassName:'hidden sm:table-cell',className:'hidden sm:table-cell',cell:project=>project.webhook_url?<StatusBadge status="active" label="On"/>:<span className="text-sm text-muted-foreground">Off</span>},
+    {key:'delivery',header:'Delivery',headClassName:'hidden sm:table-cell',className:'hidden sm:table-cell',cell:project=><DeliveryBadge project={project}/>},
     {key:'created',header:'Created',sortKey:'created',headClassName:'hidden xl:table-cell',className:'hidden xl:table-cell text-muted-foreground',cell:project=><TimeAgo value={project.created}/>},
     {key:'actions',header:<span className="sr-only">Actions</span>,className:'w-10 text-right',cell:project=><RowActions items={[
       {label:'Open project',icon:ExternalLink,onSelect:()=>navigate('projects',project.id)},
       {label:'Rename',icon:Pencil,onSelect:()=>setRenaming(project)},
-      {label:'Webhook settings',icon:Webhook,onSelect:()=>navigate('projects',project.id,'webhook')},
+      {label:'Delivery settings',icon:Webhook,onSelect:()=>navigate('projects',project.id,'webhook')},
       admin&&{label:'Edit daily limit',icon:Gauge,onSelect:()=>setQuota(project)},
       {label:'Copy project ID',icon:Copy,onSelect:()=>copyWithToast(project.id,'Project ID')},
       'separator',
@@ -126,7 +143,7 @@ export function Projects({fixed={},embedded=false}={}){
               {showOwner&&<p className="mt-3 truncate text-xs text-muted-foreground">Owner · {project.owner}</p>}
               <div className="mt-5 flex-1">{meter(project)}</div>
               <div className="mt-5 flex items-center justify-between gap-3 border-t pt-4 text-xs text-muted-foreground">
-                {project.webhook_url?<StatusBadge status="active" label="Webhook on"/>:<span>Webhook off</span>}
+                <DeliveryBadge project={project}/>
                 <span>{project.active_keys} {project.active_keys===1?'key':'keys'} · Created <TimeAgo value={project.created}/></span>
               </div>
             </div>

@@ -5,6 +5,7 @@ import {get,all} from './db.mjs';
 import {list,oneOf,equals,choice,range,pageInfo,escapeLike} from './lists.mjs';
 import {ApiError,jobView} from './jobs.mjs';
 import {dayKey} from './limits.mjs';
+import {DELIVERY_MODES} from './delivery.mjs';
 
 const db={get,all};
 const DAY=86400000;
@@ -115,12 +116,13 @@ export function listProjects(auth,url){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(today))throw new Error('Unexpected day key');
   const used='coalesce(d.pages,0)';
   const result=list(db,url,{
-    select:`p.id,p.user_id,p.name,p.daily_pages,p.created,p.webhook_url,u.email owner,${used} pages_today,(SELECT count(*) FROM api_keys k WHERE k.project_id=p.id AND k.revoked=0) active_keys`,
+    select:`p.id,p.user_id,p.name,p.daily_pages,p.created,p.webhook_url,p.delivery,p.wait_seconds,u.email owner,${used} pages_today,(SELECT count(*) FROM api_keys k WHERE k.project_id=p.id AND k.revoked=0) active_keys`,
     from:`projects p JOIN users u ON u.id=p.user_id LEFT JOIN usage d ON d.project_id=p.id AND d.day='${today}'`,...scope(auth,url,'p.user_id'),
     filters:[
       equals('user_id','p.user_id'),range('created','p.created'),
       choice('usage',{under:`${used}<p.daily_pages*0.8`,near:`${used}>=p.daily_pages*0.8 AND ${used}<p.daily_pages`,at:`${used}>=p.daily_pages`}),
       choice('webhook',{yes:'p.webhook_url IS NOT NULL',no:'p.webhook_url IS NULL'}),
+      oneOf('delivery','p.delivery',DELIVERY_MODES),
     ],
     search:['p.name','p.id',...(admin?['u.email']:[])],
     sorts:{created_desc:'p.created DESC',created_asc:'p.created ASC',name_asc:'p.name COLLATE NOCASE ASC',name_desc:'p.name COLLATE NOCASE DESC',usage_desc:`${used} DESC,p.created DESC`,usage_asc:`${used} ASC,p.created DESC`},

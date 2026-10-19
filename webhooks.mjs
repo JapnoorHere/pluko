@@ -66,8 +66,9 @@ const envelope=(type,data)=>({id:id('evt'),type,created:now(),data});
 
 // Queues job.finished for a project that has a webhook. `view` is the object returned by jobView().
 export function enqueueJobFinished(view) {
-  const project=get('SELECT id,webhook_url FROM projects WHERE id=?',view.project_id);
-  if(!project?.webhook_url)return null;
+  // Only projects that chose webhook delivery get job.finished events.
+  const project=get('SELECT id,webhook_url,delivery FROM projects WHERE id=?',view.project_id);
+  if(!project?.webhook_url||project.delivery!=='webhook')return null;
   return insertDelivery(project.id,view.id,'job.finished',envelope('job.finished',{
     job_id:view.id,project_id:view.project_id,status:view.status,requested:view.requested,returned:view.returned,
     queries:view.queries.map(({query,requested,found,status,reason})=>({query,requested,found,status,reason})),
